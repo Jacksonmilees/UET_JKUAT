@@ -166,3 +166,5 @@ Once everything is working:
 4. Complete the 100 KES mandatory contribution
 5. You should receive an STK push on your phone
 
+
+

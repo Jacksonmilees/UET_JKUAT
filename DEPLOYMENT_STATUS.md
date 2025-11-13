@@ -135,3 +135,5 @@ Look for `Access-Control-Allow-Origin` header in response.
 - Verify CORS allows frontend domain
 - Check browser console for exact error
 
+
+
