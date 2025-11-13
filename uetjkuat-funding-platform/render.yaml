@@ -5,8 +5,8 @@ services:
     runtime: node
     plan: starter  # Free tier, upgrade to standard for production
     rootDir: uetjkuat-funding-platform
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
+    buildCommand: cd uetjkuat-funding-platform && npm install && npm run build
+    startCommand: cd uetjkuat-funding-platform && npm run start
     envVars:
       - key: NODE_ENV
         value: production
