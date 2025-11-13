@@ -6,6 +6,10 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     const port = parseInt(process.env.PORT || env.PORT || '5173', 10);
     return {
+      build: {
+        outDir: 'dist',
+        emptyOutDir: true,
+      },
       server: {
         port: port,
         host: '0.0.0.0',
