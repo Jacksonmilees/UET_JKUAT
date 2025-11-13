@@ -43,8 +43,10 @@ return [
         'https://dash.moutjkuatministry.cloud',
         'https://*.moutjkuatministry.cloud',
         'http://localhost:3000',
+        'http://localhost:5173',  // Vite dev server
+        'http://localhost:8000',  // Laravel dev server
         'http://195.179.229.205:3000',
-        'https://finance.moutjkuatministry.cloud'  // Wildcard for subdomains
+        'https://uet-jkuat.onrender.com',  // Backend domain (if frontend is on same domain)
     ],
 
     /*
@@ -55,6 +57,8 @@ return [
     */
     'allowed_origins_patterns' => [
         '/^https:\/\/([a-z0-9-]+\.)?moutjkuatministry\.cloud$/', // Matches subdomains of moutjkuatministry.cloud
+        '/^https:\/\/([a-z0-9-]+\.)?onrender\.com$/', // Matches all Render subdomains
+        '/^http:\/\/localhost:\d+$/', // Matches localhost with any port
     ],
 
     /*

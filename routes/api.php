@@ -105,6 +105,7 @@ Route::middleware(ApiKeyMiddleware::class)
 
 Route::prefix('v1')->group(function () {
     Route::post('/payments/mpesa', [MpesaController::class, 'initiateSTKPush']);
+    Route::get('/payments/mpesa/status/{checkoutRequestId}', [MpesaController::class, 'queryTransactionStatus']);
     Route::get('/tickets/completed/all', [TicketController::class, 'getAllCompletedTickets']);
 });
 
