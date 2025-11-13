@@ -15,13 +15,7 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
-        $this->routes(function () {
-            Route::middleware(['api'])  // Remove the api middleware from here
-                ->prefix('api')
-                ->group(base_path('routes/api.php'));
-
-            Route::middleware('web')
-                ->group(base_path('routes/web.php'));
-        });
+        // Routes are now registered in bootstrap/app.php (Laravel 11)
+        // This method is kept for rate limiting configuration only
     }
 }
