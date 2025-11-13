@@ -1,0 +1,63 @@
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
+
+class UpdateWithdrawalsTable extends Migration
+{
+    public function up()
+    {
+        Schema::table('withdrawals', function (Blueprint $table) {
+            // Add new columns
+            if (!Schema::hasColumn('withdrawals', 'reference')) {
+                $table->string('reference')->unique()->nullable()->after('status');
+            }
+
+            if (!Schema::hasColumn('withdrawals', 'initiated_by')) {
+                $table->string('initiated_by')->nullable()->after('updated_at');
+            }
+
+            // Ensure amount is decimal with proper precision
+            $table->decimal('amount', 15, 2)->change();
+
+            // Add foreign key constraint to account_id if not exists
+            try {
+                $table->foreign('account_id')
+                      ->references('id')
+                      ->on('accounts')
+                      ->onDelete('cascade');
+            } catch (\Exception $e) {
+                // Foreign key might already exist
+                \Log::info('Foreign key on account_id already exists or cannot be added: ' . $e->getMessage());
+            }
+        });
+
+        // Populate new columns with default values for existing records
+        DB::statement("UPDATE withdrawals SET reference = CONCAT('WD-', UUID()) WHERE reference IS NULL");
+        
+        // If initiated_by_name contains useful data, you might want to copy it to initiated_by
+        // Assuming initiated_by_name might contain some identifier
+        DB::statement("UPDATE withdrawals SET initiated_by = initiated_by_name WHERE initiated_by IS NULL AND initiated_by_name IS NOT NULL");
+    }
+
+    public function down()
+    {
+        Schema::table('withdrawals', function (Blueprint $table) {
+            // Drop foreign key if it was added
+            try {
+                $table->dropForeign(['account_id']);
+            } catch (\Exception $e) {
+                \Log::info('Could not drop foreign key on account_id: ' . $e->getMessage());
+            }
+
+            // Drop new columns
+            if (Schema::hasColumn('withdrawals', 'reference')) {
+                $table->dropColumn('reference');
+            }
+            if (Schema::hasColumn('withdrawals', 'initiated_by')) {
+                $table->dropColumn('initiated_by');
+            }
+        });
+    }
+}

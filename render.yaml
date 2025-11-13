@@ -1,0 +1,62 @@
+# Render Blueprint for Laravel Backend with Neon DB
+# This file configures your Laravel application on Render
+
+services:
+  # Web Service (Laravel Application)
+  - type: web
+    name: uet-jkuat-backend
+    runtime: php
+    plan: starter  # Free tier, upgrade to standard for production
+    buildCommand: chmod +x .render-build.sh && ./.render-build.sh
+    startCommand: php artisan serve --host=0.0.0.0 --port=$PORT
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: error
+      # Neon DB Connection - Update these values in Render dashboard with your Neon DB credentials
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        value: ep-square-moon-ah1uup8k-pooler.c-3.us-east-1.aws.neon.tech
+      - key: DB_PORT
+        value: 5432
+      - key: DB_DATABASE
+        value: neondb
+      - key: DB_USERNAME
+        value: neondb_owner
+      - key: DB_PASSWORD
+        sync: false  # Set this in Render dashboard: npg_0eOnTvcjFJV3
+      - key: DB_SSLMODE
+        value: require  # Required for Neon DB
+      # Add your other environment variables in Render dashboard
+      # MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET, etc.
+
+  # Background Worker (Queue Processor)
+  - type: worker
+    name: uet-jkuat-worker
+    runtime: php
+    plan: starter
+    buildCommand: chmod +x .render-build.sh && ./.render-build.sh
+    startCommand: php artisan queue:work --tries=3 --timeout=90
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        value: ep-square-moon-ah1uup8k-pooler.c-3.us-east-1.aws.neon.tech
+      - key: DB_PORT
+        value: 5432
+      - key: DB_DATABASE
+        value: neondb
+      - key: DB_USERNAME
+        value: neondb_owner
+      - key: DB_PASSWORD
+        sync: false  # Set this in Render dashboard: npg_0eOnTvcjFJV3
+      - key: DB_SSLMODE
+        value: require  # Required for Neon DB

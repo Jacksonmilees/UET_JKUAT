@@ -1,0 +1,11 @@
+[program:laravel-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /home/moutjkuatministry-project/htdocs/project.moutjkuatministry.cloud/main-system/artisan queue:work --queue=default --sleep=3 --tries=3
+directory=/home/moutjkuatministry-project/htdocs/project.moutjkuatministry.cloud/main-system
+autostart=true
+autorestart=true
+user=www-data
+numprocs=2
+redirect_stderr=true
+stdout_logfile=/home/moutjkuatministry-project/htdocs/project.moutjkuatministry.cloud/main-system/app/storage/logs/worker.log
+stopwaitsecs=3600
