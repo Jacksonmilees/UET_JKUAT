@@ -86,11 +86,13 @@ const ContributionModal: React.FC<ContributionModalProps> = ({ project, isOpen, 
     onClose();
     // Refresh project data
     await handleContribute(project.id, amount, { phoneNumber });
+    addNotification('Payment successful. Thank you for your contribution!');
   };
 
   const handlePaymentCancel = () => {
     setMpesaSession(null);
     setIsSubmitting(false);
+    addNotification('Payment was cancelled.');
   };
 
   return (

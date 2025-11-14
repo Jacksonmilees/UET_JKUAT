@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
+use App\Http\Controllers\ReportController;
 
 // Debug route to confirm middleware registration
 Route::get('/debug-middleware', function () {
@@ -107,6 +108,7 @@ Route::middleware(ApiKeyMiddleware::class)
         Route::get('transactions', [TransactionController::class, 'index']);
         Route::get('transactions/{id}', [TransactionController::class, 'show']);
         Route::get('accounts/{reference}/transactions', [TransactionController::class, 'getAccountTransactions']);
+        Route::get('reports/finance', [ReportController::class, 'finance'])->name('reports.finance');
         
         Route::post('/airtime/purchase', [AirtimeController::class, 'purchase']);
         Route::get('/airtime/balance', [AirtimeController::class, 'balance']);

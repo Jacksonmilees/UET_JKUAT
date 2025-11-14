@@ -291,7 +291,41 @@ class MpesaController extends Controller
                     'CheckoutRequestID' => $checkoutRequestID
                 ]);
 
-            return response()->json($response->json());
+            if (!$response->successful()) {
+                Log::error('STK status query failed', [
+                    'status' => $response->status(),
+                    'body' => $response->json(),
+                ]);
+                return response()->json([
+                    'checkoutRequestId' => $checkoutRequestID,
+                    'status' => 'failed',
+                    'errorMessage' => 'Failed to query status',
+                ], 200);
+            }
+
+            $data = $response->json();
+            // Map Safaricom response to frontend expected shape
+            // Default assumptions: pending unless explicit success/failure codes
+            $resultCode = $data['ResultCode'] ?? null;
+            $resultDesc = $data['ResultDesc'] ?? null;
+
+            $status = 'pending';
+            if ($resultCode === 0 || $resultCode === '0') {
+                $status = 'completed';
+            } elseif (in_array((string)$resultCode, ['1032', '1', '2001', '1037', '1036'], true)) {
+                // 1032: Request cancelled by user; other non-zero codes considered failure
+                $status = ($resultCode == '1032') ? 'cancelled' : 'failed';
+            }
+
+            return response()->json([
+                'checkoutRequestId' => $data['CheckoutRequestID'] ?? $checkoutRequestID,
+                'status' => $status,
+                // Amount and phone not supplied by STK query - will be populated after callback
+                'amount' => null,
+                'phoneNumber' => null,
+                'mpesaReceiptNumber' => null,
+                'errorMessage' => $status === 'failed' || $status === 'cancelled' ? ($resultDesc ?? 'Payment not completed') : null,
+            ]);
 
         } catch (\Exception $e) {
             Log::error('Transaction status query error: ' . $e->getMessage());

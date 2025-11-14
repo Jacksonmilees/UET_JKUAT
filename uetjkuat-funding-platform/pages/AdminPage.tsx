@@ -8,6 +8,7 @@ import UserManagement from '../components/admin/UserManagement';
 import ProjectManagement from '../components/admin/ProjectManagement';
 import NewsManagement from '../components/admin/NewsManagement';
 import FinanceDashboard from '../components/admin/FinanceDashboard';
+import MembersManagement from '../components/admin/MembersManagement';
 import EditProjectModal from '../components/admin/EditProjectModal';
 import EditNewsModal from '../components/admin/EditNewsModal';
 import ConfirmationModal from '../components/common/ConfirmationModal';
@@ -18,7 +19,7 @@ interface AdminPageProps {
   setRoute: (route: Route) => void;
 }
 
-type AdminTab = 'users' | 'projects' | 'news' | 'finance';
+type AdminTab = 'users' | 'projects' | 'news' | 'finance' | 'members';
 type DeletableItem = { type: 'user' | 'project' | 'news', id: number, name: string };
 
 const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
@@ -79,6 +80,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
     { id: 'projects', name: 'Project Management', icon: <IconFilePlus className="w-5 h-5 mr-2" /> },
     { id: 'news', name: 'News Management', icon: <IconNewspaper className="w-5 h-5 mr-2" /> },
     { id: 'finance', name: 'Finance', icon: <IconNewspaper className="w-5 h-5 mr-2" /> },
+    { id: 'members', name: 'Members', icon: <IconUserShield className="w-5 h-5 mr-2" /> },
   ];
 
   return (
@@ -111,7 +113,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
             </aside>
             <main className="flex-1">
               <div className="bg-white p-8 rounded-lg shadow-md min-h-[600px]">
-                {activeTab === 'finance' ? <FinanceDashboard /> : renderTabContent()}
+                {activeTab === 'finance' ? <FinanceDashboard /> : activeTab === 'members' ? <MembersManagement /> : renderTabContent()}
               </div>
             </main>
           </div>

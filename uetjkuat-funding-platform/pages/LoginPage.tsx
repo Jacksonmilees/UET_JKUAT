@@ -27,7 +27,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
             if (justLoggedIn && user && !hasCheckedPayment.current) {
                 hasCheckedPayment.current = true;
                 await refreshTransactions();
-                const mandatoryStatus = getMandatoryStatus(user.id);
+                const mandatoryStatus = await getMandatoryStatus(user.id);
                 
                 if (!mandatoryStatus.isCleared) {
                     setShowPaymentModal(true);

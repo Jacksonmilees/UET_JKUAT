@@ -87,13 +87,20 @@ const FinanceDashboard: React.FC = () => {
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
 
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
       const [txRes, wdRes, projRes] = await Promise.all([
-        api.transactions.getAll({ sort_by: 'created_at', sort_direction: 'desc' }),
+        api.transactions.getAll({
+          sort_by: 'created_at',
+          sort_direction: 'desc',
+          ...(startDate ? { start_date: startDate } : {}),
+          ...(endDate ? { end_date: endDate } : {}),
+        }),
         api.withdrawals.getAll(),
         api.projects.getAll(),
       ]);
@@ -169,13 +176,36 @@ const FinanceDashboard: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-800">Finance Overview</h2>
           <p className="text-sm text-gray-600">Live totals, transactions, withdrawals, and projects.</p>
         </div>
-        <button
-          onClick={load}
-          className="px-4 py-2 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700"
-          disabled={loading}
-        >
-          {loading ? 'Refreshing…' : 'Refresh'}
-        </button>
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="border border-gray-300 rounded-md px-2 py-1 text-sm"
+          />
+          <span className="text-gray-500 text-sm">to</span>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="border border-gray-300 rounded-md px-2 py-1 text-sm"
+          />
+          <button
+            onClick={load}
+            className="px-4 py-2 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700"
+            disabled={loading}
+          >
+            {loading ? 'Refreshing…' : 'Apply'}
+          </button>
+          <a
+            href={`/api/v1/reports/finance${(startDate || endDate) ? `?${new URLSearchParams({ ...(startDate ? { start_date: startDate } : {}), ...(endDate ? { end_date: endDate } : {}) }).toString()}` : ''}`}
+            target="_blank"
+            rel="noreferrer"
+            className="px-4 py-2 rounded-md bg-gray-800 text-white font-semibold hover:bg-gray-900"
+          >
+            Export PDF
+          </a>
+        </div>
       </div>
 
       {error && (

@@ -40,7 +40,7 @@ const MpesaPaymentStatus: React.FC<MpesaPaymentStatusProps> = ({
           setIsPolling(false);
           clearInterval(interval);
           if (updated.status === 'completed' && onComplete) {
-            setTimeout(() => onComplete(), 2000);
+            onComplete();
           }
         }
       } catch (error) {
