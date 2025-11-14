@@ -93,6 +93,9 @@ class MpesaController extends Controller
                 'phone' => $request->phone_number,
             ]);
 
+            // Determine account reference to display on the customer's side and in statements
+            $accountReference = $request->account_number ?: (config('mpesa.default_account_reference') ?: 'UET-JKUAT');
+
             $response = Http::withToken($accessToken)
                 ->post($url, [
                     'BusinessShortCode' => $this->shortcode,
@@ -104,8 +107,8 @@ class MpesaController extends Controller
                     'PartyB' => $this->shortcode,
                     'PhoneNumber' => $request->phone_number,
                     'CallBackURL' => $callbackUrl,
-                    'AccountReference' => $request->account_number,
-                    'TransactionDesc' => 'Ticket Purchase'
+                    'AccountReference' => $accountReference,
+                    'TransactionDesc' => 'UET-JKUAT Payment'
                 ]);
 
             if ($response->successful()) {
