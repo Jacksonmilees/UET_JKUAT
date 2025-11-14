@@ -80,6 +80,7 @@ return [
         'Accept',
         'Origin',
         'x-api-key', // Added for API key authentication
+        'X-API-Key', // Alternative case
     ],
 
     /*

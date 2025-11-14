@@ -120,3 +120,16 @@ Route::get('/health', function () {
         ]
     ]);
 });
+
+// CORS test route
+Route::options('/cors-test', function () {
+    return response()->json(['message' => 'CORS preflight successful'], 200);
+});
+
+Route::get('/cors-test', function () {
+    return response()->json([
+        'message' => 'CORS is working!',
+        'origin' => request()->header('Origin'),
+        'timestamp' => now(),
+    ]);
+});
