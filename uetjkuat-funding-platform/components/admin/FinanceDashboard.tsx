@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import api from '../../services/api';
 
+const HAS_API_KEY = !!import.meta.env.VITE_API_KEY;
+
 type Tx = {
   id: string | number;
   amount: number;
@@ -94,6 +96,13 @@ const FinanceDashboard: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
+      if (!HAS_API_KEY) {
+        // Without an API key, protected endpoints will 401. Show empty state.
+        setTransactions([]);
+        setWithdrawals([]);
+        setProjects([]);
+        return;
+      }
       const [txRes, wdRes, projRes] = await Promise.all([
         api.transactions.getAll({
           sort_by: 'created_at',
@@ -171,6 +180,11 @@ const FinanceDashboard: React.FC = () => {
 
   return (
     <div className="space-y-8">
+      {!HAS_API_KEY && (
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md">
+          Admin data requires API access. Set backend API_KEY and frontend VITE_API_KEY to enable live transactions, withdrawals, projects, and reports.
+        </div>
+      )}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">Finance Overview</h2>

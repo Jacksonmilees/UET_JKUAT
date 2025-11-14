@@ -330,6 +330,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
         <header className="mb-12">
             <h1 className="text-4xl font-extrabold text-gray-800 mb-2">Welcome, {user.name}!</h1>
             <p className="text-lg text-gray-600">Here's a summary of your activity on the platform.</p>
+          {user.role === 'admin' && (
+            <div className="mt-4">
+              <button
+                onClick={() => setRoute({ page: 'admin' })}
+                className="px-4 py-2 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700"
+              >
+                Go to Admin Dashboard
+              </button>
+            </div>
+          )}
         </header>
 
         <div className="mb-10">
