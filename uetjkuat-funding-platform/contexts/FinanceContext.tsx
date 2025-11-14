@@ -170,10 +170,25 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     const loadDonations = useCallback(async () => {
         try {
-            const response = await api.donations.getByUser();
+            // Backend doesn't expose /v1/donations/my; derive from transactions
+            const response = await api.transactions.getAll({ sort_by: 'created_at', sort_direction: 'desc' });
             if (response.success && response.data) {
-                const transformed = response.data.map(transformDonation);
-                setDonations(transformed);
+                const txs = response.data as any[];
+                const derived = txs
+                    .filter(t => (t.type || '').toLowerCase() === 'credit' || (t.payment_method || '').toLowerCase() === 'mpesa')
+                    .map(t => ({
+                        id: (t.id?.toString?.() || `don-${t.reference || Date.now()}`),
+                        projectId: t.project_id,
+                        projectTitle: t.project_title || t.description || 'Project',
+                        amount: parseFloat(t.amount || 0),
+                        phoneNumber: t.phone_number,
+                        donorName: t.payer_name || 'Anonymous',
+                        userId: t.user_id,
+                        mpesaReceipt: t.reference || t.transaction_id,
+                        status: (t.status || 'completed'),
+                        createdAt: t.created_at || new Date().toISOString(),
+                    }));
+                setDonations(derived);
             }
         } catch (error) {
             console.error('Error loading donations:', error);

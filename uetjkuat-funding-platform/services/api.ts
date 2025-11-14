@@ -257,7 +257,7 @@ export const accountsApi = {
   ): Promise<ApiResponse<any[]>> => {
     const endpoint = accountId
       ? `/v1/accounts/${accountId}/transactions`
-      : '/v1/transactions/my';
+      : '/v1/transactions';
     return apiRequest(endpoint);
   },
 };
