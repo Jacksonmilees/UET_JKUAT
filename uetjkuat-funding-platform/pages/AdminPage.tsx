@@ -7,6 +7,7 @@ import { useNews } from '../contexts/NewsContext';
 import UserManagement from '../components/admin/UserManagement';
 import ProjectManagement from '../components/admin/ProjectManagement';
 import NewsManagement from '../components/admin/NewsManagement';
+import FinanceDashboard from '../components/admin/FinanceDashboard';
 import EditProjectModal from '../components/admin/EditProjectModal';
 import EditNewsModal from '../components/admin/EditNewsModal';
 import ConfirmationModal from '../components/common/ConfirmationModal';
@@ -17,14 +18,14 @@ interface AdminPageProps {
   setRoute: (route: Route) => void;
 }
 
-type AdminTab = 'users' | 'projects' | 'news';
+type AdminTab = 'users' | 'projects' | 'news' | 'finance';
 type DeletableItem = { type: 'user' | 'project' | 'news', id: number, name: string };
 
 const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
   const { user, deleteUser } = useAuth();
   const { deleteProject } = useProjects();
   const { deleteArticle } = useNews();
-  const [activeTab, setActiveTab] = useState<AdminTab>('users');
+  const [activeTab, setActiveTab] = useState<AdminTab>('finance');
 
   // Modal states
   const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
@@ -77,6 +78,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
     { id: 'users', name: 'User Management', icon: <IconUserShield className="w-5 h-5 mr-2" /> },
     { id: 'projects', name: 'Project Management', icon: <IconFilePlus className="w-5 h-5 mr-2" /> },
     { id: 'news', name: 'News Management', icon: <IconNewspaper className="w-5 h-5 mr-2" /> },
+    { id: 'finance', name: 'Finance', icon: <IconNewspaper className="w-5 h-5 mr-2" /> },
   ];
 
   return (
@@ -109,7 +111,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
             </aside>
             <main className="flex-1">
               <div className="bg-white p-8 rounded-lg shadow-md min-h-[600px]">
-                {renderTabContent()}
+                {activeTab === 'finance' ? <FinanceDashboard /> : renderTabContent()}
               </div>
             </main>
           </div>

@@ -366,6 +366,16 @@ export const newsApi = {
   },
 };
 
+// Transactions API (Admin)
+export const transactionsApi = {
+  getAll: async (params?: Record<string, string>): Promise<ApiResponse<any[]>> => {
+    const query = params
+      ? '?' + new URLSearchParams(params).toString()
+      : '';
+    return apiRequest(`/v1/transactions${query}`);
+  },
+};
+
 // Export default API object
 export default {
   auth: authApi,
@@ -377,6 +387,7 @@ export default {
   tickets: ticketsApi,
   users: usersApi,
   news: newsApi,
+  transactions: transactionsApi,
   getToken,
   setToken,
   removeToken,
