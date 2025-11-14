@@ -23,10 +23,11 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children }) => {
     const [aiError, setAIError] = useState<string | null>(null);
     const { addNotification } = useContext(NotificationContext);
 
-    const API_KEY = process.env.API_KEY;
+    // Use Vite-exposed env var
+    const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
 
     if (!API_KEY) {
-        console.error("API_KEY for GoogleGenAI is not set. AI features will be disabled.");
+        console.warn('GEMINI API KEY (VITE_GEMINI_API_KEY) is not set. AI features are disabled.');
         const disabledValue = {
             isGenerating: false,
             aiError: 'API Key not configured.',

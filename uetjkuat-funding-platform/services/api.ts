@@ -8,6 +8,12 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://uetjkuat-54286e10a43b.herokuapp.com/api';
 const API_KEY = import.meta.env.VITE_API_KEY || '';
 
+// Warn once if API key is missing; protected endpoints will require it
+if (!API_KEY) {
+  // eslint-disable-next-line no-console
+  console.warn('VITE_API_KEY is not set. Requests to protected /api/v1 endpoints may return 401/403.');
+}
+
 // Types
 export interface ApiResponse<T> {
   success: boolean;
@@ -112,19 +118,37 @@ async function apiRequest<T>(
       headers,
     });
 
-    const data = await response.json();
+    let data: any = null;
+    try {
+      data = await response.json();
+    } catch {
+      // No JSON body; keep data as null
+    }
+
+    // Centralized 401/403 handling: clear session and redirect to login
+    if (response.status === 401) {
+      // Unauthorized - clear auth session and redirect to login
+      removeToken();
+      if (typeof window !== 'undefined') {
+        window.location.hash = '#/login';
+      }
+      return {
+        success: false,
+        error: data?.message || data?.error || `HTTP ${response.status}`,
+      };
+    }
 
     if (!response.ok) {
       return {
         success: false,
-        error: data.message || data.error || `HTTP ${response.status}`,
+        error: data?.message || data?.error || `HTTP ${response.status}`,
       };
     }
 
     return {
       success: true,
-      data: data.data || data,
-      message: data.message,
+      data: (data && (data.data ?? data)) as T,
+      message: data?.message,
     };
   } catch (error: any) {
     return {

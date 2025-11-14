@@ -17,6 +17,7 @@ import {
     MinistryScheduleItem,
     MinistryPillar,
 } from './types';
+import bonfaceImg from './assets/images/bonface.jpg';
 
 const getFutureDate = (days: number) => {
     const date = new Date();
@@ -442,7 +443,7 @@ export const MOCK_ORDERS: Order[] = [];
 export const CHAIRPERSON_PROFILE: LeadershipProfile = {
     name: 'Boniface Mwanzia David',
     title: 'Chairperson – UET JKUAT (2025/2026)',
-    photoUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=facearea&w=640&h=640&q=80',
+    photoUrl: bonfaceImg,
     bio: `I am Boniface Mwanzia David, a final-year student pursuing a Bachelor of Science in Banking and Finance and the current Chairperson of the Uttermost Evangelistic Team (UET), JKUAT Chapter, for the 2025/2026 spiritual year. My journey at UET has been transformative, shaping my spiritual growth, character, discipline, and vision. I desire to lead this team into a deeper knowledge of Jesus Christ—raising disciples who are rooted in the Word, bold in evangelism, and unwavering in their faith.`,
     scripture: '“But grow in the grace and knowledge of our Lord and Savior Jesus Christ. To Him be glory both now and forever! Amen.” – 2 Peter 3:18',
 };

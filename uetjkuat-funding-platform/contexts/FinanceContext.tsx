@@ -24,6 +24,9 @@ import { useAuth } from './AuthContext';
 import { NotificationContext } from './NotificationContext';
 import api from '../services/api';
 
+// Frontend will receive 401 from protected endpoints unless VITE_API_KEY is configured.
+const HAS_API_KEY = !!import.meta.env.VITE_API_KEY;
+
 interface InitiateProjectContributionPayload {
     projectId: number;
     projectTitle: string;
@@ -158,6 +161,10 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     // Load data from API
     const loadTransactions = useCallback(async () => {
         try {
+            if (!HAS_API_KEY) {
+                setTransactions([]);
+                return;
+            }
             const response = await api.accounts.getTransactions();
             if (response.success && response.data) {
                 const transformed = response.data.map(transformTransaction);
@@ -170,7 +177,11 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     const loadDonations = useCallback(async () => {
         try {
-            // Backend doesn't expose /v1/donations/my; derive from transactions
+            if (!HAS_API_KEY) {
+                setDonations([]);
+                return;
+            }
+            // Derive from transactions endpoint
             const response = await api.transactions.getAll({ sort_by: 'created_at', sort_direction: 'desc' });
             if (response.success && response.data) {
                 const txs = response.data as any[];
@@ -211,6 +222,10 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     const loadWithdrawals = useCallback(async () => {
         try {
+            if (!HAS_API_KEY) {
+                setWithdrawals([]);
+                return;
+            }
             const response = await api.withdrawals.getAll();
             if (response.success && response.data) {
                 const transformed = response.data.map(transformWithdrawal);
@@ -454,7 +469,7 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     );
 
     const getMandatoryStatus = useCallback(
-        async (userId?: number): Promise<MandatoryContributionStatus> => {
+        (userId?: number): MandatoryContributionStatus => {
             if (!userId) {
                 return {
                     requiredAmount: MANDATORY_CONTRIBUTION_AMOUNT,
@@ -463,21 +478,7 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
                 };
             }
 
-            try {
-                const response = await api.auth.checkMandatoryContribution();
-                if (response.success && response.data) {
-                    return {
-                        requiredAmount: response.data.amount || MANDATORY_CONTRIBUTION_AMOUNT,
-                        contributedAmount: response.data.paid ? response.data.amount : 0,
-                        isCleared: response.data.paid || false,
-                        lastContributionDate: response.data.lastPaymentDate,
-                    };
-                }
-            } catch (error) {
-                console.error('Error checking mandatory contribution:', error);
-            }
-
-            // Fallback to local calculation
+            // Compute from local donations synchronously to keep UI stable.
             const relevantDonations = donations.filter(
                 donation => donation.userId === userId && donation.status === 'completed'
             );
