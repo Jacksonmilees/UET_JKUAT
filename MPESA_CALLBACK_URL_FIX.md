@@ -70,3 +70,4 @@ You should see:
 
 The callback URL fix ensures M-Pesa can reach your callback endpoint, but the "Invalid Access Token" error suggests the credentials might be wrong.
 
+
