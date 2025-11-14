@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\API\AuthController;
 
 // Debug route to confirm middleware registration
 Route::get('/debug-middleware', function () {
@@ -75,6 +76,13 @@ Route::post('/mpesa/balance/timeout', [MpesaBalanceController::class, 'handleTim
 Route::prefix('v1')->group(function () {
     Route::get('/projects', [ProjectController::class, 'index']); // Public read access
     Route::get('/projects/{id}', [ProjectController::class, 'show']); // Public read access
+});
+
+// Simple Auth routes for frontend (public path /api/auth/*)
+Route::prefix('auth')->group(function () {
+    Route::post('register', [AuthController::class, 'register']);
+    Route::post('login', [AuthController::class, 'login']);
+    Route::get('me', [AuthController::class, 'me']);
 });
 
 // Protected routes (require API key)

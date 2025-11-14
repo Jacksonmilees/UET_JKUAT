@@ -30,7 +30,7 @@ const getPastDate = (days: number) => {
     return date.toISOString();
 }
 
-export const MANDATORY_CONTRIBUTION_AMOUNT = 100;
+export const MANDATORY_CONTRIBUTION_AMOUNT = 1;
 
 const mockContributors: Contributor[] = [
     { name: 'Alice Johnson', avatar: 'https://i.pravatar.cc/150?u=alice' },
