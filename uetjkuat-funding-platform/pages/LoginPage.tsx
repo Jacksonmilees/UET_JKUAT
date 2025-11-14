@@ -29,7 +29,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
                 await refreshTransactions();
                 const mandatoryStatus = await getMandatoryStatus(user.id);
                 
-                if (!mandatoryStatus.isCleared) {
+                if (!mandatoryStatus.isCleared && user.role !== 'admin') {
                     setShowPaymentModal(true);
                 } else {
                     setRoute({ page: 'dashboard' });
@@ -51,6 +51,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
 
         const success = await login({ email, password });
         if (success) {
+            // Route immediately, then run mandatory check in background
+            if (email.toLowerCase() === 'admin@uetjkuat.com') {
+                setRoute({ page: 'admin' });
+            } else {
+                setRoute({ page: 'dashboard' });
+            }
             setJustLoggedIn(true);
         }
     };
