@@ -99,6 +99,11 @@ class MpesaController extends Controller
                 ]);
             }
 
+            Log::error('STK Push request failed', [
+                'status' => $response->status(),
+                'body' => $response->json(),
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to initiate STK push',
