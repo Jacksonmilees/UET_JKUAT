@@ -77,6 +77,22 @@ class MpesaController extends Controller
                 ? 'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
                 : 'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest';
 
+            // Generate callback URL - use config if available, otherwise use route helper
+            $callbackUrl = config('services.mpesa.callback_url') 
+                ?: route('mpesa.callback');
+            
+            // Ensure it's a full URL (not relative)
+            if (!filter_var($callbackUrl, FILTER_VALIDATE_URL)) {
+                $callbackUrl = config('app.url') . '/api/v1/payments/mpesa/callback';
+            }
+            
+            Log::info('M-Pesa STK Push Request', [
+                'callback_url' => $callbackUrl,
+                'shortcode' => $this->shortcode,
+                'amount' => $request->amount,
+                'phone' => $request->phone_number,
+            ]);
+
             $response = Http::withToken($accessToken)
                 ->post($url, [
                     'BusinessShortCode' => $this->shortcode,
@@ -87,7 +103,7 @@ class MpesaController extends Controller
                     'PartyA' => $request->phone_number,
                     'PartyB' => $this->shortcode,
                     'PhoneNumber' => $request->phone_number,
-                    'CallBackURL' => route('mpesa.callback'),
+                    'CallBackURL' => $callbackUrl,
                     'AccountReference' => $request->account_number,
                     'TransactionDesc' => 'Ticket Purchase'
                 ]);

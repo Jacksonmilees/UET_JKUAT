@@ -34,7 +34,7 @@ Route::get('/tickets/{mmid}', [TicketController::class, 'showPurchasePage'])->na
 Route::get('/tickets/{mmid}/purchase', [TicketController::class, 'showPurchasePage'])->name('tickets.purchase');
 Route::post('/tickets/{mmid}/process', [TicketController::class, 'processPurchase'])
     ->name('tickets.process');
-Route::post('/mpesa/callback', [MpesaController::class, 'handleCallback'])->name('mpesa.callback');
+Route::post('/mpesa/callback', [MpesaController::class, 'handleCallback'])->name('mpesa.callback.legacy');
 Route::get('/tickets/check-payment-status/{ticketNumber}', [TicketController::class, 'checkPaymentStatus'])->name('tickets.checkPaymentStatus');
 Route::get('/tickets/completed/{mmid}', [TicketController::class, 'fetchCompletedTicketSales']);
 Route::match(['get', 'post'], '/winner-selection', [TicketController::class, 'winnerSelection'])->name('winner.selection');
