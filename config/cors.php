@@ -48,6 +48,7 @@ return [
         'http://195.179.229.205:3000',
         'https://uet-jkuat.onrender.com',  // Backend domain
         'https://uet-jkuat.vercel.app',  // Frontend on Vercel
+        'https://uetjkuat-54286e10a43b.herokuapp.com',  // Heroku deployment
     ],
 
     /*
@@ -60,6 +61,7 @@ return [
         '/^https:\/\/([a-z0-9-]+\.)?moutjkuatministry\.cloud$/', // Matches subdomains of moutjkuatministry.cloud
         '/^https:\/\/([a-z0-9-]+\.)?onrender\.com$/', // Matches all Render subdomains
         '/^https:\/\/([a-z0-9-]+\.)?vercel\.app$/', // Matches all Vercel subdomains
+        '/^https:\/\/([a-z0-9-]+\.)?herokuapp\.com$/', // Matches all Heroku subdomains
         '/^http:\/\/localhost:\d+$/', // Matches localhost with any port
     ],
 

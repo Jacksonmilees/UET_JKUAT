@@ -4,8 +4,8 @@
 
 // Use production URL as default for deployed environments
 // For local development, set VITE_API_BASE_URL=http://localhost:8000/api in .env
-// Default to Render backend URL - never use localhost in production
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://uet-jkuat.onrender.com/api';
+// Default to Heroku backend URL - never use localhost in production
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://uetjkuat-54286e10a43b.herokuapp.com/api';
 const API_KEY = import.meta.env.VITE_API_KEY || '';
 
 // Types
