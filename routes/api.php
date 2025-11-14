@@ -70,10 +70,19 @@ Route::match(['GET', 'POST'], '/mpesa/balance/query', [MpesaBalanceController::c
 Route::post('/mpesa/balance/result', [MpesaBalanceController::class, 'handleResult'])->name('mpesa.balance.result');
 Route::post('/mpesa/balance/timeout', [MpesaBalanceController::class, 'handleTimeout'])->name('mpesa.balance.timeout');
 
+// Public routes (no API key required)
+Route::prefix('v1')->group(function () {
+    Route::get('/projects', [ProjectController::class, 'index']); // Public read access
+    Route::get('/projects/{id}', [ProjectController::class, 'show']); // Public read access
+});
+
+// Protected routes (require API key)
 Route::middleware(ApiKeyMiddleware::class)
     ->prefix('v1')
     ->group(function () {
-        Route::apiResource('projects', ProjectController::class);
+        Route::post('/projects', [ProjectController::class, 'store']);
+        Route::put('/projects/{id}', [ProjectController::class, 'update']);
+        Route::delete('/projects/{id}', [ProjectController::class, 'destroy']);
         Route::apiResource('accounts', AccountController::class); // Includes update (PUT) and destroy (DELETE)
         Route::get('accounts/{account}/transactions', [AccountController::class, 'transactions']);
         Route::post('/create-account', [CreateAccountController::class, '__invoke']);
@@ -107,6 +116,10 @@ Route::prefix('v1')->group(function () {
     Route::post('/payments/mpesa', [MpesaController::class, 'initiateSTKPush']);
     Route::get('/payments/mpesa/status/{checkoutRequestId}', [MpesaController::class, 'queryTransactionStatus']);
     Route::get('/tickets/completed/all', [TicketController::class, 'getAllCompletedTickets']);
+    
+    // News routes
+    Route::get('/news', [\App\Http\Controllers\API\NewsController::class, 'index']);
+    Route::get('/news/{id}', [\App\Http\Controllers\API\NewsController::class, 'show']);
 });
 
 Route::get('/health', function () {

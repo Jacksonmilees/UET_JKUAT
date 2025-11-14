@@ -18,4 +18,13 @@ class NewsController extends Controller
             'message' => 'News endpoint is available',
         ]);
     }
+
+    public function show($id)
+    {
+        // Basic placeholder implementation
+        return response()->json([
+            'data' => null,
+            'message' => 'News article not found',
+        ], 404);
+    }
 }

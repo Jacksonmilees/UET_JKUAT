@@ -37,10 +37,26 @@ class MpesaController extends Controller
             ->get($url);
 
         if ($response->successful()) {
-            return $response->json()['access_token'];
+            $data = $response->json();
+            if (isset($data['access_token'])) {
+                return $data['access_token'];
+            }
+            Log::error('M-Pesa token response missing access_token', [
+                'response' => $data,
+                'env' => $this->env,
+                'url' => $url
+            ]);
+            throw new \Exception('Access token not found in M-Pesa response');
         }
 
-        throw new \Exception('Failed to get access token');
+        Log::error('M-Pesa token generation failed', [
+            'status' => $response->status(),
+            'body' => $response->body(),
+            'env' => $this->env,
+            'consumer_key' => substr($this->consumerKey, 0, 10) . '...', // Log partial key for debugging
+        ]);
+        
+        throw new \Exception('Failed to get M-Pesa access token. Status: ' . $response->status() . '. Check your M-Pesa credentials.');
     }
 
     public function initiateSTKPush(Request $request)
