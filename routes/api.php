@@ -110,15 +110,58 @@ Route::prefix('v1')->group(function () {
 });
 
 Route::get('/health', function () {
-    return response()->json([
-        'status' => 'healthy',
-        'timestamp' => now(),
-        'services' => [
-            'database' => DB::connection()->getPdo() ? 'connected' : 'disconnected',
-            'redis' => Cache::store('redis')->get('health_check') !== null ? 'connected' : 'disconnected',
-            'queue' => Queue::size() >= 0 ? 'active' : 'inactive'
-        ]
-    ]);
+    try {
+        // Check database connection safely
+        $databaseStatus = 'unknown';
+        try {
+            if (config('database.default') && config('database.default') !== 'sqlite') {
+                DB::connection()->getPdo();
+                $databaseStatus = 'connected';
+            } else {
+                $databaseStatus = 'not_configured';
+            }
+        } catch (\Exception $e) {
+            $databaseStatus = 'disconnected';
+        }
+
+        // Check Redis connection safely
+        $redisStatus = 'unknown';
+        try {
+            if (config('cache.default') === 'redis') {
+                Cache::store('redis')->put('health_check', 'ok', 1);
+                $redisStatus = 'connected';
+            } else {
+                $redisStatus = 'not_configured';
+            }
+        } catch (\Exception $e) {
+            $redisStatus = 'disconnected';
+        }
+
+        // Check queue status safely
+        $queueStatus = 'unknown';
+        try {
+            $queueSize = Queue::size();
+            $queueStatus = $queueSize >= 0 ? 'active' : 'inactive';
+        } catch (\Exception $e) {
+            $queueStatus = 'error';
+        }
+
+        return response()->json([
+            'status' => 'healthy',
+            'timestamp' => now(),
+            'services' => [
+                'database' => $databaseStatus,
+                'redis' => $redisStatus,
+                'queue' => $queueStatus
+            ]
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+            'timestamp' => now()
+        ], 500);
+    }
 });
 
 // CORS test route

@@ -42,10 +42,10 @@ return [
       
      'member_db' => [
     'driver' => 'mysql',
-    'host' => 'localhost',
-    'database' => 'moutsystem',
-    'username' => 'moutsystem',
-    'password' => 'Elijah@10519',
+    'host' => env('MEMBER_DB_HOST', 'localhost'),
+    'database' => env('MEMBER_DB_DATABASE', 'moutsystem'),
+    'username' => env('MEMBER_DB_USERNAME', 'moutsystem'),
+    'password' => env('MEMBER_DB_PASSWORD', ''),
     'charset' => 'utf8mb4',
     'collation' => 'utf8mb4_unicode_ci',
     'prefix' => '',
