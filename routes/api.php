@@ -85,6 +85,20 @@ Route::prefix('v1')->group(function () {
     Route::get('/withdrawals', [WithdrawalController::class, 'getWithdrawals']);
     Route::get('/withdrawals/{id}', [WithdrawalController::class, 'getWithdrawal']);
     
+    // All accounts with transactions (for debugging)
+    Route::get('/accounts-all', function () {
+        try {
+            $accounts = DB::table('accounts')
+                ->select('id', 'reference', 'name', 'type', 'balance', 'created_at')
+                ->latest('created_at')
+                ->limit(50)
+                ->get();
+            return response()->json(['status' => 'success', 'data' => $accounts, 'count' => $accounts->count()]);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage(), 'data' => []]);
+        }
+    });
+    
     // News routes (public read access)
     Route::get('/news', [\App\Http\Controllers\API\NewsController::class, 'index']);
     Route::get('/news/{id}', [\App\Http\Controllers\API\NewsController::class, 'show']);
@@ -99,8 +113,12 @@ Route::prefix('v1')->group(function () {
     
     // M-Pesa transaction logs (public read access)
     Route::get('/mpesa-transactions', function () {
-        $logs = \App\Models\MpesaTransactionLog::latest()->take(100)->get();
-        return response()->json(['status' => 'success', 'data' => $logs]);
+        try {
+            $logs = DB::table('mpesa_transaction_logs')->latest('created_at')->limit(100)->get();
+            return response()->json(['status' => 'success', 'data' => $logs, 'count' => $logs->count()]);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage(), 'data' => []]);
+        }
     });
 });
 
