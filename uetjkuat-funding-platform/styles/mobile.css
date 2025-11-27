@@ -129,6 +129,11 @@ html {
   }
 }
 
+@keyframes scale-in { 
+    0% { transform: scale(0.95); opacity: 0; } 
+    100% { transform: scale(1); opacity: 1; } 
+}
+
 .animate-slide-up {
   animation: slide-up 0.3s ease-out;
 }
@@ -139,6 +144,10 @@ html {
 
 .animate-fade-in {
   animation: fade-in 0.3s ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s cubic-bezier(0.165, 0.840, 0.440, 1.000) forwards;
 }
 
 /* Mobile-optimized grid */
@@ -159,7 +168,7 @@ html {
     top: 0;
     z-index: 40;
     backdrop-filter: blur(10px);
-    background-color: rgba(255, 255, 255, 0.95);
+    background-color: rgba(15, 23, 42, 0.95); /* Dark Clay */
   }
 }
 
@@ -228,8 +237,8 @@ html {
   }
   
   .mobile-header {
-    background-color: rgba(17, 24, 39, 0.95);
-    border-bottom-color: rgba(55, 65, 81, 0.5);
+    background-color: rgba(15, 23, 42, 0.95);
+    border-bottom-color: rgba(51, 65, 85, 0.5);
   }
 }
 
@@ -253,9 +262,9 @@ html {
 .skeleton {
   background: linear-gradient(
     90deg,
-    #f0f0f0 25%,
-    #e0e0e0 50%,
-    #f0f0f0 75%
+    #1e293b 25%,
+    #334155 50%,
+    #1e293b 75%
   );
   background-size: 200% 100%;
   animation: loading 1.5s ease-in-out infinite;
@@ -287,7 +296,7 @@ html {
 .swipe-indicator {
   width: 40px;
   height: 4px;
-  background: #d1d5db;
+  background: #475569;
   border-radius: 2px;
   margin: 8px auto;
 }
@@ -311,7 +320,7 @@ html {
   .table-mobile tr {
     display: block;
     margin-bottom: 1rem;
-    border: 1px solid #e5e7eb;
+    border: 1px solid #334155;
     border-radius: 8px;
     padding: 1rem;
   }
@@ -320,7 +329,7 @@ html {
     display: flex;
     justify-content: space-between;
     padding: 0.5rem 0;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid #1e293b;
   }
   
   .table-mobile td:last-child {
@@ -351,7 +360,7 @@ html {
 /* Android-specific fixes */
 @media (max-width: 768px) {
   select {
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
     background-repeat: no-repeat;
     background-position: right 0.5rem center;
     background-size: 1.5em 1.5em;
@@ -380,7 +389,7 @@ html {
   bottom: 80px;
   left: 1rem;
   right: 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
   color: white;
   border-radius: 16px;
   padding: 1rem;

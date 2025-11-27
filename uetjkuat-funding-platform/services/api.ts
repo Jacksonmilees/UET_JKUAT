@@ -114,7 +114,7 @@ async function apiRequest<T>(
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
   const token = getToken();
-  
+
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const headers: HeadersInit = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
@@ -284,18 +284,16 @@ export const accountsApi = {
     const query = params ? '?' + new URLSearchParams(params).toString() : '';
     return apiRequest(`/v1/accounts${query}`);
   },
-  
-  getTransactions: async (accountId: string): Promise<ApiResponse<any[]>> => {
-    return apiRequest(`/v1/accounts/${accountId}/transactions`);
-  },
-  
+
+
+
   createAccount: async (data: any): Promise<ApiResponse<any>> => {
     return apiRequest('/v1/create-account', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
-  
+
   checkAccount: async (data: any): Promise<ApiResponse<any>> => {
     return apiRequest('/v1/accounts/check', {
       method: 'POST',
@@ -366,7 +364,7 @@ export const accountsApi = {
   },
 
   getTransactions: async (
-    accountId?: number
+    accountId?: number | string
   ): Promise<ApiResponse<any[]>> => {
     const endpoint = accountId
       ? `/v1/accounts/${accountId}/transactions`
@@ -425,7 +423,7 @@ export const ticketsApi = {
   getByMember: async (mmid: string): Promise<ApiResponse<any[]>> => {
     return apiRequest(`/api/tickets/completed/${mmid}`);
   },
-  
+
   getByMMID: async (mmid: string): Promise<ApiResponse<any>> => {
     return apiRequest(`/api/tickets/${mmid}`);
   },
@@ -433,11 +431,11 @@ export const ticketsApi = {
   getAllCompleted: async (): Promise<ApiResponse<any>> => {
     return apiRequest('/v1/tickets/completed/all');
   },
-  
+
   checkPaymentStatus: async (ticketNumber: string): Promise<ApiResponse<any>> => {
     return apiRequest(`/api/tickets/check-payment-status/${ticketNumber}`);
   },
-  
+
   processPurchase: async (mmid: string, data: any): Promise<ApiResponse<any>> => {
     return apiRequest(`/api/tickets/${mmid}/process`, {
       method: 'POST',
@@ -527,11 +525,11 @@ export const transactionsApi = {
       : '';
     return apiRequest(`/v1/transactions${query}`);
   },
-  
+
   getById: async (id: string): Promise<ApiResponse<any>> => {
     return apiRequest(`/v1/transactions/${id}`);
   },
-  
+
   getByAccount: async (reference: string): Promise<ApiResponse<any[]>> => {
     return apiRequest(`/v1/accounts/${reference}/transactions`);
   },
@@ -573,21 +571,21 @@ export const membersApi = {
       body: JSON.stringify({ query }),
     });
   },
-  
+
   create: async (data: any): Promise<ApiResponse<any>> => {
     return apiRequest('/v1/members', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
-  
+
   update: async (id: string, data: any): Promise<ApiResponse<any>> => {
     return apiRequest(`/v1/members/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   },
-  
+
   getStats: async (id: string): Promise<ApiResponse<any>> => {
     return apiRequest(`/v1/members/${id}/stats`);
   },
@@ -643,15 +641,15 @@ const ordersApi = {
   getMy: async () => apiRequest('/v1/orders/my'),
   getById: async (id: string) => apiRequest(`/v1/orders/${id}`),
   create: async (data: any) => apiRequest('/v1/orders', { method: 'POST', body: JSON.stringify(data) }),
-  updateStatus: async (id: string, status: string, trackingNumber?: string) => 
-    apiRequest(`/v1/orders/${id}/status`, { 
-      method: 'PUT', 
-      body: JSON.stringify({ status, tracking_number: trackingNumber }) 
+  updateStatus: async (id: string, status: string, trackingNumber?: string) =>
+    apiRequest(`/v1/orders/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status, tracking_number: trackingNumber })
     }),
-  updatePayment: async (id: string, paymentStatus: string) => 
-    apiRequest(`/v1/orders/${id}/payment`, { 
-      method: 'PUT', 
-      body: JSON.stringify({ payment_status: paymentStatus }) 
+  updatePayment: async (id: string, paymentStatus: string) =>
+    apiRequest(`/v1/orders/${id}/payment`, {
+      method: 'PUT',
+      body: JSON.stringify({ payment_status: paymentStatus })
     }),
 };
 
@@ -662,10 +660,10 @@ const merchandiseApi = {
   create: async (data: any) => apiRequest('/v1/merchandise', { method: 'POST', body: JSON.stringify(data) }),
   update: async (id: string, data: any) => apiRequest(`/v1/merchandise/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: async (id: string) => apiRequest(`/v1/merchandise/${id}`, { method: 'DELETE' }),
-  updateStock: async (id: string, stock: number) => 
-    apiRequest(`/v1/merchandise/${id}/stock`, { 
-      method: 'PUT', 
-      body: JSON.stringify({ stock }) 
+  updateStock: async (id: string, stock: number) =>
+    apiRequest(`/v1/merchandise/${id}/stock`, {
+      method: 'PUT',
+      body: JSON.stringify({ stock })
     }),
 };
 
@@ -673,14 +671,14 @@ const merchandiseApi = {
 const enhancedUsersApi = {
   ...usersApi,
   getStats: async (id: string) => apiRequest(`/v1/users/${id}/stats`),
-  updatePassword: async (id: string, currentPassword: string, newPassword: string, newPasswordConfirmation: string) => 
-    apiRequest(`/v1/users/${id}/password`, { 
-      method: 'PUT', 
-      body: JSON.stringify({ 
-        current_password: currentPassword, 
+  updatePassword: async (id: string, currentPassword: string, newPassword: string, newPasswordConfirmation: string) =>
+    apiRequest(`/v1/users/${id}/password`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        current_password: currentPassword,
         new_password: newPassword,
-        new_password_confirmation: newPasswordConfirmation 
-      }) 
+        new_password_confirmation: newPasswordConfirmation
+      })
     }),
   toggleStatus: async (id: string) => apiRequest(`/v1/users/${id}/toggle-status`, { method: 'PUT' }),
 };

@@ -1,7 +1,6 @@
-
 import React, { useState, useContext, useEffect } from 'react';
 import { Project, MpesaSession } from '../types';
-import { IconClose, IconPhone } from './icons';
+import { X, Phone, Check, AlertCircle, Banknote } from 'lucide-react';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { NotificationContext } from '../contexts/NotificationContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -37,10 +36,10 @@ const ContributionModal: React.FC<ContributionModalProps> = ({ project, isOpen, 
     setError('');
     const value = e.target.value;
     if (value === '' || (/^\d+$/.test(value) && parseInt(value) >= 0)) {
-        setAmount(value === '' ? '' : parseInt(value));
+      setAmount(value === '' ? '' : parseInt(value));
     }
   };
-  
+
   const presetAmounts = [50, 100, 250, 500, 1000];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -56,7 +55,7 @@ const ContributionModal: React.FC<ContributionModalProps> = ({ project, isOpen, 
 
     setIsSubmitting(true);
     setError('');
-    
+
     try {
       // Initiate MPesa payment
       const result = await initiateProjectContribution({
@@ -85,7 +84,9 @@ const ContributionModal: React.FC<ContributionModalProps> = ({ project, isOpen, 
     setAmount('');
     onClose();
     // Refresh project data
-    await handleContribute(project.id, amount, { phoneNumber });
+    if (typeof amount === 'number') {
+      await handleContribute(project.id, amount, { phoneNumber });
+    }
     addNotification('Payment successful. Thank you for your contribution!');
   };
 
@@ -96,93 +97,109 @@ const ContributionModal: React.FC<ContributionModalProps> = ({ project, isOpen, 
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-2xl p-8 max-w-md w-full relative transform transition-all duration-300 animate-scale-in">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-          <IconClose className="w-6 h-6" />
+    <div className="fixed inset-0 bg-secondary-950/80 backdrop-blur-sm flex justify-center items-center z-50 p-4 animate-fade-in">
+      <div className="bg-secondary-900 rounded-3xl shadow-2xl border border-secondary-800 p-8 max-w-md w-full relative transform transition-all duration-300 animate-scale-in">
+        <button onClick={onClose} className="absolute top-4 right-4 text-secondary-400 hover:text-white transition-colors p-2 rounded-full hover:bg-secondary-800">
+          <X className="w-6 h-6" />
         </button>
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">Contribute to</h2>
-        <p className="text-lg text-blue-600 font-semibold mb-6">{project.title}</p>
-        
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">Amount (KES)</label>
-            <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-500 sm:text-sm"> KES </span>
-                </div>
-                <input
-                    type="number"
-                    name="amount"
-                    id="amount"
-                    value={amount}
-                    onChange={handleAmountChange}
-                    className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-12 pr-4 sm:text-sm border-gray-300 rounded-md py-3"
-                    placeholder="0"
-                    autoFocus
-                />
+
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold text-white mb-2">Contribute to</h2>
+          <p className="text-lg text-primary-400 font-semibold">{project.title}</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label htmlFor="amount" className="block text-sm font-medium text-secondary-300 mb-2">Amount (KES)</label>
+            <div className="relative rounded-xl shadow-sm group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <span className="text-secondary-500 font-bold group-focus-within:text-primary-500 transition-colors">KES</span>
+              </div>
+              <input
+                type="number"
+                name="amount"
+                id="amount"
+                value={amount}
+                onChange={handleAmountChange}
+                className="block w-full pl-14 pr-4 py-4 bg-secondary-800 border border-secondary-700 rounded-xl text-white placeholder-secondary-600 focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all outline-none font-bold text-lg"
+                placeholder="0"
+                autoFocus
+              />
             </div>
-            {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+            {error && (
+              <div className="flex items-center gap-2 mt-2 text-red-400 text-sm animate-slide-down">
+                <AlertCircle className="w-4 h-4" />
+                <p>{error}</p>
+              </div>
+            )}
           </div>
 
-          <div className="flex flex-wrap gap-2 mb-6">
+          <div className="flex flex-wrap gap-2">
             {presetAmounts.map(preset => (
               <button
                 key={preset}
                 type="button"
                 onClick={() => { setAmount(preset); setError(''); }}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${amount === preset ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 border ${amount === preset
+                  ? 'bg-primary-500 text-primary-950 border-primary-500 shadow-glow'
+                  : 'bg-secondary-800 text-secondary-400 border-secondary-700 hover:border-primary-500/50 hover:text-primary-400'
+                  }`}
               >
                 {preset}
               </button>
             ))}
           </div>
 
-          <div className="mb-6">
-            <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">M-Pesa Phone Number</label>
-            <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <IconPhone className="w-4 h-4 text-gray-400" />
-                </div>
-                <input
-                    type="tel"
-                    name="phoneNumber"
-                    id="phoneNumber"
-                    value={phoneNumber}
-                    onChange={(event) => setPhoneNumber(event.target.value)}
-                    className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 pr-4 sm:text-sm border-gray-300 rounded-md py-3"
-                    placeholder="2547XXXXXXXX"
-                    required
-                />
+          <div>
+            <label htmlFor="phoneNumber" className="block text-sm font-medium text-secondary-300 mb-2">M-Pesa Phone Number</label>
+            <div className="relative rounded-xl shadow-sm group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Phone className="w-5 h-5 text-secondary-500 group-focus-within:text-primary-500 transition-colors" />
+              </div>
+              <input
+                type="tel"
+                name="phoneNumber"
+                id="phoneNumber"
+                value={phoneNumber}
+                onChange={(event) => setPhoneNumber(event.target.value)}
+                className="block w-full pl-12 pr-4 py-4 bg-secondary-800 border border-secondary-700 rounded-xl text-white placeholder-secondary-600 focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all outline-none font-medium"
+                placeholder="2547XXXXXXXX"
+                required
+              />
             </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Ensure the number is registered on M-Pesa. You will receive an STK prompt to confirm the payment.
+            <p className="text-xs text-secondary-500 mt-2 flex items-center gap-1">
+              <Banknote className="w-3 h-3" />
+              Ensure the number is registered on M-Pesa.
             </p>
           </div>
 
-          <div className="rounded-md bg-blue-50 border border-blue-100 p-4 mb-6">
-            <p className="text-sm text-blue-700">
-              Every active member is encouraged to contribute at least <span className="font-semibold">KES 100</span> each term to support UET JKUAT ministries. You can fulfil that commitment with this contribution.
+          <div className="rounded-xl bg-primary-900/20 border border-primary-500/20 p-4">
+            <p className="text-sm text-primary-200">
+              Every active member is encouraged to contribute at least <span className="font-bold text-primary-400">KES 100</span> each term to support UET JKUAT ministries.
             </p>
           </div>
 
-          <div className="flex justify-end space-x-4">
+          <div className="flex gap-4 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2 rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+              className="flex-1 px-6 py-3 rounded-xl text-secondary-300 bg-secondary-800 hover:bg-secondary-700 transition-colors font-medium"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+              className="flex-1 px-6 py-3 rounded-xl text-primary-950 bg-primary-500 hover:bg-primary-400 transition-all duration-300 font-bold shadow-glow hover:shadow-glow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {isSubmitting ? 'Processing...' : 'Confirm Contribution'}
+              {isSubmitting ? (
+                <>Processing...</>
+              ) : (
+                <>Confirm <Check className="w-5 h-5" /></>
+              )}
             </button>
           </div>
-          <p className="text-xs text-gray-500 mt-4 text-center">
+          <p className="text-xs text-secondary-600 text-center">
             A confirmation SMS will be sent after M-Pesa acknowledges the payment.
           </p>
         </form>
