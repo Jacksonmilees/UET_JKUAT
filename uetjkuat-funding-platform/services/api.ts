@@ -43,12 +43,23 @@ export interface RegisterCredentials {
 export interface AuthResponse {
   user: {
     id: number;
+    member_id?: string;
     name: string;
     email: string;
     role: 'user' | 'admin' | 'super_admin';
-    status: 'active' | 'inactive';
+    status: 'active' | 'inactive' | 'suspended';
     phone_number?: string;
+    year_of_study?: string;
+    course?: string;
+    college?: string;
+    admission_number?: string;
+    ministry_interest?: string;
+    residence?: string;
     avatar?: string;
+    registration_completed_at?: string;
+    created_at?: string;
+    updated_at?: string;
+    member_id_info?: string;
   };
   token: string;
 }

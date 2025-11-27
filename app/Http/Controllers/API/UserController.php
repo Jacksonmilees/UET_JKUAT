@@ -4,9 +4,11 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\MemberIdService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
@@ -18,6 +20,18 @@ class UserController extends Controller
         try {
             $query = User::query();
             
+            // Search by name, email, member_id, or admission_number
+            if ($request->has('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%")
+                      ->orWhere('member_id', 'like', "%{$search}%")
+                      ->orWhere('admission_number', 'like', "%{$search}%")
+                      ->orWhere('phone_number', 'like', "%{$search}%");
+                });
+            }
+            
             // Filter by role
             if ($request->has('role')) {
                 $query->where('role', $request->role);
@@ -28,11 +42,41 @@ class UserController extends Controller
                 $query->where('status', $request->status);
             }
             
-            $users = $query->orderBy('created_at', 'desc')->get();
+            // Filter by college
+            if ($request->has('college')) {
+                $query->where('college', $request->college);
+            }
+            
+            // Filter by year of study
+            if ($request->has('year_of_study')) {
+                $query->where('year_of_study', $request->year_of_study);
+            }
+            
+            // Filter by ministry interest
+            if ($request->has('ministry_interest')) {
+                $query->where('ministry_interest', 'like', "%{$request->ministry_interest}%");
+            }
+            
+            // Pagination
+            $perPage = $request->get('per_page', 50);
+            $users = $query->orderBy('created_at', 'desc')->paginate($perPage);
+            
+            // Transform users to include full profile data
+            $users->getCollection()->transform(function ($user) {
+                return $user->getProfileData();
+            });
             
             return response()->json([
                 'success' => true,
-                'data' => $users
+                'data' => $users->items(),
+                'pagination' => [
+                    'total' => $users->total(),
+                    'per_page' => $users->perPage(),
+                    'current_page' => $users->currentPage(),
+                    'last_page' => $users->lastPage(),
+                    'from' => $users->firstItem(),
+                    'to' => $users->lastItem(),
+                ]
             ]);
         } catch (\Exception $e) {
             Log::error('Error fetching users: ' . $e->getMessage());
@@ -51,9 +95,18 @@ class UserController extends Controller
         try {
             $user = User::findOrFail($id);
             
+            // Get member ID info
+            $memberIdInfo = null;
+            if ($user->member_id) {
+                $memberIdInfo = MemberIdService::getReadableInfo($user->member_id);
+            }
+            
+            $userData = $user->getProfileData();
+            $userData['member_id_info'] = $memberIdInfo;
+            
             return response()->json([
                 'success' => true,
-                'data' => $user
+                'data' => $userData
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -74,9 +127,16 @@ class UserController extends Controller
             $validated = $request->validate([
                 'name' => 'sometimes|string|max:255',
                 'email' => 'sometimes|email|unique:users,email,' . $id,
-                'phone_number' => 'sometimes|string',
+                'phone_number' => 'sometimes|string|max:20',
+                'year_of_study' => 'sometimes|string|max:50',
+                'course' => 'sometimes|string|max:255',
+                'college' => 'sometimes|string|max:255',
+                'admission_number' => 'sometimes|string|max:50|unique:users,admission_number,' . $id,
+                'ministry_interest' => 'sometimes|string|max:255',
+                'residence' => 'sometimes|string|max:255',
                 'role' => 'sometimes|in:user,admin,super_admin',
                 'status' => 'sometimes|in:active,inactive,suspended',
+                'avatar' => 'sometimes|string',
             ]);
 
             $user->update($validated);

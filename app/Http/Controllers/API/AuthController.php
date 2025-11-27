@@ -4,10 +4,12 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\MemberIdService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class AuthController extends Controller
 {
@@ -18,6 +20,12 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6',
             'phoneNumber' => 'nullable|string|max:20',
+            'yearOfStudy' => 'nullable|string|max:50',
+            'course' => 'nullable|string|max:255',
+            'college' => 'nullable|string|max:255',
+            'admissionNumber' => 'nullable|string|max:50|unique:users,admission_number',
+            'ministryInterest' => 'nullable|string|max:255',
+            'residence' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -28,37 +36,38 @@ class AuthController extends Controller
             ], 422);
         }
 
+        // Generate unique member ID
+        $memberId = MemberIdService::generate();
         $token = Str::random(60);
+
+        // Determine role
+        $role = ($request->get('email') === 'admin@uetjkuat.com') ? 'admin' : 'user';
 
         $user = User::create([
             'name' => $request->get('name'),
             'email' => $request->get('email'),
             'password' => Hash::make($request->get('password')),
+            'member_id' => $memberId,
+            'phone_number' => $request->get('phoneNumber'),
+            'year_of_study' => $request->get('yearOfStudy'),
+            'course' => $request->get('course'),
+            'college' => $request->get('college'),
+            'admission_number' => $request->get('admissionNumber'),
+            'ministry_interest' => $request->get('ministryInterest'),
+            'residence' => $request->get('residence'),
+            'role' => $role,
+            'status' => 'active',
+            'registration_completed_at' => Carbon::now(),
             'remember_token' => $token,
         ]);
-
-        // Optional fields
-        if ($request->get('phoneNumber')) {
-            $user->phone_number = $request->get('phoneNumber');
-        }
-        if ($request->get('status')) {
-            $user->status = $request->get('status');
-        }
-        $user->save();
 
         return response()->json([
             'success' => true,
             'data' => [
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => ($user->email === 'admin@uetjkuat.com') ? 'admin' : ($user->role ?? 'user'),
-                    'status' => $user->status ?? 'active',
-                    'phone_number' => $user->phone_number ?? null,
-                ],
+                'user' => $user->getProfileData(),
                 'token' => $token,
             ],
+            'message' => 'Registration successful! Your member ID is: ' . $memberId,
         ]);
     }
 
@@ -93,14 +102,7 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => ($user->email === 'admin@uetjkuat.com') ? 'admin' : ($user->role ?? 'user'),
-                    'status' => $user->status ?? 'active',
-                    'phone_number' => $user->phone_number ?? null,
-                ],
+                'user' => $user->getProfileData(),
                 'token' => $token,
             ],
         ]);
@@ -121,14 +123,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => ($user->email === 'admin@uetjkuat.com') ? 'admin' : ($user->role ?? 'user'),
-                'status' => $user->status ?? 'active',
-                'phone_number' => $user->phone_number ?? null,
-            ]
+            'data' => $user->getProfileData(),
         ]);
     }
 }
