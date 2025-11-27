@@ -26,11 +26,12 @@ return new class extends Migration
         });
 
         // Populate new columns with default values for existing records
-        DB::statement("UPDATE withdrawals SET reference = CONCAT('WD-', UUID()) WHERE reference IS NULL");
+        // PostgreSQL uses gen_random_uuid() instead of UUID()
+        DB::statement("UPDATE withdrawals SET reference = CONCAT('WD-', gen_random_uuid()::text) WHERE reference IS NULL");
         
         // If initiated_by_name contains useful data, you might want to copy it to initiated_by
-        // Assuming initiated_by_name might contain some identifier
-        DB::statement("UPDATE withdrawals SET initiated_by = initiated_by_name WHERE initiated_by IS NULL AND initiated_by_name IS NOT NULL");
+        // Note: initiated_by_name column may not exist, so skip this for now
+        // DB::statement("UPDATE withdrawals SET initiated_by = initiated_by_name WHERE initiated_by IS NULL AND initiated_by_name IS NOT NULL");
     }
 
     public function down()
