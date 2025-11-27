@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
+import { Search, RefreshCw, UserCog, UserX, UserCheck, Shield, Phone, Mail } from 'lucide-react';
 
 type Member = {
   id: number;
@@ -74,7 +75,7 @@ const MembersManagement: React.FC = () => {
 
   const toggleStatus = async (id: number) => {
     try {
-      const res = await api.users.toggleStatus(id);
+      const res = await api.users.toggleStatus(String(id));
       if (res.success) {
         await load();
       } else {
@@ -87,90 +88,128 @@ const MembersManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Members</h2>
-          <p className="text-sm text-gray-600">Manage member list, roles, status, and bible study groups.</p>
+          <h2 className="text-2xl font-bold text-foreground">Members</h2>
+          <p className="text-sm text-muted-foreground">Manage member list, roles, status, and bible study groups.</p>
         </div>
-        <div className="flex gap-2">
-          <input
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder="Search member..."
-            className="border border-gray-300 rounded-md px-3 py-2 text-sm"
-          />
+        <div className="flex gap-2 w-full md:w-auto">
+          <div className="relative flex-grow md:flex-grow-0">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <input
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder="Search member..."
+              className="block w-full md:w-64 pl-10 pr-3 py-2 border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary sm:text-sm transition-colors"
+            />
+          </div>
           <button
             onClick={load}
-            className="px-4 py-2 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700"
+            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors flex items-center gap-2"
             disabled={loading}
           >
-            {loading ? 'Refreshing…' : 'Refresh'}
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">{loading ? 'Refreshing...' : 'Refresh'}</span>
           </button>
         </div>
       </div>
 
-      <div className="overflow-x-auto border border-gray-100 rounded-lg">
-        <table className="min-w-full bg-white">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Name</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Email</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Phone</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Role</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Status</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Bible Study Group</th>
-              <th className="px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(m => (
-              <tr key={m.id} className="border-t border-gray-100">
-                <td className="px-4 py-3 text-sm text-gray-800 font-medium">{m.name}</td>
-                <td className="px-4 py-3 text-sm text-gray-600">{m.email}</td>
-                <td className="px-4 py-3 text-sm text-gray-600">{m.phone_number || '—'}</td>
-                <td className="px-4 py-3 text-sm text-gray-600 capitalize">{m.role || 'user'}</td>
-                <td className="px-4 py-3 text-sm">
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${m.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                    {m.status || 'active'}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-sm">
-                  <input
-                    defaultValue={m.bible_study_group || ''}
-                    onBlur={(e) => updateMember(m.id, { bible_study_group: e.target.value })}
-                    placeholder="e.g., Alpha Group"
-                    className="border border-gray-300 rounded-md px-2 py-1 text-sm w-44"
-                  />
-                </td>
-                <td className="px-4 py-3 text-sm text-right">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => toggleRole(m.id)}
-                      className="px-2 py-1 text-xs rounded-md border border-gray-300 hover:bg-gray-50"
-                      title="Toggle Role"
-                    >
-                      Toggle Role
-                    </button>
-                    <button
-                      onClick={() => toggleStatus(m.id)}
-                      className="px-2 py-1 text-xs rounded-md border border-gray-300 hover:bg-gray-50"
-                      title="Toggle Status"
-                    >
-                      Toggle Status
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {!filtered.length && (
+      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-secondary/50 border-b border-border">
               <tr>
-                <td className="px-4 py-6 text-center text-sm text-gray-500" colSpan={7}>
-                  {error || 'No members found'}
-                </td>
+                <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Name</th>
+                <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Contact</th>
+                <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Role</th>
+                <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Bible Study Group</th>
+                <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">Actions</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {filtered.map(m => (
+                <tr key={m.id} className="hover:bg-secondary/30 transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+                        {m.name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="text-sm font-medium text-foreground">{m.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Mail className="w-3 h-3" /> {m.email}
+                      </div>
+                      {m.phone_number && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Phone className="w-3 h-3" /> {m.phone_number}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${m.role === 'admin' || m.role === 'super_admin'
+                      ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
+                      : 'bg-secondary text-secondary-foreground'
+                      }`}>
+                      {m.role === 'admin' || m.role === 'super_admin' ? <Shield className="w-3 h-3 mr-1" /> : null}
+                      {m.role || 'user'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${m.status === 'active'
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                      : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                      }`}>
+                      {m.status || 'active'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <input
+                      defaultValue={m.bible_study_group || ''}
+                      onBlur={(e) => updateMember(m.id, { bible_study_group: e.target.value })}
+                      placeholder="e.g., Alpha Group"
+                      className="w-full bg-transparent border-b border-transparent hover:border-border focus:border-primary focus:outline-none text-sm py-1 transition-colors text-foreground placeholder:text-muted-foreground/50"
+                    />
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => toggleRole(m.id)}
+                        className="p-2 text-muted-foreground hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
+                        title="Toggle Role"
+                      >
+                        <UserCog className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => toggleStatus(m.id)}
+                        className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+                        title="Toggle Status"
+                      >
+                        {m.status === 'active' ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {!filtered.length && (
+                <tr>
+                  <td className="px-6 py-12 text-center text-muted-foreground" colSpan={6}>
+                    <div className="flex flex-col items-center gap-2">
+                      <Search className="w-8 h-8 opacity-20" />
+                      <p>{error || 'No members found matching your search.'}</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

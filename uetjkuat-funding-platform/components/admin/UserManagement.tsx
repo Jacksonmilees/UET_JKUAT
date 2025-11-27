@@ -1,9 +1,8 @@
 
-
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { User } from '../../types';
-import { IconTrash } from '../icons';
+import { Trash2, Shield, UserCheck, UserX } from 'lucide-react';
 
 interface UserManagementProps {
     onUserDelete: (user: User) => void;
@@ -11,71 +10,91 @@ interface UserManagementProps {
 
 const UserManagement: React.FC<UserManagementProps> = ({ onUserDelete }) => {
     const { users, toggleUserStatus, toggleUserRole, user: adminUser } = useAuth();
-    
+
     return (
-        <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">User Management</h2>
-            <div className="overflow-x-auto bg-white rounded-lg shadow">
-                <table className="w-full text-left">
-                    <thead className="bg-gray-50 border-b-2 border-gray-200">
-                        <tr>
-                            <th className="p-4 text-sm font-semibold text-gray-600">User</th>
-                            <th className="p-4 text-sm font-semibold text-gray-600">Role</th>
-                            <th className="p-4 text-sm font-semibold text-gray-600">Status</th>
-                            <th className="p-4 text-sm font-semibold text-gray-600">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {users.map((user: User) => (
-                            <tr key={user.id} className="border-b border-gray-100 hover:bg-gray-50">
-                                <td className="p-4 flex items-center gap-3">
-                                    <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full" />
-                                    <div>
-                                        <p className="font-medium text-gray-800">{user.name}</p>
-                                        <p className="text-sm text-gray-500">{user.email}</p>
-                                    </div>
-                                </td>
-                                <td className="p-4">
-                                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                        user.role === 'admin' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-800'
-                                    }`}>
-                                        {user.role}
-                                    </span>
-                                </td>
-                                <td className="p-4">
-                                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                        user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                    }`}>
-                                        {user.status}
-                                    </span>
-                                </td>
-                                <td className="p-4 space-x-2">
-                                    <button
-                                        onClick={() => toggleUserStatus(user.id)}
-                                        disabled={user.id === adminUser?.id}
-                                        className="px-3 py-1 text-sm font-semibold rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white bg-yellow-500 hover:bg-yellow-600"
-                                    >
-                                        {user.status === 'active' ? 'Deactivate' : 'Activate'}
-                                    </button>
-                                    <button
-                                        onClick={() => toggleUserRole(user.id)}
-                                        disabled={user.id === adminUser?.id}
-                                        className="px-3 py-1 text-sm font-semibold rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white bg-indigo-500 hover:bg-indigo-600"
-                                    >
-                                        {user.role === 'admin' ? 'Demote' : 'Promote'}
-                                    </button>
-                                     <button
-                                        onClick={() => onUserDelete(user)}
-                                        disabled={user.id === adminUser?.id}
-                                        className="p-2 text-sm font-semibold rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-red-600 hover:bg-red-100"
-                                    >
-                                        <IconTrash className="w-4 h-4" />
-                                    </button>
-                                </td>
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-foreground">User Management</h2>
+                <div className="text-sm text-muted-foreground">
+                    Total Users: {users.length}
+                </div>
+            </div>
+
+            <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-secondary/50 border-b border-border">
+                            <tr>
+                                <th className="p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">User</th>
+                                <th className="p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Role</th>
+                                <th className="p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                                <th className="p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">Actions</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                            {users.map((user: User) => (
+                                <tr key={user.id} className="hover:bg-secondary/30 transition-colors">
+                                    <td className="p-4">
+                                        <div className="flex items-center gap-3">
+                                            <img
+                                                src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`}
+                                                alt={user.name}
+                                                className="w-10 h-10 rounded-full object-cover border border-border"
+                                            />
+                                            <div>
+                                                <p className="font-medium text-foreground">{user.name}</p>
+                                                <p className="text-sm text-muted-foreground">{user.email}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="p-4">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.role === 'admin' || user.role === 'super_admin'
+                                                ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
+                                                : 'bg-secondary text-secondary-foreground'
+                                            }`}>
+                                            {user.role === 'admin' || user.role === 'super_admin' ? <Shield className="w-3 h-3 mr-1" /> : null}
+                                            {user.role}
+                                        </span>
+                                    </td>
+                                    <td className="p-4">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.status === 'active'
+                                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                                : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                                            }`}>
+                                            {user.status}
+                                        </span>
+                                    </td>
+                                    <td className="p-4 text-right space-x-2">
+                                        <button
+                                            onClick={() => toggleUserStatus(user.id)}
+                                            disabled={user.id === adminUser?.id}
+                                            className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            title={user.status === 'active' ? 'Deactivate User' : 'Activate User'}
+                                        >
+                                            {user.status === 'active' ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                                        </button>
+                                        <button
+                                            onClick={() => toggleUserRole(user.id)}
+                                            disabled={user.id === adminUser?.id}
+                                            className="p-2 text-muted-foreground hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            title={user.role === 'admin' ? 'Demote to User' : 'Promote to Admin'}
+                                        >
+                                            <Shield className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => onUserDelete(user)}
+                                            disabled={user.id === adminUser?.id}
+                                            className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            title="Delete User"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );

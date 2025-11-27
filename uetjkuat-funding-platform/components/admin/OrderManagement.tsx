@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { IconShoppingCart, IconCheckCircle, IconClock, IconAlertCircle } from '../icons';
+import { ShoppingCart, CheckCircle2, Clock, AlertCircle, Package, Truck, X } from 'lucide-react';
 import api from '../../services/api';
 
 interface Order {
@@ -66,25 +66,29 @@ const OrderManagement: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     const badges = {
-      pending: 'bg-yellow-100 text-yellow-700',
-      processing: 'bg-blue-100 text-blue-700',
-      shipped: 'bg-indigo-100 text-indigo-700',
-      delivered: 'bg-green-100 text-green-700',
-      cancelled: 'bg-red-100 text-red-700',
+      pending: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+      processing: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+      shipped: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
+      delivered: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+      cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
     };
-    return badges[status as keyof typeof badges] || 'bg-gray-100 text-gray-700';
+    return badges[status as keyof typeof badges] || 'bg-secondary text-secondary-foreground';
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'delivered':
-        return <IconCheckCircle className="w-5 h-5 text-green-600" />;
+        return <CheckCircle2 className="w-4 h-4 text-green-600" />;
       case 'pending':
-        return <IconClock className="w-5 h-5 text-yellow-600" />;
+        return <Clock className="w-4 h-4 text-yellow-600" />;
       case 'cancelled':
-        return <IconAlertCircle className="w-5 h-5 text-red-600" />;
+        return <AlertCircle className="w-4 h-4 text-red-600" />;
+      case 'shipped':
+        return <Truck className="w-4 h-4 text-indigo-600" />;
+      case 'processing':
+        return <Package className="w-4 h-4 text-blue-600" />;
       default:
-        return <IconShoppingCart className="w-5 h-5 text-blue-600" />;
+        return <ShoppingCart className="w-4 h-4 text-muted-foreground" />;
     }
   };
 
@@ -94,50 +98,61 @@ const OrderManagement: React.FC = () => {
   const shippedOrders = orders.filter(o => o.status === 'shipped').length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div>
-        <h2 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-          <IconShoppingCart className="w-8 h-8 text-purple-600" />
+        <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <ShoppingCart className="w-6 h-6 text-primary" />
           Order Management
         </h2>
-        <p className="text-gray-600 mt-1">Process and track customer orders</p>
+        <p className="text-sm text-muted-foreground mt-1">Process and track customer orders</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-xl p-6 border-2 border-purple-200">
-          <p className="text-purple-700 font-semibold mb-2">Total Orders</p>
-          <p className="text-4xl font-extrabold text-purple-800">{totalOrders}</p>
+        <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Orders</p>
+            <ShoppingCart className="w-4 h-4 text-primary" />
+          </div>
+          <p className="text-2xl font-bold text-foreground">{totalOrders}</p>
         </div>
 
-        <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl shadow-xl p-6 border-2 border-yellow-200">
-          <p className="text-yellow-700 font-semibold mb-2">Pending</p>
-          <p className="text-4xl font-extrabold text-yellow-800">{pendingOrders}</p>
+        <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pending</p>
+            <Clock className="w-4 h-4 text-yellow-600" />
+          </div>
+          <p className="text-2xl font-bold text-yellow-600">{pendingOrders}</p>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-xl p-6 border-2 border-blue-200">
-          <p className="text-blue-700 font-semibold mb-2">Processing</p>
-          <p className="text-4xl font-extrabold text-blue-800">{processingOrders}</p>
+        <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Processing</p>
+            <Package className="w-4 h-4 text-blue-600" />
+          </div>
+          <p className="text-2xl font-bold text-blue-600">{processingOrders}</p>
         </div>
 
-        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl shadow-xl p-6 border-2 border-indigo-200">
-          <p className="text-indigo-700 font-semibold mb-2">Shipped</p>
-          <p className="text-4xl font-extrabold text-indigo-800">{shippedOrders}</p>
+        <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Shipped</p>
+            <Truck className="w-4 h-4 text-indigo-600" />
+          </div>
+          <p className="text-2xl font-bold text-indigo-600">{shippedOrders}</p>
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div className="bg-white rounded-2xl shadow-lg p-2 flex gap-2">
+      <div className="bg-card rounded-xl shadow-sm p-1 border border-border inline-flex w-full md:w-auto overflow-x-auto">
         {(['all', 'pending', 'processing', 'shipped', 'delivered'] as const).map((status) => (
           <button
             key={status}
             onClick={() => setFilter(status)}
-            className={`flex-1 px-6 py-3 rounded-xl font-bold transition-all ${
-              filter === status
-                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
+            className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${filter === status
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+              }`}
           >
             {status.charAt(0).toUpperCase() + status.slice(1)}
           </button>
@@ -146,47 +161,51 @@ const OrderManagement: React.FC = () => {
 
       {/* Orders List */}
       {loading ? (
-        <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading orders...</p>
+        <div className="bg-card rounded-xl shadow-sm p-12 text-center border border-border">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading orders...</p>
         </div>
       ) : orders.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
-          <IconShoppingCart className="w-20 h-20 text-gray-300 mx-auto mb-4" />
-          <p className="text-xl text-gray-600 font-semibold">No orders found</p>
-          <p className="text-gray-500 mt-2">Orders will appear here when customers make purchases</p>
+        <div className="bg-card rounded-xl shadow-sm p-12 text-center border border-border">
+          <ShoppingCart className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+          <p className="text-lg text-foreground font-semibold">No orders found</p>
+          <p className="text-muted-foreground mt-2">Orders will appear here when customers make purchases</p>
         </div>
       ) : (
         <div className="space-y-4">
           {orders.map((order) => (
-            <div key={order.id} className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all border-2 border-gray-100">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+            <div key={order.id} className="bg-card rounded-xl shadow-sm p-6 hover:shadow-md transition-all border border-border group">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
                 <div>
-                  <p className="text-sm text-gray-500">Order #{order.order_number}</p>
-                  <p className="text-lg font-bold text-gray-800">{order.user.name}</p>
-                  <p className="text-sm text-gray-600">{order.user.email} • {order.phone_number}</p>
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-sm font-medium text-muted-foreground">Order #{order.order_number}</p>
+                    <span className="text-xs text-muted-foreground">•</span>
+                    <p className="text-sm text-muted-foreground">{new Date(order.created_at).toLocaleDateString()}</p>
+                  </div>
+                  <p className="text-lg font-bold text-foreground">{order.user.name}</p>
+                  <p className="text-sm text-muted-foreground">{order.user.email} • {order.phone_number}</p>
                 </div>
-                <div className="flex items-center gap-4 mt-4 md:mt-0">
-                  <span className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 ${getStatusBadge(order.status)}`}>
+                <div className="flex flex-col md:items-end gap-2">
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium flex items-center gap-1.5 w-fit ${getStatusBadge(order.status)}`}>
                     {getStatusIcon(order.status)}
                     {order.status.toUpperCase()}
                   </span>
-                  <span className="text-2xl font-extrabold text-purple-600">
+                  <span className="text-xl font-bold text-primary">
                     KES {order.total_amount.toLocaleString()}
                   </span>
                 </div>
               </div>
 
               {/* Order Items */}
-              <div className="border-t border-gray-200 pt-4 mb-4">
-                <h4 className="font-semibold text-gray-700 mb-2">Items:</h4>
+              <div className="bg-secondary/30 rounded-lg p-4 mb-4">
+                <h4 className="text-sm font-medium text-foreground mb-3">Items</h4>
                 <div className="space-y-2">
                   {order.items.map((item, index) => (
-                    <div key={index} className="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
-                      <span className="text-gray-700">
-                        {item.name || `Item #${item.merchandise_id}`} × {item.quantity}
+                    <div key={index} className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">
+                        {item.name || `Item #${item.merchandise_id}`} <span className="text-foreground font-medium">× {item.quantity}</span>
                       </span>
-                      <span className="font-semibold text-gray-800">
+                      <span className="font-medium text-foreground">
                         KES {(item.price * item.quantity).toLocaleString()}
                       </span>
                     </div>
@@ -195,25 +214,28 @@ const OrderManagement: React.FC = () => {
               </div>
 
               {/* Delivery Info */}
-              <div className="bg-blue-50 rounded-lg p-3 mb-4 border border-blue-200">
-                <p className="text-sm text-blue-700 font-semibold">Delivery Address:</p>
-                <p className="text-gray-800">{order.delivery_address}</p>
+              <div className="flex flex-col md:flex-row gap-4 mb-6 text-sm">
+                <div className="flex-1">
+                  <p className="text-muted-foreground font-medium mb-1">Delivery Address</p>
+                  <p className="text-foreground">{order.delivery_address}</p>
+                </div>
                 {order.tracking_number && (
-                  <p className="text-sm text-blue-700 mt-2">
-                    Tracking: <span className="font-mono font-bold">{order.tracking_number}</span>
-                  </p>
+                  <div className="flex-1">
+                    <p className="text-muted-foreground font-medium mb-1">Tracking Number</p>
+                    <p className="font-mono bg-secondary px-2 py-1 rounded w-fit text-foreground">{order.tracking_number}</p>
+                  </div>
                 )}
               </div>
 
               {/* Actions */}
-              <div className="flex gap-3">
+              <div className="flex gap-3 pt-4 border-t border-border">
                 <button
                   onClick={() => setSelectedOrder(order)}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all"
+                  className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-input rounded-lg text-sm font-medium text-foreground hover:bg-secondary transition-colors"
                 >
                   Update Status
                 </button>
-                <button className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-2 rounded-lg font-semibold hover:from-green-700 hover:to-emerald-700 transition-all">
+                <button className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 transition-colors">
                   View Details
                 </button>
               </div>
@@ -224,27 +246,33 @@ const OrderManagement: React.FC = () => {
 
       {/* Update Status Modal */}
       {selectedOrder && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8">
-            <h2 className="text-3xl font-bold text-gray-800 mb-6">Update Order Status</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-xl shadow-2xl max-w-md w-full p-6 border border-border">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-foreground">Update Order Status</h2>
+              <button onClick={() => setSelectedOrder(null)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
             <div className="space-y-4">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Order Number</p>
-                <p className="font-bold text-gray-800">{selectedOrder.order_number}</p>
+                <p className="text-sm text-muted-foreground mb-1">Order Number</p>
+                <p className="font-bold text-foreground">{selectedOrder.order_number}</p>
               </div>
 
               <div>
-                <p className="text-sm text-gray-600 mb-1">Current Status</p>
-                <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusBadge(selectedOrder.status)}`}>
+                <p className="text-sm text-muted-foreground mb-1">Current Status</p>
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium inline-flex items-center gap-1.5 ${getStatusBadge(selectedOrder.status)}`}>
+                  {getStatusIcon(selectedOrder.status)}
                   {selectedOrder.status.toUpperCase()}
                 </span>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">New Status</label>
+                <label className="block text-sm font-medium text-foreground mb-1.5">New Status</label>
                 <select
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500"
+                  className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm"
                   defaultValue={selectedOrder.status}
                   id="newStatus"
                 >
@@ -257,7 +285,7 @@ const OrderManagement: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-1.5">
                   Tracking Number (Optional)
                 </label>
                 <input
@@ -265,17 +293,17 @@ const OrderManagement: React.FC = () => {
                   value={trackingNumber}
                   onChange={(e) => setTrackingNumber(e.target.value)}
                   placeholder="Enter tracking number"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500"
+                  className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm"
                 />
               </div>
 
-              <div className="flex gap-4 pt-4">
+              <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => {
                     setSelectedOrder(null);
                     setTrackingNumber('');
                   }}
-                  className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-all"
+                  className="flex-1 px-4 py-2 border border-input rounded-lg font-medium text-foreground hover:bg-secondary transition-colors"
                 >
                   Cancel
                 </button>
@@ -284,7 +312,7 @@ const OrderManagement: React.FC = () => {
                     const select = document.getElementById('newStatus') as HTMLSelectElement;
                     handleUpdateStatus(selectedOrder.id, select.value);
                   }}
-                  className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-bold hover:from-purple-700 hover:to-pink-700 shadow-lg transform hover:scale-105 transition-all"
+                  className="flex-1 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-sm"
                 >
                   Update
                 </button>

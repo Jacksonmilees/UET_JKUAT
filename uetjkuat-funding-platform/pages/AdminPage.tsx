@@ -21,38 +21,39 @@ import EditProjectModal from '../components/admin/EditProjectModal';
 import EditNewsModal from '../components/admin/EditNewsModal';
 import ConfirmationModal from '../components/common/ConfirmationModal';
 import { Route, Project, NewsArticle, User } from '../types';
-import { 
-  IconFilePlus, 
-  IconNewspaper, 
-  IconUserShield, 
-  IconTrendingUp,
-  IconUsers,
-  IconTarget,
-  IconCreditCard,
-  IconAlertCircle,
-  IconCheckCircle,
-  IconClock,
-  IconWallet,
-  IconHash,
-  IconArrowUp,
-  IconPhone
-} from '../components/icons';
+import {
+  LayoutDashboard,
+  Users,
+  FilePlus,
+  Wallet,
+  CreditCard,
+  ArrowUpRight,
+  Ticket,
+  TrendingUp,
+  Newspaper,
+  AlertCircle,
+  CheckCircle,
+  LogOut,
+  Menu,
+  X
+} from 'lucide-react';
 
 interface AdminPageProps {
   setRoute: (route: Route) => void;
 }
 
-type AdminTab = 'overview' | 'users' | 'projects' | 'news' | 'finance' | 'members' | 
-                'withdrawals' | 'accounts' | 'transactions' | 'tickets' | 'reports' | 'directory' |
-                'merchandise' | 'orders' | 'announcements';
+type AdminTab = 'overview' | 'users' | 'projects' | 'news' | 'finance' | 'members' |
+  'withdrawals' | 'accounts' | 'transactions' | 'tickets' | 'reports' | 'directory' |
+  'merchandise' | 'orders' | 'announcements';
 type DeletableItem = { type: 'user' | 'project' | 'news', id: number, name: string };
 
 const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
-  const { user, users, deleteUser } = useAuth();
+  const { user, users, deleteUser, logout } = useAuth();
   const { projects, deleteProject } = useProjects();
   const { articles, deleteArticle } = useNews();
   const { transactions, accounts, withdrawals, mpesaSessions } = useFinance();
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Modal states
   const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
@@ -61,14 +62,14 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
 
   if (user?.role !== 'admin' && user?.role !== 'super_admin') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-orange-100">
-        <div className="bg-white p-12 rounded-2xl shadow-2xl text-center max-w-md">
-          <IconAlertCircle className="w-20 h-20 mx-auto text-red-500 mb-6" />
-          <h2 className="text-3xl font-bold mb-4 text-gray-800">Access Denied</h2>
-          <p className="mb-8 text-gray-600">You do not have permission to view this page.</p>
-          <button 
-            onClick={() => setRoute({ page: 'home' })} 
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-xl hover:from-blue-700 hover:to-indigo-700 font-semibold shadow-lg transform hover:scale-105 transition-all"
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="bg-card p-8 rounded-xl shadow-lg text-center max-w-md border border-border">
+          <AlertCircle className="w-16 h-16 mx-auto text-destructive mb-4" />
+          <h2 className="text-2xl font-bold mb-2 text-foreground">Access Denied</h2>
+          <p className="mb-6 text-muted-foreground">You do not have permission to view this page.</p>
+          <button
+            onClick={() => setRoute({ page: 'home' })}
+            className="bg-primary text-primary-foreground px-6 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors"
           >
             Go to Homepage
           </button>
@@ -98,17 +99,17 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
   const overviewStats = useMemo(() => {
     const completedTransactions = transactions.filter(t => t.status === 'completed');
     const totalRevenue = completedTransactions.reduce((sum, t) => sum + t.amount, 0);
-    
+
     const totalProjects = projects.length;
     const activeProjects = projects.filter(p => new Date(p.endDate) > new Date()).length;
-    
+
     const totalUsers = users.length;
     const activeUsers = users.filter(u => u.status === 'active').length;
-    
+
     const pendingWithdrawals = withdrawals.filter(w => w.status === 'pending').length;
     const completedWithdrawals = withdrawals.filter(w => w.status === 'completed');
     const totalWithdrawn = completedWithdrawals.reduce((sum, w) => sum + w.amount, 0);
-    
+
     const recentTransactions = transactions
       .filter(t => {
         const date = new Date(t.date);
@@ -179,70 +180,104 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
     }
   };
 
-  const tabs: { id: AdminTab, name: string, icon: React.ReactNode, color: string }[] = [
-    { id: 'overview', name: 'Overview', icon: <IconLayoutDashboard className="w-5 h-5" />, color: 'blue' },
-    { id: 'users', name: 'Users', icon: <IconUserShield className="w-5 h-5" />, color: 'green' },
-    { id: 'projects', name: 'Projects', icon: <IconFilePlus className="w-5 h-5" />, color: 'purple' },
-    { id: 'accounts', name: 'Accounts', icon: <IconWallet className="w-5 h-5" />, color: 'emerald' },
-    { id: 'transactions', name: 'Transactions', icon: <IconCreditCard className="w-5 h-5" />, color: 'blue' },
-    { id: 'withdrawals', name: 'Withdrawals', icon: <IconArrowUp className="w-5 h-5" />, color: 'red' },
-    { id: 'tickets', name: 'Tickets', icon: <IconHash className="w-5 h-5" />, color: 'purple' },
-    { id: 'directory', name: 'Members', icon: <IconUsers className="w-5 h-5" />, color: 'indigo' },
-    { id: 'reports', name: 'Reports', icon: <IconTrendingUp className="w-5 h-5" />, color: 'blue' },
-    { id: 'news', name: 'News', icon: <IconNewspaper className="w-5 h-5" />, color: 'orange' },
-    { id: 'finance', name: 'Finance', icon: <IconWallet className="w-5 h-5" />, color: 'indigo' },
-    { id: 'members', name: 'Old Members', icon: <IconUsers className="w-5 h-5" />, color: 'pink' },
+  const tabs: { id: AdminTab, name: string, icon: React.ReactNode }[] = [
+    { id: 'overview', name: 'Overview', icon: <LayoutDashboard className="w-5 h-5" /> },
+    { id: 'users', name: 'Users', icon: <Users className="w-5 h-5" /> },
+    { id: 'projects', name: 'Projects', icon: <FilePlus className="w-5 h-5" /> },
+    { id: 'accounts', name: 'Accounts', icon: <Wallet className="w-5 h-5" /> },
+    { id: 'transactions', name: 'Transactions', icon: <CreditCard className="w-5 h-5" /> },
+    { id: 'withdrawals', name: 'Withdrawals', icon: <ArrowUpRight className="w-5 h-5" /> },
+    { id: 'tickets', name: 'Tickets', icon: <Ticket className="w-5 h-5" /> },
+    { id: 'directory', name: 'Members', icon: <Users className="w-5 h-5" /> },
+    { id: 'reports', name: 'Reports', icon: <TrendingUp className="w-5 h-5" /> },
+    { id: 'news', name: 'News', icon: <Newspaper className="w-5 h-5" /> },
+    { id: 'finance', name: 'Finance', icon: <Wallet className="w-5 h-5" /> },
   ];
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Header */}
-          <header className="mb-8">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-              <div className="mb-6 lg:mb-0">
-                <h1 className="text-4xl lg:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-2">
-                  Admin Dashboard 🎯
-                </h1>
-                <p className="text-lg text-gray-600">Complete platform management & analytics</p>
-              </div>
+      <div className="min-h-screen bg-background flex">
+        {/* Sidebar for Desktop */}
+        <aside className="hidden lg:flex flex-col w-64 border-r border-border bg-card fixed h-full z-10">
+          <div className="p-6 border-b border-border">
+            <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <span className="text-primary">⚡</span> Admin
+            </h1>
+          </div>
+          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+            {tabs.map(tab => (
               <button
-                onClick={() => setRoute({ page: 'dashboard' })}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 shadow-lg transform hover:scale-105 transition-all"
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                  }`}
               >
-                ← Back to User Dashboard
+                {tab.icon}
+                {tab.name}
               </button>
-            </div>
-          </header>
+            ))}
+          </nav>
+          <div className="p-4 border-t border-border">
+            <button
+              onClick={() => setRoute({ page: 'dashboard' })}
+              className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+            >
+              <LayoutDashboard className="w-5 h-5" />
+              User Dashboard
+            </button>
+          </div>
+        </aside>
 
-          {/* Tab Navigation */}
-          <div className="mb-8">
-            <div className="bg-white rounded-2xl shadow-xl p-2">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+        {/* Mobile Header & Sidebar Overlay */}
+        <div className="lg:hidden fixed top-0 left-0 right-0 bg-card border-b border-border z-20 px-4 py-3 flex items-center justify-between">
+          <h1 className="text-lg font-bold text-foreground">Admin Panel</h1>
+          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-muted-foreground hover:text-foreground">
+            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
+
+        {isMobileMenuOpen && (
+          <div className="lg:hidden fixed inset-0 bg-background/80 backdrop-blur-sm z-10 pt-16" onClick={() => setIsMobileMenuOpen(false)}>
+            <div className="bg-card w-64 h-full border-r border-border p-4 overflow-y-auto" onClick={e => e.stopPropagation()}>
+              <nav className="space-y-1">
                 {tabs.map(tab => (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center justify-center gap-2 px-3 py-3 rounded-xl font-semibold transition-all transform text-sm ${
-                      activeTab === tab.id
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg scale-105'
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }`}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                      }`}
                   >
                     {tab.icon}
-                    <span className="hidden sm:inline">{tab.name}</span>
+                    {tab.name}
                   </button>
                 ))}
-              </div>
+                <div className="pt-4 mt-4 border-t border-border">
+                  <button
+                    onClick={() => setRoute({ page: 'dashboard' })}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+                  >
+                    <LayoutDashboard className="w-5 h-5" />
+                    User Dashboard
+                  </button>
+                </div>
+              </nav>
             </div>
           </div>
+        )}
 
-          {/* Main Content */}
-          <div className="bg-white rounded-2xl shadow-xl p-8 min-h-[600px]">
+        {/* Main Content */}
+        <main className="flex-1 lg:ml-64 p-4 lg:p-8 pt-20 lg:pt-8 overflow-y-auto min-h-screen">
+          <div className="max-w-7xl mx-auto">
             {renderTabContent()}
           </div>
-        </div>
+        </main>
       </div>
 
       {/* Modals */}
@@ -272,146 +307,138 @@ const OverviewDashboard: React.FC<{ stats: any; setActiveTab: (tab: AdminTab) =>
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-3xl font-bold text-gray-800 mb-6">Platform Overview</h2>
-        
+        <h2 className="text-2xl font-bold text-foreground mb-6">Platform Overview</h2>
+
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <MetricCard
-            icon={<IconTrendingUp className="w-8 h-8" />}
+            icon={<TrendingUp className="w-5 h-5" />}
             label="Total Revenue"
             value={`KES ${stats.totalRevenue.toLocaleString()}`}
             subtext={`${stats.completedTransactions} transactions`}
-            color="green"
             onClick={() => setActiveTab('transactions')}
           />
           <MetricCard
-            icon={<IconWallet className="w-8 h-8" />}
+            icon={<Wallet className="w-5 h-5" />}
             label="Account Balance"
             value={`KES ${stats.totalAccountBalance.toLocaleString()}`}
             subtext={`${stats.totalAccounts} accounts`}
-            color="blue"
             onClick={() => setActiveTab('accounts')}
           />
           <MetricCard
-            icon={<IconUsers className="w-8 h-8" />}
+            icon={<Users className="w-5 h-5" />}
             label="Total Users"
             value={stats.totalUsers.toString()}
             subtext={`${stats.activeUsers} active`}
-            color="purple"
             onClick={() => setActiveTab('users')}
           />
           <MetricCard
-            icon={<IconCreditCard className="w-8 h-8" />}
+            icon={<CreditCard className="w-5 h-5" />}
             label="M-Pesa Payments"
             value={`KES ${stats.totalMpesaAmount.toLocaleString()}`}
             subtext={`${stats.recentMpesa} successful`}
-            color="indigo"
             onClick={() => setActiveTab('finance')}
           />
         </div>
 
         {/* Secondary Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <MetricCard
-            icon={<IconTarget className="w-8 h-8" />}
+            icon={<FilePlus className="w-5 h-5" />}
             label="Projects"
             value={stats.totalProjects.toString()}
             subtext={`${stats.activeProjects} active`}
-            color="purple"
             onClick={() => setActiveTab('projects')}
           />
           <MetricCard
-            icon={<IconArrowUp className="w-8 h-8" />}
+            icon={<ArrowUpRight className="w-5 h-5" />}
             label="Withdrawals"
             value={`KES ${stats.totalWithdrawn.toLocaleString()}`}
             subtext={`${stats.pendingWithdrawals} pending`}
-            color="orange"
             onClick={() => setActiveTab('withdrawals')}
           />
           <MetricCard
-            icon={<IconHash className="w-8 h-8" />}
+            icon={<Ticket className="w-5 h-5" />}
             label="Total Transactions"
             value={stats.totalTransactions.toString()}
             subtext="All time"
-            color="blue"
             onClick={() => setActiveTab('transactions')}
           />
           <MetricCard
-            icon={<IconCheckCircle className="w-8 h-8" />}
+            icon={<CheckCircle className="w-5 h-5" />}
             label="This Week"
             value={`KES ${stats.recentTransactions.toLocaleString()}`}
             subtext="Last 7 days"
-            color="green"
             onClick={() => setActiveTab('reports')}
           />
         </div>
 
         {/* Additional Stats */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200">
-            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <IconWallet className="w-6 h-6 text-blue-600" />
+          <div className="bg-card rounded-xl p-6 border border-border shadow-sm">
+            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-primary" />
               Financial Summary
             </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Total Revenue</span>
-                <span className="font-bold text-green-600">KES {stats.totalRevenue.toLocaleString()}</span>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Total Revenue</span>
+                <span className="font-medium text-green-600">KES {stats.totalRevenue.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Total Withdrawn</span>
-                <span className="font-bold text-red-600">KES {stats.totalWithdrawn.toLocaleString()}</span>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Total Withdrawn</span>
+                <span className="font-medium text-destructive">KES {stats.totalWithdrawn.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Account Balance</span>
-                <span className="font-bold text-blue-600">KES {stats.totalAccountBalance.toLocaleString()}</span>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Account Balance</span>
+                <span className="font-medium text-blue-600">KES {stats.totalAccountBalance.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">M-Pesa Total</span>
-                <span className="font-bold text-indigo-600">KES {stats.totalMpesaAmount.toLocaleString()}</span>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">M-Pesa Total</span>
+                <span className="font-medium text-purple-600">KES {stats.totalMpesaAmount.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between items-center pt-3 border-t border-blue-200">
-                <span className="text-gray-800 font-semibold">Net Balance</span>
-                <span className="font-extrabold text-2xl text-green-600">
+              <div className="flex justify-between items-center pt-4 border-t border-border">
+                <span className="text-foreground font-semibold">Net Balance</span>
+                <span className="font-bold text-xl text-primary">
                   KES {(stats.totalRevenue - stats.totalWithdrawn).toLocaleString()}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border-2 border-purple-200">
-            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <IconCheckCircle className="w-6 h-6 text-purple-600" />
+          <div className="bg-card rounded-xl p-6 border border-border shadow-sm">
+            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-primary" />
               Quick Actions
             </h3>
             <div className="space-y-3">
-              <button 
+              <button
                 onClick={() => setActiveTab('withdrawals')}
-                className="w-full bg-white hover:bg-purple-50 text-left px-4 py-3 rounded-lg border-2 border-purple-200 transition-all transform hover:scale-105"
+                className="w-full bg-secondary/50 hover:bg-secondary text-left px-4 py-3 rounded-lg border border-border transition-colors group"
               >
-                <span className="font-semibold text-gray-800">Review Pending Withdrawals</span>
-                <span className="block text-sm text-purple-600 font-bold">{stats.pendingWithdrawals} items</span>
+                <span className="font-medium text-foreground group-hover:text-primary transition-colors">Review Pending Withdrawals</span>
+                <span className="block text-xs text-muted-foreground mt-1">{stats.pendingWithdrawals} items</span>
               </button>
-              <button 
+              <button
                 onClick={() => setActiveTab('transactions')}
-                className="w-full bg-white hover:bg-blue-50 text-left px-4 py-3 rounded-lg border-2 border-blue-200 transition-all transform hover:scale-105"
+                className="w-full bg-secondary/50 hover:bg-secondary text-left px-4 py-3 rounded-lg border border-border transition-colors group"
               >
-                <span className="font-semibold text-gray-800">View All Transactions</span>
-                <span className="block text-sm text-blue-600 font-bold">{stats.totalTransactions} total</span>
+                <span className="font-medium text-foreground group-hover:text-primary transition-colors">View All Transactions</span>
+                <span className="block text-xs text-muted-foreground mt-1">{stats.totalTransactions} total</span>
               </button>
-              <button 
+              <button
                 onClick={() => setActiveTab('reports')}
-                className="w-full bg-white hover:bg-green-50 text-left px-4 py-3 rounded-lg border-2 border-green-200 transition-all transform hover:scale-105"
+                className="w-full bg-secondary/50 hover:bg-secondary text-left px-4 py-3 rounded-lg border border-border transition-colors group"
               >
-                <span className="font-semibold text-gray-800">Generate Financial Report</span>
-                <span className="block text-sm text-green-600 font-bold">Export & Email</span>
+                <span className="font-medium text-foreground group-hover:text-primary transition-colors">Generate Financial Report</span>
+                <span className="block text-xs text-muted-foreground mt-1">Export & Email</span>
               </button>
-              <button 
+              <button
                 onClick={() => setActiveTab('tickets')}
-                className="w-full bg-white hover:bg-orange-50 text-left px-4 py-3 rounded-lg border-2 border-orange-200 transition-all transform hover:scale-105"
+                className="w-full bg-secondary/50 hover:bg-secondary text-left px-4 py-3 rounded-lg border border-border transition-colors group"
               >
-                <span className="font-semibold text-gray-800">Manage Tickets</span>
-                <span className="block text-sm text-orange-600 font-bold">View & Select Winner</span>
+                <span className="font-medium text-foreground group-hover:text-primary transition-colors">Manage Tickets</span>
+                <span className="block text-xs text-muted-foreground mt-1">View & Select Winner</span>
               </button>
             </div>
           </div>
@@ -426,41 +453,23 @@ const MetricCard: React.FC<{
   label: string;
   value: string;
   subtext: string;
-  color: 'green' | 'blue' | 'purple' | 'orange' | 'indigo' | 'emerald';
   onClick?: () => void;
-}> = ({ icon, label, value, subtext, color, onClick }) => {
-  const colorClasses = {
-    green: 'from-green-500 to-green-600',
-    blue: 'from-blue-500 to-blue-600',
-    purple: 'from-purple-500 to-purple-600',
-    orange: 'from-orange-500 to-orange-600',
-    indigo: 'from-indigo-500 to-indigo-600',
-    emerald: 'from-emerald-500 to-emerald-600',
-  };
-
+}> = ({ icon, label, value, subtext, onClick }) => {
   return (
-    <div 
+    <div
       onClick={onClick}
-      className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-all transform hover:-translate-y-2 border-2 border-gray-100 cursor-pointer"
+      className="bg-card rounded-xl p-6 border border-border shadow-sm hover:border-primary/50 hover:shadow-md transition-all cursor-pointer group"
     >
-      <div className={`p-4 rounded-xl bg-gradient-to-br ${colorClasses[color]} text-white shadow-lg inline-block mb-4`}>
-        {icon}
+      <div className="flex items-center justify-between mb-4">
+        <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+          {icon}
+        </div>
       </div>
-      <p className="text-gray-500 text-sm font-medium mb-1">{label}</p>
-      <p className="text-3xl font-extrabold text-gray-800 mb-2">{value}</p>
-      <p className="text-sm text-gray-500">{subtext}</p>
+      <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-2xl font-bold text-foreground mb-1">{value}</p>
+      <p className="text-xs text-muted-foreground">{subtext}</p>
     </div>
   );
 };
-
-// Add missing icon
-const IconLayoutDashboard: React.FC<{ className?: string }> = ({ className }) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect width="7" height="9" x="3" y="3" rx="1"/>
-    <rect width="7" height="5" x="14" y="3" rx="1"/>
-    <rect width="7" height="9" x="14" y="12" rx="1"/>
-    <rect width="7" height="5" x="3" y="16" rx="1"/>
-  </svg>
-);
 
 export default AdminPage;

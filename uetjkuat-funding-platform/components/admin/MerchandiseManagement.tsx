@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { IconShoppingCart, IconPlus, IconEdit, IconTrash, IconUpload } from '../icons';
+import { ShoppingCart, Plus, Edit2, Trash2, Upload, X, Package, DollarSign, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import api from '../../services/api';
 
 interface Merchandise {
@@ -68,7 +68,7 @@ const MerchandiseManagement: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const data = {
         ...formData,
@@ -144,15 +144,15 @@ const MerchandiseManagement: React.FC = () => {
   const lowStock = merchandise.filter(item => item.stock < 10).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-            <IconShoppingCart className="w-8 h-8 text-purple-600" />
+          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <ShoppingCart className="w-6 h-6 text-primary" />
             Merchandise Management
           </h2>
-          <p className="text-gray-600 mt-1">Manage your catalog and inventory</p>
+          <p className="text-sm text-muted-foreground mt-1">Manage your catalog and inventory</p>
         </div>
         <button
           onClick={() => {
@@ -160,93 +160,106 @@ const MerchandiseManagement: React.FC = () => {
             resetForm();
             setShowModal(true);
           }}
-          className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-bold hover:from-purple-700 hover:to-pink-700 shadow-lg transform hover:scale-105 transition-all flex items-center gap-2"
+          className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all"
         >
-          <IconPlus className="w-5 h-5" />
+          <Plus className="w-4 h-4 mr-2" />
           Add Product
         </button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-xl p-6 border-2 border-purple-200">
-          <p className="text-purple-700 font-semibold mb-2">Total Products</p>
-          <p className="text-4xl font-extrabold text-purple-800">{merchandise.length}</p>
+        <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Products</p>
+            <Package className="w-4 h-4 text-primary" />
+          </div>
+          <p className="text-2xl font-bold text-foreground">{merchandise.length}</p>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl shadow-xl p-6 border-2 border-green-200">
-          <p className="text-green-700 font-semibold mb-2">In Stock</p>
-          <p className="text-4xl font-extrabold text-green-800">
+        <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">In Stock</p>
+            <CheckCircle2 className="w-4 h-4 text-green-600" />
+          </div>
+          <p className="text-2xl font-bold text-green-600">
             {merchandise.filter(m => m.stock > 0).length}
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl shadow-xl p-6 border-2 border-orange-200">
-          <p className="text-orange-700 font-semibold mb-2">Low Stock</p>
-          <p className="text-4xl font-extrabold text-orange-800">{lowStock}</p>
+        <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Low Stock</p>
+            <AlertTriangle className="w-4 h-4 text-orange-600" />
+          </div>
+          <p className="text-2xl font-bold text-orange-600">{lowStock}</p>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-xl p-6 border-2 border-blue-200">
-          <p className="text-blue-700 font-semibold mb-2">Total Value</p>
-          <p className="text-3xl font-extrabold text-blue-800">KES {totalValue.toLocaleString()}</p>
+        <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Value</p>
+            <DollarSign className="w-4 h-4 text-blue-600" />
+          </div>
+          <p className="text-2xl font-bold text-blue-600">KES {totalValue.toLocaleString()}</p>
         </div>
       </div>
 
       {/* Products Grid */}
       {loading ? (
-        <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading products...</p>
+        <div className="bg-card rounded-xl shadow-sm p-12 text-center border border-border">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading products...</p>
         </div>
       ) : merchandise.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
-          <IconShoppingCart className="w-20 h-20 text-gray-300 mx-auto mb-4" />
-          <p className="text-xl text-gray-600 font-semibold">No products yet</p>
-          <p className="text-gray-500 mt-2">Add your first product to get started</p>
+        <div className="bg-card rounded-xl shadow-sm p-12 text-center border border-border">
+          <ShoppingCart className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+          <p className="text-lg text-foreground font-semibold">No products yet</p>
+          <p className="text-muted-foreground mt-2">Add your first product to get started</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {merchandise.map((item) => (
-            <div key={item.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all border-2 border-gray-100">
+            <div key={item.id} className="bg-card rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all border border-border group">
               {/* Product Image */}
-              <div className="h-48 bg-gradient-to-br from-purple-100 to-pink-100 relative">
+              <div className="h-48 bg-secondary/50 relative">
                 {item.image_url ? (
                   <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
                 ) : (
                   <div className="flex items-center justify-center h-full">
-                    <IconShoppingCart className="w-20 h-20 text-purple-300" />
+                    <ShoppingCart className="w-16 h-16 text-muted-foreground/30" />
                   </div>
                 )}
                 {!item.active && (
-                  <div className="absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                  <div className="absolute top-2 right-2 bg-destructive text-destructive-foreground px-2 py-1 rounded text-xs font-bold">
                     INACTIVE
                   </div>
                 )}
               </div>
 
               {/* Product Info */}
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-800 mb-2">{item.name}</h3>
-                <p className="text-gray-600 text-sm mb-4 line-clamp-2">{item.description}</p>
+              <div className="p-5">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="text-lg font-bold text-foreground line-clamp-1" title={item.name}>{item.name}</h3>
+                </div>
+                <p className="text-muted-foreground text-sm mb-4 line-clamp-2 min-h-[40px]">{item.description}</p>
 
                 <div className="flex justify-between items-center mb-4">
-                  <span className="text-2xl font-extrabold text-purple-600">
+                  <span className="text-xl font-bold text-primary">
                     KES {item.price.toLocaleString()}
                   </span>
-                  <span className={`px-3 py-1 rounded-full text-sm font-bold ${
-                    item.stock > 10 
-                      ? 'bg-green-100 text-green-700'
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${item.stock > 10
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
                       : item.stock > 0
-                      ? 'bg-orange-100 text-orange-700'
-                      : 'bg-red-100 text-red-700'
-                  }`}>
+                        ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+                        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                    }`}>
                     Stock: {item.stock}
                   </span>
                 </div>
 
                 {/* Stock Update */}
                 <div className="mb-4">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Update Stock</label>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wider">Update Stock</label>
                   <input
                     type="number"
                     defaultValue={item.stock}
@@ -256,24 +269,24 @@ const MerchandiseManagement: React.FC = () => {
                         handleUpdateStock(item.id, newStock);
                       }
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm"
                   />
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2">
+                <div className="flex gap-2 pt-2 border-t border-border">
                   <button
                     onClick={() => handleEdit(item)}
-                    className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+                    className="flex-1 inline-flex justify-center items-center px-3 py-2 border border-input rounded-lg text-sm font-medium text-foreground hover:bg-secondary transition-colors"
                   >
-                    <IconEdit className="w-4 h-4" />
+                    <Edit2 className="w-4 h-4 mr-2" />
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(item.id)}
-                    className="flex-1 bg-red-600 text-white py-2 rounded-lg font-semibold hover:bg-red-700 transition-all flex items-center justify-center gap-2"
+                    className="flex-1 inline-flex justify-center items-center px-3 py-2 border border-transparent rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
                   >
-                    <IconTrash className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4 mr-2" />
                     Delete
                   </button>
                 </div>
@@ -285,24 +298,29 @@ const MerchandiseManagement: React.FC = () => {
 
       {/* Add/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-8 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-3xl font-bold text-gray-800 mb-6">
-              {editingItem ? 'Edit Product' : 'Add New Product'}
-            </h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-xl shadow-2xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto border border-border">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-foreground">
+                {editingItem ? 'Edit Product' : 'Add New Product'}
+              </h2>
+              <button onClick={() => setShowModal(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Image Upload */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Product Image</label>
+                <label className="block text-sm font-medium text-foreground mb-1.5">Product Image</label>
                 <div className="flex items-center gap-4">
                   {formData.image_url && (
-                    <img src={formData.image_url} alt="Preview" className="w-32 h-32 object-cover rounded-lg" />
+                    <img src={formData.image_url} alt="Preview" className="w-24 h-24 object-cover rounded-lg border border-border" />
                   )}
-                  <label className="flex-1 cursor-pointer">
-                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-purple-500 transition-all">
-                      <IconUpload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600">
+                  <label className="flex-1 cursor-pointer group">
+                    <div className="border-2 border-dashed border-input rounded-xl p-4 text-center hover:border-primary transition-all bg-secondary/30 group-hover:bg-secondary/50">
+                      <Upload className="w-6 h-6 text-muted-foreground mx-auto mb-2 group-hover:text-primary" />
+                      <p className="text-xs text-muted-foreground group-hover:text-foreground">
                         {uploadingImage ? 'Uploading...' : 'Click to upload image'}
                       </p>
                     </div>
@@ -318,22 +336,22 @@ const MerchandiseManagement: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Product Name</label>
+                <label className="block text-sm font-medium text-foreground mb-1.5">Product Name</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500"
+                  className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                <label className="block text-sm font-medium text-foreground mb-1.5">Description</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500"
+                  className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm"
                   rows={3}
                   required
                 />
@@ -341,50 +359,51 @@ const MerchandiseManagement: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Price (KES)</label>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">Price (KES)</label>
                   <input
                     type="number"
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500"
+                    className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Stock</label>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">Stock</label>
                   <input
                     type="number"
                     value={formData.stock}
                     onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500"
+                    className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Category</label>
+                <label className="block text-sm font-medium text-foreground mb-1.5">Category</label>
                 <input
                   type="text"
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500"
+                  className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm"
                   placeholder="e.g., T-Shirts, Books, Accessories"
                 />
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 pt-2">
                 <input
                   type="checkbox"
+                  id="active"
                   checked={formData.active}
                   onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-                  className="w-5 h-5 text-purple-600"
+                  className="w-4 h-4 text-primary border-input rounded focus:ring-primary"
                 />
-                <label className="text-sm font-semibold text-gray-700">Active (visible to customers)</label>
+                <label htmlFor="active" className="text-sm font-medium text-foreground">Active (visible to customers)</label>
               </div>
 
-              <div className="flex gap-4 pt-4">
+              <div className="flex gap-3 pt-4">
                 <button
                   type="button"
                   onClick={() => {
@@ -392,13 +411,13 @@ const MerchandiseManagement: React.FC = () => {
                     setEditingItem(null);
                     resetForm();
                   }}
-                  className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-all"
+                  className="flex-1 px-4 py-2 border border-input rounded-lg font-medium text-foreground hover:bg-secondary transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-bold hover:from-purple-700 hover:to-pink-700 shadow-lg transform hover:scale-105 transition-all"
+                  className="flex-1 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-sm"
                 >
                   {editingItem ? 'Update Product' : 'Add Product'}
                 </button>

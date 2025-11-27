@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { IconUsers, IconWallet, IconHash, IconPhone } from '../icons';
+import { Users, Wallet, Hash, Phone, Search, X } from 'lucide-react';
 import api from '../../services/api';
 
 interface Member {
@@ -62,81 +62,70 @@ const MemberDirectory: React.FC = () => {
   const totalTicketsSold = members.reduce((sum, m) => sum + (m.total_tickets_sold || 0), 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div>
-        <h2 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-          <IconUsers className="w-8 h-8 text-indigo-600" />
+        <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <Users className="w-6 h-6 text-primary" />
           Member Directory
         </h2>
-        <p className="text-gray-600 mt-1">Manage members and their wallets</p>
+        <p className="text-sm text-muted-foreground mt-1">Manage members and their wallets</p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl shadow-xl p-6 border-2 border-indigo-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-indigo-700 font-semibold mb-2">Total Members</p>
-              <p className="text-4xl font-extrabold text-indigo-800">{totalMembers}</p>
-            </div>
-            <div className="p-4 bg-indigo-600 rounded-xl">
-              <IconUsers className="w-8 h-8 text-white" />
-            </div>
+        <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Members</p>
+            <Users className="w-4 h-4 text-primary" />
           </div>
+          <p className="text-2xl font-bold text-foreground">{totalMembers}</p>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl shadow-xl p-6 border-2 border-green-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-green-700 font-semibold mb-2">Active Members</p>
-              <p className="text-4xl font-extrabold text-green-800">{activeMembers}</p>
-            </div>
-            <div className="p-4 bg-green-600 rounded-xl">
-              <IconHash className="w-8 h-8 text-white" />
-            </div>
+        <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Active Members</p>
+            <Hash className="w-4 h-4 text-green-600" />
           </div>
+          <p className="text-2xl font-bold text-green-600">{activeMembers}</p>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl shadow-xl p-6 border-2 border-blue-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-blue-700 font-semibold mb-2">Total Wallets</p>
-              <p className="text-3xl font-extrabold text-blue-800">KES {totalWalletBalance.toLocaleString()}</p>
-            </div>
-            <div className="p-4 bg-blue-600 rounded-xl">
-              <IconWallet className="w-8 h-8 text-white" />
-            </div>
+        <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Wallets</p>
+            <Wallet className="w-4 h-4 text-blue-600" />
           </div>
+          <p className="text-2xl font-bold text-blue-600">KES {totalWalletBalance.toLocaleString()}</p>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-xl p-6 border-2 border-purple-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-purple-700 font-semibold mb-2">Tickets Sold</p>
-              <p className="text-4xl font-extrabold text-purple-800">{totalTicketsSold}</p>
-            </div>
-            <div className="p-4 bg-purple-600 rounded-xl">
-              <IconHash className="w-8 h-8 text-white" />
-            </div>
+        <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tickets Sold</p>
+            <Hash className="w-4 h-4 text-purple-600" />
           </div>
+          <p className="text-2xl font-bold text-purple-600">{totalTicketsSold}</p>
         </div>
       </div>
 
       {/* Search */}
-      <div className="bg-white rounded-2xl shadow-lg p-4">
+      <div className="bg-card rounded-xl shadow-sm p-4 border border-border">
         <div className="flex gap-4">
-          <input
-            type="text"
-            placeholder="Search by name or MMID..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-            className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-lg"
-          />
+          <div className="relative flex-1">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search by name or MMID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              className="block w-full pl-10 pr-3 py-2 border border-input rounded-lg leading-5 bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm"
+            />
+          </div>
           <button
             onClick={handleSearch}
-            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-3 rounded-xl font-bold hover:from-indigo-700 hover:to-purple-700 shadow-lg transform hover:scale-105 transition-all"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all"
           >
             Search
           </button>
@@ -145,60 +134,59 @@ const MemberDirectory: React.FC = () => {
 
       {/* Members Grid */}
       {loading ? (
-        <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading members...</p>
+        <div className="bg-card rounded-xl shadow-sm p-12 text-center border border-border">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading members...</p>
         </div>
       ) : members.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
-          <IconUsers className="w-20 h-20 text-gray-300 mx-auto mb-4" />
-          <p className="text-xl text-gray-600 font-semibold">No members found</p>
-          <p className="text-gray-500 mt-2">Try a different search query</p>
+        <div className="bg-card rounded-xl shadow-sm p-12 text-center border border-border">
+          <Users className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+          <p className="text-lg text-foreground font-semibold">No members found</p>
+          <p className="text-muted-foreground mt-2">Try a different search query</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {members.map((member) => (
             <div
               key={member.id}
-              className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-all border-2 border-transparent hover:border-indigo-200 cursor-pointer"
+              className="bg-card rounded-xl shadow-sm p-6 hover:shadow-md transition-all border border-border cursor-pointer group"
               onClick={() => setSelectedMember(member)}
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold text-gray-800 mb-1">{member.name}</h3>
-                  <p className="text-sm text-indigo-600 font-mono font-bold">MMID: {member.mmid}</p>
+                  <h3 className="text-lg font-bold text-foreground mb-1 group-hover:text-primary transition-colors">{member.name}</h3>
+                  <p className="text-sm text-primary font-mono font-bold">MMID: {member.mmid}</p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                  member.status === 'active' 
-                    ? 'bg-green-100 text-green-700' 
-                    : 'bg-gray-100 text-gray-700'
-                }`}>
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${member.status === 'active'
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                    : 'bg-secondary text-muted-foreground'
+                  }`}>
                   {member.status}
                 </span>
               </div>
 
               <div className="space-y-3">
-                <div className="flex items-center gap-2 text-gray-600">
-                  <IconPhone className="w-4 h-4" />
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Phone className="w-4 h-4" />
                   <span className="text-sm">{member.whatsapp}</span>
                 </div>
 
-                <div className="bg-green-50 rounded-xl p-3 border-2 border-green-200">
-                  <p className="text-xs text-green-700 mb-1">Wallet Balance</p>
-                  <p className="text-2xl font-extrabold text-green-600">
+                <div className="bg-green-50/50 dark:bg-green-900/10 rounded-lg p-3 border border-green-100 dark:border-green-800">
+                  <p className="text-xs font-medium text-green-700 dark:text-green-300 mb-1">Wallet Balance</p>
+                  <p className="text-xl font-bold text-green-600 dark:text-green-400">
                     KES {(member.wallet_balance || 0).toLocaleString()}
                   </p>
                 </div>
 
-                <div className="bg-purple-50 rounded-xl p-3 border-2 border-purple-200">
-                  <p className="text-xs text-purple-700 mb-1">Tickets Sold</p>
-                  <p className="text-2xl font-extrabold text-purple-600">
+                <div className="bg-purple-50/50 dark:bg-purple-900/10 rounded-lg p-3 border border-purple-100 dark:border-purple-800">
+                  <p className="text-xs font-medium text-purple-700 dark:text-purple-300 mb-1">Tickets Sold</p>
+                  <p className="text-xl font-bold text-purple-600 dark:text-purple-400">
                     {member.total_tickets_sold || 0}
                   </p>
                 </div>
               </div>
 
-              <button className="w-full mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-2 rounded-lg font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all">
+              <button className="w-full mt-4 inline-flex justify-center items-center px-4 py-2 border border-input rounded-lg text-sm font-medium text-foreground hover:bg-secondary transition-colors">
                 View Profile
               </button>
             </div>
@@ -208,66 +196,71 @@ const MemberDirectory: React.FC = () => {
 
       {/* Member Detail Modal */}
       {selectedMember && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-8">
-            <h2 className="text-3xl font-bold text-gray-800 mb-6">Member Profile</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-xl shadow-2xl max-w-2xl w-full p-6 border border-border relative">
+            <button
+              onClick={() => setSelectedMember(null)}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold text-foreground mb-6">Member Profile</h2>
 
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Name</p>
-                  <p className="text-xl font-bold text-gray-800">{selectedMember.name}</p>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Name</p>
+                  <p className="text-lg font-bold text-foreground">{selectedMember.name}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">MMID</p>
-                  <p className="text-xl font-bold text-indigo-600 font-mono">{selectedMember.mmid}</p>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">MMID</p>
+                  <p className="text-lg font-bold text-primary font-mono">{selectedMember.mmid}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">WhatsApp</p>
-                  <p className="font-semibold text-gray-800">{selectedMember.whatsapp}</p>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">WhatsApp</p>
+                  <p className="font-semibold text-foreground">{selectedMember.whatsapp}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Status</p>
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                    selectedMember.status === 'active' 
-                      ? 'bg-green-100 text-green-700' 
-                      : 'bg-gray-100 text-gray-700'
-                  }`}>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Status</p>
+                  <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${selectedMember.status === 'active'
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                      : 'bg-secondary text-muted-foreground'
+                    }`}>
                     {selectedMember.status.toUpperCase()}
                   </span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-4">
-                <div className="bg-green-50 rounded-xl p-4 border-2 border-green-200">
-                  <p className="text-sm text-green-700 mb-2">Wallet Balance</p>
-                  <p className="text-3xl font-extrabold text-green-600">
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="bg-green-50/50 dark:bg-green-900/10 rounded-xl p-4 border border-green-100 dark:border-green-800">
+                  <p className="text-sm font-medium text-green-700 dark:text-green-300 mb-2">Wallet Balance</p>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                     KES {(selectedMember.wallet_balance || 0).toLocaleString()}
                   </p>
                 </div>
-                <div className="bg-purple-50 rounded-xl p-4 border-2 border-purple-200">
-                  <p className="text-sm text-purple-700 mb-2">Tickets Sold</p>
-                  <p className="text-3xl font-extrabold text-purple-600">
+                <div className="bg-purple-50/50 dark:bg-purple-900/10 rounded-xl p-4 border border-purple-100 dark:border-purple-800">
+                  <p className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-2">Tickets Sold</p>
+                  <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
                     {selectedMember.total_tickets_sold || 0}
                   </p>
                 </div>
               </div>
 
-              <div className="pt-4">
-                <p className="text-sm text-gray-600 mb-1">Member Since</p>
-                <p className="font-semibold text-gray-800">
+              <div className="pt-2">
+                <p className="text-sm font-medium text-muted-foreground mb-1">Member Since</p>
+                <p className="font-semibold text-foreground">
                   {new Date(selectedMember.created_at).toLocaleDateString()}
                 </p>
               </div>
 
-              <div className="flex gap-4 pt-4">
+              <div className="flex gap-3 pt-4 border-t border-border">
                 <button
                   onClick={() => setSelectedMember(null)}
-                  className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-all"
+                  className="flex-1 px-4 py-2 border border-input rounded-lg font-medium text-foreground hover:bg-secondary transition-colors"
                 >
                   Close
                 </button>
-                <button className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl font-bold hover:from-indigo-700 hover:to-purple-700 shadow-lg transform hover:scale-105 transition-all">
+                <button className="flex-1 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-sm">
                   Edit Member
                 </button>
               </div>

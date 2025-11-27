@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import api from '../../services/api';
+import { Download, RefreshCw, Calendar, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 
 const HAS_API_KEY = !!import.meta.env.VITE_API_KEY;
 
@@ -37,10 +38,18 @@ type Project = {
   status?: string;
 };
 
-const Stat: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-100">
-    <div className="text-xs uppercase tracking-wide text-gray-500">{label}</div>
-    <div className="mt-1 text-2xl font-bold text-gray-800">{value}</div>
+const Stat: React.FC<{ label: string; value: string; type?: 'neutral' | 'positive' | 'negative' }> = ({ label, value, type = 'neutral' }) => (
+  <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
+    <div className="flex items-center justify-between mb-2">
+      <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">{label}</div>
+      {type === 'positive' && <TrendingUp className="w-4 h-4 text-green-500" />}
+      {type === 'negative' && <TrendingDown className="w-4 h-4 text-red-500" />}
+      {type === 'neutral' && <DollarSign className="w-4 h-4 text-muted-foreground" />}
+    </div>
+    <div className={`text-2xl font-bold ${type === 'positive' ? 'text-green-600 dark:text-green-400' :
+        type === 'negative' ? 'text-red-600 dark:text-red-400' :
+          'text-foreground'
+      }`}>{value}</div>
   </div>
 );
 
@@ -48,22 +57,22 @@ const Table: React.FC<{
   columns: string[];
   rows: React.ReactNode[][];
 }> = ({ columns, rows }) => (
-  <div className="overflow-x-auto border border-gray-100 rounded-lg">
-    <table className="min-w-full bg-white">
-      <thead className="bg-gray-50">
+  <div className="overflow-x-auto border border-border rounded-xl bg-card shadow-sm">
+    <table className="min-w-full">
+      <thead className="bg-secondary/50 border-b border-border">
         <tr>
           {columns.map((c) => (
-            <th key={c} className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+            <th key={c} className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               {c}
             </th>
           ))}
         </tr>
       </thead>
-      <tbody>
+      <tbody className="divide-y divide-border">
         {rows.map((r, i) => (
-          <tr key={i} className="border-t border-gray-100 hover:bg-gray-50">
+          <tr key={i} className="hover:bg-secondary/30 transition-colors">
             {r.map((cell, j) => (
-              <td key={j} className="px-4 py-3 text-sm text-gray-700">
+              <td key={j} className="px-6 py-4 text-sm text-foreground">
                 {cell}
               </td>
             ))}
@@ -71,8 +80,8 @@ const Table: React.FC<{
         ))}
         {!rows.length && (
           <tr>
-            <td className="px-4 py-6 text-center text-sm text-gray-500" colSpan={columns.length}>
-              No data
+            <td className="px-6 py-8 text-center text-sm text-muted-foreground" colSpan={columns.length}>
+              No data available
             </td>
           </tr>
         )}
@@ -97,7 +106,6 @@ const FinanceDashboard: React.FC = () => {
     setError(null);
     try {
       if (!HAS_API_KEY) {
-        // Without an API key, protected endpoints will 401. Show empty state.
         setTransactions([]);
         setWithdrawals([]);
         setProjects([]);
@@ -150,92 +158,99 @@ const FinanceDashboard: React.FC = () => {
   }, [transactions]);
 
   const recentTxRows: React.ReactNode[][] = (transactions || []).slice(0, 12).map((t) => [
-    <span className="font-medium">{t.account?.reference || t.account?.name || '—'}</span>,
-    KES(t.amount),
-    <span className={
-      (t.type || '').toLowerCase() === 'credit'
-        ? 'text-green-600 font-semibold'
-        : 'text-red-600 font-semibold'
-    }>{(t.type || '').toUpperCase()}</span>,
-    <span className="capitalize">{t.status || '—'}</span>,
-    <code className="text-xs">{t.reference || '—'}</code>,
-    t.created_at ? new Date(t.created_at).toLocaleString() : '—',
+    <span className="font-medium text-foreground">{t.account?.reference || t.account?.name || '—'}</span>,
+    <span className="font-mono">{KES(t.amount)}</span>,
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${(t.type || '').toLowerCase() === 'credit'
+        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+      }`}>{(t.type || '').toUpperCase()}</span>,
+    <span className="capitalize text-muted-foreground">{t.status || '—'}</span>,
+    <code className="text-xs bg-secondary px-1.5 py-0.5 rounded text-muted-foreground">{t.reference || '—'}</code>,
+    <span className="text-muted-foreground text-xs">{t.created_at ? new Date(t.created_at).toLocaleString() : '—'}</span>,
   ]);
 
   const withdrawalRows: React.ReactNode[][] = (withdrawals || []).slice(0, 10).map((w) => [
-    `#${w.id}`,
-    KES(w.amount),
+    <span className="font-mono text-xs">#{w.id}</span>,
+    <span className="font-mono">{KES(w.amount)}</span>,
     w.phone_number || '—',
-    <span className="capitalize">{w.status}</span>,
-    w.created_at ? new Date(w.created_at).toLocaleString() : '—',
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${w.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+        w.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+          'bg-secondary text-secondary-foreground'
+      }`}>{w.status}</span>,
+    <span className="text-muted-foreground text-xs">{w.created_at ? new Date(w.created_at).toLocaleString() : '—'}</span>,
   ]);
 
   const projectRows: React.ReactNode[][] = (projects || []).map((p) => [
-    <span className="font-medium">{p.title}</span>,
-    KES(p.current_amount || 0),
-    KES(p.target_amount || 0),
-    <span>{p.account_number || '—'}</span>,
-    <span className="capitalize">{p.status || 'active'}</span>,
+    <span className="font-medium text-foreground">{p.title}</span>,
+    <span className="font-mono text-green-600 dark:text-green-400">{KES(p.current_amount || 0)}</span>,
+    <span className="font-mono text-muted-foreground">{KES(p.target_amount || 0)}</span>,
+    <span className="font-mono text-xs">{p.account_number || '—'}</span>,
+    <span className="capitalize inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">{p.status || 'active'}</span>,
   ]);
 
   return (
     <div className="space-y-8">
       {!HAS_API_KEY && (
-        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md">
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900/50 text-yellow-800 dark:text-yellow-200 px-4 py-3 rounded-lg text-sm">
           Admin data requires API access. Set backend API_KEY and frontend VITE_API_KEY to enable live transactions, withdrawals, projects, and reports.
         </div>
       )}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Finance Overview</h2>
-          <p className="text-sm text-gray-600">Live totals, transactions, withdrawals, and projects.</p>
+          <h2 className="text-2xl font-bold text-foreground">Finance Overview</h2>
+          <p className="text-sm text-muted-foreground">Live totals, transactions, withdrawals, and projects.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="border border-gray-300 rounded-md px-2 py-1 text-sm"
-          />
-          <span className="text-gray-500 text-sm">to</span>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="border border-gray-300 rounded-md px-2 py-1 text-sm"
-          />
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 bg-card border border-input rounded-lg px-3 py-2 shadow-sm">
+            <Calendar className="w-4 h-4 text-muted-foreground" />
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="bg-transparent border-none text-sm focus:ring-0 p-0 w-32 text-foreground"
+            />
+            <span className="text-muted-foreground text-sm">-</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="bg-transparent border-none text-sm focus:ring-0 p-0 w-32 text-foreground"
+            />
+          </div>
           <button
             onClick={load}
-            className="px-4 py-2 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700"
+            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors flex items-center gap-2 shadow-sm"
             disabled={loading}
           >
-            {loading ? 'Refreshing…' : 'Apply'}
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">{loading ? 'Refreshing...' : 'Apply'}</span>
           </button>
           <a
             href={`/api/v1/reports/finance${(startDate || endDate) ? `?${new URLSearchParams({ ...(startDate ? { start_date: startDate } : {}), ...(endDate ? { end_date: endDate } : {}) }).toString()}` : ''}`}
             target="_blank"
             rel="noreferrer"
-            className="px-4 py-2 rounded-md bg-gray-800 text-white font-semibold hover:bg-gray-900"
+            className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground font-medium hover:bg-secondary/80 transition-colors flex items-center gap-2 border border-border shadow-sm"
           >
-            Export PDF
+            <Download className="w-4 h-4" />
+            <span className="hidden sm:inline">Export PDF</span>
           </a>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+        <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
           {error}
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Stat label="Total Inflow" value={KES(totals.credit)} />
-        <Stat label="Total Outflow" value={KES(totals.debit)} />
-        <Stat label="Net" value={KES(totals.net)} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Stat label="Total Inflow" value={KES(totals.credit)} type="positive" />
+        <Stat label="Total Outflow" value={KES(totals.debit)} type="negative" />
+        <Stat label="Net Balance" value={KES(totals.net)} type={totals.net >= 0 ? 'positive' : 'negative'} />
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-800">Recent Transactions</h3>
+        <h3 className="text-lg font-semibold text-foreground">Recent Transactions</h3>
         <Table
           columns={['Account', 'Amount', 'Type', 'Status', 'Reference', 'Created']}
           rows={recentTxRows}
@@ -244,7 +259,7 @@ const FinanceDashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-800">Withdrawals</h3>
+          <h3 className="text-lg font-semibold text-foreground">Withdrawals</h3>
           <Table
             columns={['ID', 'Amount', 'Phone', 'Status', 'Created']}
             rows={withdrawalRows}
@@ -252,7 +267,7 @@ const FinanceDashboard: React.FC = () => {
         </div>
 
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-800">Projects</h3>
+          <h3 className="text-lg font-semibold text-foreground">Projects</h3>
           <Table
             columns={['Project', 'Current', 'Target', 'Account', 'Status']}
             rows={projectRows}

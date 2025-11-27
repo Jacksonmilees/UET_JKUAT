@@ -5,8 +5,8 @@ export interface ProjectUpdate {
 }
 
 export interface Contributor {
-    name: string;
-    avatar: string;
+  name: string;
+  avatar: string;
 }
 
 export interface Project {
@@ -31,7 +31,7 @@ export interface User {
   email: string;
   avatar: string;
   password?: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'super_admin';
   status: 'active' | 'inactive';
   // New detailed fields for students
   phoneNumber?: string;
@@ -104,7 +104,7 @@ export interface Withdrawal {
   amount: number;
   phoneNumber: string;
   reason: string;
-  status: 'pending' | 'approved' | 'sent' | 'failed' | 'cancelled';
+  status: 'pending' | 'approved' | 'sent' | 'failed' | 'cancelled' | 'completed';
   createdAt: string;
   completedAt?: string;
   mpesaTransactionId?: string;
@@ -144,39 +144,39 @@ export interface Donation {
 export type RoutePage = 'home' | 'projectDetail' | 'dashboard' | 'news' | 'login' | 'register' | 'merch' | 'cart' | 'admin';
 
 export interface Route {
-    page: RoutePage;
-    params?: any;
+  page: RoutePage;
+  params?: any;
 }
 
 export interface NewsArticle {
-    id: number;
-    title: string;
-    excerpt: string;
-    imageUrl: string;
-    author: string;
-    date: string;
-    category: string;
+  id: number;
+  title: string;
+  excerpt: string;
+  imageUrl: string;
+  author: string;
+  date: string;
+  category: string;
 }
 
 export interface MerchandiseItem {
-    id: number;
-    name: string;
-    description: string;
-    price: number;
-    imageUrl: string;
-    category: string;
-    stock: number;
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  imageUrl: string;
+  category: string;
+  stock: number;
 }
 
 export interface CartItem extends MerchandiseItem {
-    quantity: number;
+  quantity: number;
 }
 
 export interface Order {
-    id: string;
-    userId: number;
-    items: CartItem[];
-    totalAmount: number;
-    orderDate: string;
-    status: 'Processing' | 'Shipped' | 'Delivered';
+  id: string;
+  userId: number;
+  items: CartItem[];
+  totalAmount: number;
+  orderDate: string;
+  status: 'Processing' | 'Shipped' | 'Delivered';
 }

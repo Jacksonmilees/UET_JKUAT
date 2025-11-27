@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IconTrendingUp, IconCalendar, IconCheckCircle } from '../icons';
+import { TrendingUp, Calendar, CheckCircle2, FileText, Mail, Download, X } from 'lucide-react';
 import api from '../../services/api';
 
 interface ReportData {
@@ -83,43 +83,43 @@ const ReportsManagement: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div>
-        <h2 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-          <IconTrendingUp className="w-8 h-8 text-blue-600" />
+        <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <TrendingUp className="w-6 h-6 text-primary" />
           Financial Reports
         </h2>
-        <p className="text-gray-600 mt-1">Generate and export financial reports</p>
+        <p className="text-sm text-muted-foreground mt-1">Generate and export financial reports</p>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl shadow-lg p-6">
-        <h3 className="text-xl font-bold text-gray-800 mb-4">Report Filters</h3>
+      <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+        <h3 className="text-lg font-bold text-foreground mb-4">Report Filters</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              <IconCalendar className="w-4 h-4 inline mr-1" />
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              <Calendar className="w-4 h-4 inline mr-1.5 text-muted-foreground" />
               From Date
             </label>
             <input
               type="date"
               value={filters.from_date}
               onChange={(e) => setFilters({ ...filters, from_date: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              <IconCalendar className="w-4 h-4 inline mr-1" />
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              <Calendar className="w-4 h-4 inline mr-1.5 text-muted-foreground" />
               To Date
             </label>
             <input
               type="date"
               value={filters.to_date}
               onChange={(e) => setFilters({ ...filters, to_date: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm"
             />
           </div>
 
@@ -127,7 +127,7 @@ const ReportsManagement: React.FC = () => {
             <button
               onClick={generateReport}
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:from-blue-700 hover:to-indigo-700 shadow-lg transform hover:scale-105 transition-all disabled:opacity-50"
+              className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Generating...' : 'Generate Report'}
             </button>
@@ -140,47 +140,56 @@ const ReportsManagement: React.FC = () => {
         <>
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl shadow-xl p-6 border-2 border-green-200">
-              <p className="text-green-700 font-semibold mb-2">Total Income</p>
-              <p className="text-4xl font-extrabold text-green-800">
+            <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Income</p>
+                <TrendingUp className="w-4 h-4 text-green-600" />
+              </div>
+              <p className="text-2xl font-bold text-green-600">
                 KES {reportData.total_income.toLocaleString()}
               </p>
             </div>
 
-            <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl shadow-xl p-6 border-2 border-red-200">
-              <p className="text-red-700 font-semibold mb-2">Total Expenses</p>
-              <p className="text-4xl font-extrabold text-red-800">
+            <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Expenses</p>
+                <TrendingUp className="w-4 h-4 text-red-600 rotate-180" />
+              </div>
+              <p className="text-2xl font-bold text-red-600">
                 KES {reportData.total_expenses.toLocaleString()}
               </p>
             </div>
 
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-xl p-6 border-2 border-blue-200">
-              <p className="text-blue-700 font-semibold mb-2">Net Balance</p>
-              <p className="text-4xl font-extrabold text-blue-800">
+            <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Net Balance</p>
+                <FileText className="w-4 h-4 text-blue-600" />
+              </div>
+              <p className="text-2xl font-bold text-blue-600">
                 KES {reportData.net_balance.toLocaleString()}
               </p>
             </div>
           </div>
 
           {/* Category Breakdown */}
-          <div className="bg-white rounded-2xl shadow-xl p-6">
-            <h3 className="text-2xl font-bold text-gray-800 mb-4">Category Breakdown</h3>
+          <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+            <h3 className="text-lg font-bold text-foreground mb-4">Category Breakdown</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-blue-50 rounded-xl p-4 border-2 border-blue-200">
-                <p className="text-blue-700 font-semibold mb-1">Donations</p>
-                <p className="text-3xl font-bold text-blue-800">
+              <div className="bg-blue-50/50 dark:bg-blue-900/10 rounded-xl p-4 border border-blue-100 dark:border-blue-800">
+                <p className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">Donations</p>
+                <p className="text-2xl font-bold text-blue-800 dark:text-blue-200">
                   KES {reportData.summary.donations.toLocaleString()}
                 </p>
               </div>
-              <div className="bg-red-50 rounded-xl p-4 border-2 border-red-200">
-                <p className="text-red-700 font-semibold mb-1">Withdrawals</p>
-                <p className="text-3xl font-bold text-red-800">
+              <div className="bg-red-50/50 dark:bg-red-900/10 rounded-xl p-4 border border-red-100 dark:border-red-800">
+                <p className="text-sm font-medium text-red-700 dark:text-red-300 mb-1">Withdrawals</p>
+                <p className="text-2xl font-bold text-red-800 dark:text-red-200">
                   KES {reportData.summary.withdrawals.toLocaleString()}
                 </p>
               </div>
-              <div className="bg-purple-50 rounded-xl p-4 border-2 border-purple-200">
-                <p className="text-purple-700 font-semibold mb-1">Transfers</p>
-                <p className="text-3xl font-bold text-purple-800">
+              <div className="bg-purple-50/50 dark:bg-purple-900/10 rounded-xl p-4 border border-purple-100 dark:border-purple-800">
+                <p className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">Transfers</p>
+                <p className="text-2xl font-bold text-purple-800 dark:text-purple-200">
                   KES {reportData.summary.transfers.toLocaleString()}
                 </p>
               </div>
@@ -188,20 +197,22 @@ const ReportsManagement: React.FC = () => {
           </div>
 
           {/* Actions */}
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Export Options</h3>
+          <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+            <h3 className="text-lg font-bold text-foreground mb-4">Export Options</h3>
             <div className="flex flex-wrap gap-4">
               <button
                 onClick={downloadPDF}
-                className="bg-gradient-to-r from-red-600 to-pink-600 text-white px-6 py-3 rounded-xl font-bold hover:from-red-700 hover:to-pink-700 shadow-lg transform hover:scale-105 transition-all"
+                className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors shadow-sm"
               >
-                📄 Download PDF
+                <FileText className="w-4 h-4 mr-2" />
+                Download PDF
               </button>
               <button
                 onClick={() => setEmailModal(true)}
-                className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:from-green-700 hover:to-emerald-700 shadow-lg transform hover:scale-105 transition-all"
+                className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors shadow-sm"
               >
-                📧 Email Report
+                <Mail className="w-4 h-4 mr-2" />
+                Email Report
               </button>
               <button
                 onClick={() => {
@@ -211,9 +222,10 @@ const ReportsManagement: React.FC = () => {
                   link.download = 'report.csv';
                   link.click();
                 }}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:from-blue-700 hover:to-indigo-700 shadow-lg transform hover:scale-105 transition-all"
+                className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-sm"
               >
-                📊 Export CSV
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
               </button>
             </div>
           </div>
@@ -222,40 +234,46 @@ const ReportsManagement: React.FC = () => {
 
       {/* Empty State */}
       {!reportData && !loading && (
-        <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
-          <IconTrendingUp className="w-20 h-20 text-gray-300 mx-auto mb-4" />
-          <p className="text-xl text-gray-600 font-semibold">No Report Generated</p>
-          <p className="text-gray-500 mt-2">Select date range and click Generate Report</p>
+        <div className="bg-card rounded-xl shadow-sm p-12 text-center border border-border">
+          <TrendingUp className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+          <p className="text-lg text-foreground font-semibold">No Report Generated</p>
+          <p className="text-muted-foreground mt-2">Select date range and click Generate Report</p>
         </div>
       )}
 
       {/* Email Modal */}
       {emailModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8">
-            <h2 className="text-3xl font-bold text-gray-800 mb-6">Email Report</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-xl shadow-2xl max-w-md w-full p-6 border border-border relative">
+            <button
+              onClick={() => setEmailModal(false)}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold text-foreground mb-6">Email Report</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
+                <label className="block text-sm font-medium text-foreground mb-1.5">Email Address</label>
                 <input
                   type="email"
                   value={emailAddress}
                   onChange={(e) => setEmailAddress(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm"
                   placeholder="email@example.com"
                 />
               </div>
-              <div className="flex gap-4">
+              <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setEmailModal(false)}
-                  className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-all"
+                  className="flex-1 px-4 py-2 border border-input rounded-lg font-medium text-foreground hover:bg-secondary transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={sendEmail}
                   disabled={!emailAddress || loading}
-                  className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:from-green-700 hover:to-emerald-700 shadow-lg transform hover:scale-105 transition-all disabled:opacity-50"
+                  className="flex-1 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Sending...' : 'Send'}
                 </button>

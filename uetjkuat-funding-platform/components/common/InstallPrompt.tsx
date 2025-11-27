@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { IconX, IconDownload } from '../icons';
+import { X, Download, Zap, Smartphone, Shield } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -22,7 +22,7 @@ const InstallPrompt: React.FC = () => {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      
+
       // Show prompt after 3 seconds
       setTimeout(() => {
         const dismissed = localStorage.getItem('pwa-install-dismissed');
@@ -56,7 +56,7 @@ const InstallPrompt: React.FC = () => {
 
     // Wait for the user's response
     const { outcome } = await deferredPrompt.userChoice;
-    
+
     if (outcome === 'accepted') {
       console.log('User accepted the install prompt');
     } else {
@@ -76,36 +76,36 @@ const InstallPrompt: React.FC = () => {
 
   return (
     <div className="fixed bottom-20 md:bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-sm z-50 animate-slide-up">
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl shadow-2xl p-4 text-white">
+      <div className="bg-card border border-border rounded-lg shadow-lg p-4 text-foreground">
         <button
           onClick={handleDismiss}
-          className="absolute top-2 right-2 text-white/80 hover:text-white transition-colors"
+          className="absolute top-2 right-2 text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Dismiss"
         >
-          <IconX className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
 
         <div className="flex items-start gap-4">
-          <div className="flex-shrink-0 bg-white/20 rounded-xl p-3">
-            <IconDownload className="w-8 h-8" />
+          <div className="flex-shrink-0 bg-primary/10 rounded-lg p-2">
+            <Download className="w-6 h-6 text-primary" />
           </div>
 
           <div className="flex-1 pr-6">
-            <h3 className="font-bold text-lg mb-1">Install UET JKUAT App</h3>
-            <p className="text-white/90 text-sm mb-4">
-              Install our app for quick access, offline support, and a better experience!
+            <h3 className="font-semibold text-sm mb-1">Install App</h3>
+            <p className="text-muted-foreground text-xs mb-3">
+              Get quick access and offline support.
             </p>
 
             <div className="flex gap-2">
               <button
                 onClick={handleInstallClick}
-                className="flex-1 bg-white text-indigo-600 px-4 py-2 rounded-xl font-bold hover:bg-gray-100 transition-all shadow-lg"
+                className="flex-1 bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-xs font-medium hover:bg-primary/90 transition-all shadow-sm"
               >
-                Install Now
+                Install
               </button>
               <button
                 onClick={handleDismiss}
-                className="px-4 py-2 text-white/90 hover:text-white transition-colors text-sm"
+                className="px-3 py-1.5 text-muted-foreground hover:text-foreground transition-colors text-xs"
               >
                 Later
               </button>
@@ -114,19 +114,19 @@ const InstallPrompt: React.FC = () => {
         </div>
 
         {/* Features */}
-        <div className="mt-4 pt-4 border-t border-white/20">
-          <div className="grid grid-cols-3 gap-2 text-xs">
+        <div className="mt-3 pt-3 border-t border-border">
+          <div className="grid grid-cols-3 gap-2 text-[10px]">
             <div className="text-center">
-              <div className="font-semibold">⚡ Fast</div>
-              <div className="text-white/80">Quick access</div>
+              <div className="flex justify-center mb-1"><Zap className="w-3 h-3 text-muted-foreground" /></div>
+              <div className="font-medium">Fast</div>
             </div>
             <div className="text-center">
-              <div className="font-semibold">📱 Native</div>
-              <div className="text-white/80">App-like feel</div>
+              <div className="flex justify-center mb-1"><Smartphone className="w-3 h-3 text-muted-foreground" /></div>
+              <div className="font-medium">Native</div>
             </div>
             <div className="text-center">
-              <div className="font-semibold">🔒 Secure</div>
-              <div className="text-white/80">Safe & private</div>
+              <div className="flex justify-center mb-1"><Shield className="w-3 h-3 text-muted-foreground" /></div>
+              <div className="font-medium">Secure</div>
             </div>
           </div>
         </div>

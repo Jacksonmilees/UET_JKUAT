@@ -14,7 +14,7 @@ const NewsPreview: React.FC<NewsPreviewProps> = ({ setRoute }) => {
   return (
     <section className="bg-secondary-900 py-16 md:py-24 relative overflow-hidden">
       {/* Background Elements */}
-      <div className="absolute top-0 left-0 w-full h-full bg-[url('/icons/pattern.svg')] opacity-5 pointer-events-none"></div>
+      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-secondary-900 to-secondary-800 opacity-50 pointer-events-none"></div>
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary-500/5 rounded-full blur-[100px] pointer-events-none"></div>
 
       <div className="container mx-auto px-6 relative z-10">
