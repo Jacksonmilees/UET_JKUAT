@@ -21,16 +21,8 @@ return new class extends Migration
             // Ensure amount is decimal with proper precision
             $table->decimal('amount', 15, 2)->change();
 
-            // Add foreign key constraint to account_id if not exists
-            try {
-                $table->foreign('account_id')
-                      ->references('id')
-                      ->on('accounts')
-                      ->onDelete('cascade');
-            } catch (\Exception $e) {
-                // Foreign key might already exist
-                \Log::info('Foreign key on account_id already exists or cannot be added: ' . $e->getMessage());
-            }
+            // Foreign key constraint already exists from create_withdrawals migration
+            // Skipping to avoid duplicate constraint error
         });
 
         // Populate new columns with default values for existing records
