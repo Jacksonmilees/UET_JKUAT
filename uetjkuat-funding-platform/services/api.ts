@@ -104,8 +104,9 @@ async function apiRequest<T>(
 ): Promise<ApiResponse<T>> {
   const token = getToken();
   
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const headers: HeadersInit = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     'Accept': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` }),
     ...(API_KEY && { 'X-API-Key': API_KEY }),
@@ -266,10 +267,69 @@ export const mpesaApi = {
   },
 };
 
-// Accounts API
+// Accounts API (Extended)
 export const accountsApi = {
+  getAll: async (params?: Record<string, any>): Promise<ApiResponse<any[]>> => {
+    const query = params ? '?' + new URLSearchParams(params).toString() : '';
+    return apiRequest(`/v1/accounts${query}`);
+  },
+
   getMyAccount: async (): Promise<ApiResponse<any>> => {
     return apiRequest('/v1/accounts/my');
+  },
+
+  getById: async (id: number): Promise<ApiResponse<any>> => {
+    return apiRequest(`/v1/accounts/${id}`);
+  },
+
+  create: async (data: any): Promise<ApiResponse<any>> => {
+    return apiRequest('/v1/accounts', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  update: async (id: number, data: any): Promise<ApiResponse<any>> => {
+    return apiRequest(`/v1/accounts/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete: async (id: number): Promise<ApiResponse<void>> => {
+    return apiRequest(`/v1/accounts/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  search: async (criteria: any): Promise<ApiResponse<any>> => {
+    return apiRequest('/v1/accounts/search', {
+      method: 'POST',
+      body: JSON.stringify(criteria),
+    });
+  },
+
+  transfer: async (data: any): Promise<ApiResponse<any>> => {
+    return apiRequest('/v1/accounts/transfer', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  validateTransfer: async (data: any): Promise<ApiResponse<any>> => {
+    return apiRequest('/v1/accounts/validate-transfer', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  getTypes: async (): Promise<ApiResponse<any[]>> => {
+    return apiRequest('/v1/account-types');
+  },
+
+  getSubtypes: async (typeId?: number): Promise<ApiResponse<any[]>> => {
+    const query = typeId ? `?account_type_id=${typeId}` : '';
+    return apiRequest(`/v1/account-subtypes${query}`);
   },
 
   getBalance: async (): Promise<ApiResponse<{ balance: number }>> => {
@@ -312,7 +372,7 @@ export const withdrawalsApi = {
   },
 };
 
-// Tickets API
+// Tickets API (Extended)
 export const ticketsApi = {
   getMyTickets: async (): Promise<ApiResponse<any[]>> => {
     return apiRequest('/v1/tickets/my');
@@ -320,6 +380,31 @@ export const ticketsApi = {
 
   getById: async (id: number): Promise<ApiResponse<any>> => {
     return apiRequest(`/v1/tickets/${id}`);
+  },
+
+  purchase: async (mmid: string, data: any): Promise<ApiResponse<any>> => {
+    return apiRequest(`/api/tickets/${mmid}/process`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  checkStatus: async (ticketNumber: string): Promise<ApiResponse<any>> => {
+    return apiRequest(`/api/tickets/check-payment-status/${ticketNumber}`);
+  },
+
+  getByMember: async (mmid: string): Promise<ApiResponse<any[]>> => {
+    return apiRequest(`/api/tickets/completed/${mmid}`);
+  },
+
+  getAllCompleted: async (): Promise<ApiResponse<any>> => {
+    return apiRequest('/v1/tickets/completed/all');
+  },
+
+  selectWinner: async (): Promise<ApiResponse<any>> => {
+    return apiRequest('/api/winner-selection', {
+      method: 'POST',
+    });
   },
 };
 
@@ -400,6 +485,82 @@ export const transactionsApi = {
   },
 };
 
+// Reports API
+export const reportsApi = {
+  getFinance: async (params?: Record<string, string>): Promise<ApiResponse<any>> => {
+    const query = params ? '?' + new URLSearchParams(params).toString() : '';
+    return apiRequest(`/v1/reports/finance${query}`);
+  },
+
+  downloadPDF: async (params?: Record<string, string>): Promise<ApiResponse<any>> => {
+    const query = params ? '?' + new URLSearchParams(params).toString() : '';
+    return apiRequest(`/v1/reports/finance/pdf${query}`);
+  },
+
+  emailReport: async (data: any): Promise<ApiResponse<any>> => {
+    return apiRequest('/v1/reports/finance/email', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+};
+
+// Members API
+export const membersApi = {
+  getAll: async (): Promise<ApiResponse<any[]>> => {
+    return apiRequest('/v1/members');
+  },
+
+  getByMMID: async (mmid: string): Promise<ApiResponse<any>> => {
+    return apiRequest(`/v1/members/${mmid}`);
+  },
+
+  search: async (query: string): Promise<ApiResponse<any[]>> => {
+    return apiRequest(`/v1/members/search?q=${encodeURIComponent(query)}`);
+  },
+
+  update: async (mmid: string, data: any): Promise<ApiResponse<any>> => {
+    return apiRequest(`/v1/members/${mmid}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+};
+
+// Airtime API
+export const airtimeApi = {
+  purchase: async (data: { phone_number: string; amount: number }): Promise<ApiResponse<any>> => {
+    return apiRequest('/v1/airtime/purchase', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  getBalance: async (): Promise<ApiResponse<{ balance: number }>> => {
+    return apiRequest('/v1/airtime/balance');
+  },
+};
+
+// M-Pesa Balance API
+export const mpesaBalanceApi = {
+  query: async (): Promise<ApiResponse<any>> => {
+    return apiRequest('/api/mpesa/balance/query', {
+      method: 'POST',
+    });
+  },
+};
+
+// Uploads API
+export const uploadsApi = {
+  uploadImage: async (file: File): Promise<ApiResponse<{ url: string; path: string }>> => {
+    const form = new FormData();
+    form.append('file', file);
+    return apiRequest('/v1/uploads', {
+      method: 'POST',
+      body: form,
+    });
+  },
+};
 // Export default API object
 export default {
   auth: authApi,
@@ -412,6 +573,11 @@ export default {
   users: usersApi,
   news: newsApi,
   transactions: transactionsApi,
+  reports: reportsApi,
+  members: membersApi,
+  airtime: airtimeApi,
+  mpesaBalance: mpesaBalanceApi,
+  uploads: uploadsApi,
   getToken,
   setToken,
   removeToken,

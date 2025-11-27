@@ -30,7 +30,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleFormSubmit = (e: React.FormEvent) => {
+    const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setFormError('');
 
@@ -46,14 +46,19 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
             setFormError('Password must be at least 6 characters long.');
             return;
         }
-        setShowPaymentModal(true);
+        
+        // Register user first
+        const success = await register({ ...formData, password });
+        if (success) {
+            // After successful registration, show payment modal
+            setShowPaymentModal(true);
+        }
     };
 
     const handlePaymentSuccess = async () => {
-        const success = await register({ ...formData, password });
-        if (success) {
-            setRoute({ page: 'dashboard' });
-        }
+        // Payment successful, redirect to dashboard
+        setShowPaymentModal(false);
+        setRoute({ page: 'dashboard' });
     };
 
     const renderInput = (id: keyof Omit<RegisterCredentials, 'password'>, label: string, type: string, icon: React.ReactNode, options?: string[]) => (
@@ -117,8 +122,16 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
                     </div>
 
                     <div>
-                        <button type="submit" disabled={isLoading} className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300">
-                            {isLoading ? 'Processing...' : 'Proceed to Payment (KES 100)'}
+                        <button type="submit" disabled={isLoading} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-base font-bold text-white bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all">
+                            {isLoading ? (
+                                <span className="flex items-center gap-2">
+                                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Processing...
+                                </span>
+                            ) : 'Create Account & Pay KES 100 →'}
                         </button>
                     </div>
                 </form>

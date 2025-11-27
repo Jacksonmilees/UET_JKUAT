@@ -1,6 +1,4 @@
-
-
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useFinance } from '../contexts/FinanceContext';
@@ -11,264 +9,19 @@ import {
   IconCalendar,
   IconHash,
   IconPhone,
+  IconCreditCard,
+  IconWallet,
+  IconArrowUp,
+  IconArrowDown,
+  IconCheckCircle,
+  IconClock,
+  IconAlertCircle,
 } from '../components/icons';
-import {
-  Route,
-  Order,
-  MpesaSession,
-  Account,
-  Withdrawal,
-  Ticket,
-  MandatoryContributionStatus,
-  Transaction,
-} from '../types';
+import { Route, Transaction } from '../types';
 
 interface DashboardPageProps {
   setRoute: (route: Route) => void;
 }
-
-const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string; }> = ({ icon, label, value }) => (
-    <div className="bg-white p-6 rounded-lg shadow-md flex items-center space-x-4">
-        <div className="bg-blue-100 text-blue-600 p-3 rounded-full">
-            {icon}
-        </div>
-        <div>
-            <p className="text-gray-500 text-sm">{label}</p>
-            <p className="text-2xl font-bold text-gray-800">{value}</p>
-        </div>
-    </div>
-);
-
-
-const MandatoryContributionCard: React.FC<{
-  status: MandatoryContributionStatus;
-  onContribute: () => void;
-}> = ({ status, onContribute }) => {
-  const progress = Math.min(
-    100,
-    (status.contributedAmount / status.requiredAmount) * 100 || 0
-  );
-
-  return (
-    <div className="bg-white p-6 rounded-lg shadow-md flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-      <div>
-        <h3 className="text-xl font-bold text-gray-800 mb-2">Mandatory Term Contribution</h3>
-        <p className="text-sm text-gray-600">
-          Every member pledges{' '}
-          <span className="font-semibold text-blue-600">KES {status.requiredAmount}</span>{' '}
-          each term to keep the ministry running.
-        </p>
-        {status.lastContributionDate && (
-          <p className="text-xs text-gray-500 mt-2">
-            Last fulfilled on{' '}
-            {new Date(status.lastContributionDate).toLocaleDateString(undefined, {
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric',
-            })}
-          </p>
-        )}
-      </div>
-      <div className="flex-1">
-        <div className="flex items-center justify-between mb-2 text-sm text-gray-600">
-          <span>Progress</span>
-          <span>
-            KES {status.contributedAmount.toLocaleString()} /{' '}
-            {status.requiredAmount.toLocaleString()}
-          </span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div
-            className={`h-2 rounded-full ${
-              status.isCleared ? 'bg-green-500' : 'bg-blue-600'
-            }`}
-            style={{ width: `${progress}%` }}
-          ></div>
-        </div>
-      </div>
-      <div>
-        <button
-          onClick={onContribute}
-          className="px-6 py-2 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors"
-        >
-          {status.isCleared ? 'Give Again' : 'Complete Now'}
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const MpesaSessionTimeline: React.FC<{ sessions: MpesaSession[] }> = ({ sessions }) => {
-  if (!sessions.length) {
-    return (
-      <div className="text-sm text-gray-500">
-        No recent M-Pesa requests. Initiate a contribution to see live updates here.
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      {sessions.slice(0, 5).map(session => (
-        <div
-          key={session.id}
-          className="flex items-center justify-between border border-gray-100 rounded-lg px-4 py-3"
-        >
-          <div>
-            <p className="text-sm font-semibold text-gray-800">
-              {session.projectTitle ?? 'General Contribution'}
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              {new Date(session.initiatedAt).toLocaleString()} &bull;{' '}
-              {session.phoneNumber}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="font-semibold text-gray-800">
-              KES {session.amount.toLocaleString()}
-            </p>
-            <span
-              className={`text-xs font-semibold px-3 py-1 rounded-full inline-block mt-1 ${
-                session.status === 'successful'
-                  ? 'bg-green-100 text-green-700'
-                  : session.status === 'processing'
-                  ? 'bg-yellow-100 text-yellow-700'
-                  : session.status === 'failed'
-                  ? 'bg-red-100 text-red-700'
-                  : 'bg-gray-100 text-gray-600'
-              }`}
-            >
-              {session.status.toUpperCase()}
-            </span>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-const AccountsSnapshot: React.FC<{ accounts: Account[] }> = ({ accounts }) => {
-  if (!accounts.length) {
-    return <p className="text-sm text-gray-500">No ministry accounts assigned to you yet.</p>;
-  }
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {accounts.slice(0, 4).map(account => (
-        <div key={account.id} className="border border-gray-100 rounded-lg p-4 shadow-sm">
-          <p className="text-sm text-blue-600 font-semibold">{account.reference}</p>
-          <h4 className="text-lg font-bold text-gray-800 mt-1">{account.label}</h4>
-          <p className="text-xs text-gray-500">
-            Owner: {account.ownerName} · {account.ownerPhone}
-          </p>
-          <p className="text-sm text-gray-600 mt-3">
-            Balance:{' '}
-            <span className="font-semibold text-gray-900">
-              KES {account.balance.toLocaleString()}
-            </span>
-          </p>
-          <span
-            className={`inline-flex items-center mt-3 px-3 py-1 text-xs font-semibold rounded-full ${
-              account.status === 'active'
-                ? 'bg-green-100 text-green-700'
-                : account.status === 'suspended'
-                ? 'bg-red-100 text-red-700'
-                : 'bg-yellow-100 text-yellow-700'
-            }`}
-          >
-            {account.status.toUpperCase()}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-const WithdrawalList: React.FC<{ withdrawals: Withdrawal[]; currentUserName?: string }> = ({
-  withdrawals,
-  currentUserName,
-}) => {
-  const relevant = withdrawals.filter(withdrawal =>
-    currentUserName ? withdrawal.requestedBy === currentUserName : true
-  );
-
-  if (!relevant.length) {
-    return (
-      <p className="text-sm text-gray-500">
-        No withdrawal requests recorded under your name yet.
-      </p>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      {relevant.map(withdrawal => (
-        <div key={withdrawal.id} className="flex items-center justify-between">
-          <div>
-            <p className="font-semibold text-gray-800">
-              Withdrawal #{withdrawal.id} · KES {withdrawal.amount.toLocaleString()}
-            </p>
-            <p className="text-xs text-gray-500">
-              Requested on{' '}
-              {new Date(withdrawal.createdAt).toLocaleDateString()} · Account ID{' '}
-              {withdrawal.accountId}
-            </p>
-          </div>
-          <span
-            className={`text-xs font-semibold px-3 py-1 rounded-full ${
-              withdrawal.status === 'approved'
-                ? 'bg-blue-100 text-blue-700'
-                : withdrawal.status === 'pending'
-                ? 'bg-yellow-100 text-yellow-700'
-                : withdrawal.status === 'sent'
-                ? 'bg-green-100 text-green-700'
-                : 'bg-red-100 text-red-700'
-            }`}
-          >
-            {withdrawal.status.toUpperCase()}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-const TicketsSummary: React.FC<{ tickets: Ticket[] }> = ({ tickets }) => {
-  if (!tickets.length) {
-    return (
-      <div className="border-2 border-dashed border-gray-200 rounded-lg py-10 text-center text-sm text-gray-500">
-        No tickets purchased with your phone number yet.
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      {tickets.slice(0, 4).map(ticket => (
-        <div key={ticket.id} className="flex items-center justify-between border border-gray-100 rounded-lg px-4 py-3">
-          <div>
-            <p className="font-semibold text-gray-800">{ticket.ticketNumber}</p>
-            <p className="text-xs text-gray-500">
-              Purchased on {new Date(ticket.purchaseDate).toLocaleDateString()} · Expires{' '}
-              {new Date(ticket.expiryDate).toLocaleDateString()}
-            </p>
-          </div>
-          <span
-            className={`text-xs font-semibold px-3 py-1 rounded-full ${
-              ticket.status === 'active'
-                ? 'bg-green-100 text-green-700'
-                : ticket.status === 'expired'
-                ? 'bg-gray-200 text-gray-600'
-                : 'bg-red-100 text-red-700'
-            }`}
-          >
-            {ticket.status.toUpperCase()}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-};
 
 const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
   const { user } = useAuth();
@@ -283,21 +36,28 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
     tickets,
   } = useFinance();
 
+  const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('month');
+
   const userTransactions = useMemo<Transaction[]>(
     () => getUserTransactions(user?.id),
     [getUserTransactions, user?.id]
   );
 
   const userDonations = useMemo(
-    () =>
-      getUserDonations(user?.id).filter(donation => donation.status === 'completed'),
+    () => getUserDonations(user?.id).filter(donation => donation.status === 'completed'),
     [getUserDonations, user?.id]
   );
 
   const userStats = useMemo(() => {
     const totalContributed = userDonations.reduce((sum, donation) => sum + donation.amount, 0);
     const projectsSupported = new Set(userDonations.map(donation => donation.projectId)).size;
-    return { totalContributed, projectsSupported };
+    const recentContributions = userDonations.filter(d => {
+      const date = new Date(d.createdAt);
+      const now = new Date();
+      const diff = now.getTime() - date.getTime();
+      return diff < 30 * 24 * 60 * 60 * 1000; // Last 30 days
+    }).length;
+    return { totalContributed, projectsSupported, recentContributions };
   }, [userDonations]);
 
   const mandatoryStatus = useMemo(
@@ -307,196 +67,340 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
 
   if (!user) {
     return (
-      <div className="container mx-auto px-6 py-16 text-center">
-        <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
-        <p className="mb-6">Please log in to view your dashboard.</p>
-        <button onClick={() => setRoute({ page: 'login' })} className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700">
-          Login
-        </button>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="bg-white p-12 rounded-2xl shadow-2xl text-center max-w-md">
+          <IconAlertCircle className="w-20 h-20 mx-auto text-red-500 mb-6" />
+          <h2 className="text-3xl font-bold mb-4 text-gray-800">Access Denied</h2>
+          <p className="mb-8 text-gray-600">Please log in to view your dashboard.</p>
+          <button 
+            onClick={() => setRoute({ page: 'login' })} 
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-xl hover:from-blue-700 hover:to-indigo-700 font-semibold shadow-lg transform hover:scale-105 transition-all"
+          >
+            Login Now
+          </button>
+        </div>
       </div>
     );
   }
-  
-  const userOrders = orders.filter(o => o.userId === user.id);
+
   const myAccounts = accounts.filter(account => account.ownerPhone === user.phoneNumber);
-  const myWithdrawals = withdrawals.filter(
-    withdrawal => withdrawal.requestedBy === user.name
-  );
+  const myWithdrawals = withdrawals.filter(withdrawal => withdrawal.requestedBy === user.name);
   const myTickets = tickets.filter(ticket => ticket.phoneNumber === user.phoneNumber);
+  const userOrders = orders.filter(o => o.userId === user.id);
+
+  const progress = Math.min(100, (mandatoryStatus.contributedAmount / mandatoryStatus.requiredAmount) * 100 || 0);
 
   return (
-    <div className="bg-gray-100 min-h-full">
-      <div className="container mx-auto px-6 py-12">
-        <header className="mb-12">
-            <h1 className="text-4xl font-extrabold text-gray-800 mb-2">Welcome, {user.name}!</h1>
-            <p className="text-lg text-gray-600">Here's a summary of your activity on the platform.</p>
-          {user.role === 'admin' && (
-            <div className="mt-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header Section */}
+        <div className="mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+            <div className="mb-6 lg:mb-0">
+              <h1 className="text-4xl lg:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-2">
+                Welcome back, {user.name}! 👋
+              </h1>
+              <p className="text-lg text-gray-600">Here's what's happening with your account today.</p>
+            </div>
+            {user.role === 'admin' && (
               <button
                 onClick={() => setRoute({ page: 'admin' })}
-                className="px-4 py-2 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700"
+                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 shadow-lg transform hover:scale-105 transition-all flex items-center gap-2"
               >
-                Go to Admin Dashboard
+                <IconUserShield className="w-5 h-5" />
+                Admin Dashboard
               </button>
-            </div>
-          )}
-        </header>
+            )}
+          </div>
+        </div>
 
-        <div className="mb-10">
-          <MandatoryContributionCard
-            status={mandatoryStatus}
-            onContribute={() => setRoute({ page: 'home' })}
+        {/* Mandatory Contribution Card */}
+        <div className="mb-8">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-2xl p-8 text-white">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-4">
+                  <IconWallet className="w-8 h-8" />
+                  <h3 className="text-2xl font-bold">Mandatory Term Contribution</h3>
+                </div>
+                <p className="text-blue-100 mb-4">
+                  Every member pledges <span className="font-bold text-white">KES {mandatoryStatus.requiredAmount}</span> each term to keep the ministry running.
+                </p>
+                {mandatoryStatus.lastContributionDate && (
+                  <p className="text-sm text-blue-200">
+                    Last fulfilled on {new Date(mandatoryStatus.lastContributionDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </p>
+                )}
+              </div>
+              <div className="lg:w-1/3">
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-medium">Progress</span>
+                    <span className="text-sm font-bold">
+                      KES {mandatoryStatus.contributedAmount.toLocaleString()} / {mandatoryStatus.requiredAmount.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="w-full bg-white/30 rounded-full h-3 mb-4">
+                    <div
+                      className={`h-3 rounded-full transition-all duration-500 ${mandatoryStatus.isCleared ? 'bg-green-400' : 'bg-yellow-400'}`}
+                      style={{ width: `${progress}%` }}
+                    ></div>
+                  </div>
+                  <button
+                    onClick={() => setRoute({ page: 'home' })}
+                    className="w-full bg-white text-blue-600 px-6 py-3 rounded-lg font-bold hover:bg-blue-50 transition-all shadow-lg"
+                  >
+                    {mandatoryStatus.isCleared ? '✓ Completed - Give Again' : 'Complete Now'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <StatCard
+            icon={<IconTrendingUp className="w-8 h-8" />}
+            label="Total Contributed"
+            value={`KES ${userStats.totalContributed.toLocaleString()}`}
+            trend="+12%"
+            trendUp={true}
+            color="blue"
+          />
+          <StatCard
+            icon={<IconTarget className="w-8 h-8" />}
+            label="Projects Supported"
+            value={userStats.projectsSupported.toString()}
+            trend="+3"
+            trendUp={true}
+            color="green"
+          />
+          <StatCard
+            icon={<IconUsers className="w-8 h-8" />}
+            label="This Month"
+            value={userStats.recentContributions.toString()}
+            trend="Active"
+            color="purple"
+          />
+          <StatCard
+            icon={<IconCreditCard className="w-8 h-8" />}
+            label="Total Transactions"
+            value={userTransactions.length.toString()}
+            color="orange"
           />
         </div>
 
-        {/* User Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <StatCard 
-                icon={<IconTrendingUp className="w-6 h-6"/>}
-                label="Total Contributed" 
-                value={`KES ${userStats.totalContributed.toLocaleString()}`}
-            />
-            <StatCard 
-                icon={<IconTarget className="w-6 h-6"/>}
-                label="Projects Supported" 
-                value={userStats.projectsSupported.toString()}
-            />
-            <StatCard 
-                icon={<IconUsers className="w-6 h-6"/>}
-                label="Contributions Made" 
-                value={userTransactions.length.toString()}
-            />
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+          {/* Recent Activity */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-2xl shadow-xl p-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+                  <IconClock className="w-6 h-6 text-blue-600" />
+                  Recent Contributions
+                </h2>
+                <select
+                  value={selectedPeriod}
+                  onChange={(e) => setSelectedPeriod(e.target.value as any)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="year">This Year</option>
+                </select>
+              </div>
+              
+              {userTransactions.length > 0 ? (
+                <div className="space-y-4">
+                  {userTransactions.slice(0, 5).map(tx => (
+                    <div key={tx.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl hover:shadow-md transition-all border border-gray-100">
+                      <div className="flex items-center gap-4">
+                        <div className={`p-3 rounded-full ${tx.status === 'completed' ? 'bg-green-100' : 'bg-yellow-100'}`}>
+                          {tx.status === 'completed' ? (
+                            <IconCheckCircle className="w-6 h-6 text-green-600" />
+                          ) : (
+                            <IconClock className="w-6 h-6 text-yellow-600" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-800">{tx.projectTitle}</p>
+                          <p className="text-sm text-gray-500">{new Date(tx.date).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-gray-800">KES {tx.amount.toLocaleString()}</p>
+                        <button
+                          onClick={() => setRoute({ page: 'projectDetail', params: { id: tx.projectId } })}
+                          className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          View →
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-16 border-2 border-dashed border-gray-200 rounded-xl">
+                  <IconTarget className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                  <p className="text-gray-500 mb-6 text-lg">No contributions yet</p>
+                  <button
+                    onClick={() => setRoute({ page: 'home' })}
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 font-semibold shadow-lg transform hover:scale-105 transition-all"
+                  >
+                    Explore Projects
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* M-Pesa Activity */}
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+              <IconPhone className="w-6 h-6 text-green-600" />
+              M-Pesa Activity
+            </h2>
+            {mpesaSessions.length > 0 ? (
+              <div className="space-y-4">
+                {mpesaSessions.slice(0, 5).map(session => (
+                  <div key={session.id} className="border-l-4 border-green-500 pl-4 py-2">
+                    <p className="font-semibold text-gray-800">{session.projectTitle ?? 'General'}</p>
+                    <p className="text-sm text-gray-500">{new Date(session.initiatedAt).toLocaleString()}</p>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="font-bold text-gray-800">KES {session.amount.toLocaleString()}</span>
+                      <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                        session.status === 'successful' ? 'bg-green-100 text-green-700' :
+                        session.status === 'processing' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        {session.status.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <IconPhone className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                <p className="text-sm">No M-Pesa activity yet</p>
+              </div>
+            )}
+          </div>
         </div>
-        
-        <div className="space-y-12">
-            {/* Recent Transactions */}
-            <div className="bg-white p-8 rounded-lg shadow-md">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Your Contribution History</h2>
-                {userTransactions.length > 0 ? (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="border-b-2 border-gray-200">
-                                <tr>
-                                    <th className="p-4 text-sm font-semibold text-gray-600">Project</th>
-                                    <th className="p-4 text-sm font-semibold text-gray-600">Amount</th>
-                                    <th className="p-4 text-sm font-semibold text-gray-600">Date</th>
-                                    <th className="p-4 text-sm font-semibold text-gray-600">Status</th>
-                                    <th className="p-4 text-sm font-semibold text-gray-600">Reference</th>
-                                    <th className="p-4 text-sm font-semibold text-gray-600"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {userTransactions.map(tx => (
-                                    <tr key={tx.id} className="border-b border-gray-100 hover:bg-gray-50">
-                                        <td className="p-4 font-medium text-gray-800">{tx.projectTitle}</td>
-                                        <td className="p-4 text-gray-700">KES {tx.amount.toLocaleString()}</td>
-                                        <td className="p-4 text-gray-500">{new Date(tx.date).toLocaleDateString()}</td>
-                                        <td className="p-4 text-gray-500 capitalize">{tx.status}</td>
-                                        <td className="p-4 text-gray-500 font-mono text-xs">{tx.reference ?? '—'}</td>
-                                        <td className="p-4">
-                                            <button 
-                                                onClick={() => setRoute({ page: 'projectDetail', params: { id: tx.projectId } })}
-                                                className="text-blue-600 hover:underline font-semibold"
-                                            >
-                                                View Project
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+
+        {/* Additional Sections */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Tickets */}
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+              <IconHash className="w-6 h-6 text-purple-600" />
+              My Tickets
+            </h2>
+            {myTickets.length > 0 ? (
+              <div className="space-y-4">
+                {myTickets.slice(0, 4).map(ticket => (
+                  <div key={ticket.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100">
+                    <div>
+                      <p className="font-bold text-gray-800">{ticket.ticketNumber}</p>
+                      <p className="text-sm text-gray-500">
+                        Expires {new Date(ticket.expiryDate).toLocaleDateString()}
+                      </p>
                     </div>
-                ) : (
-                    <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-lg">
-                        <p className="text-gray-500 mb-4">You haven't made any contributions yet.</p>
-                        <button onClick={() => setRoute({ page: 'home' })} className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700">
-                            Explore Projects
-                        </button>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                      ticket.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
+                    }`}>
+                      {ticket.status.toUpperCase()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
+                <p className="text-gray-500">No tickets purchased yet</p>
+              </div>
+            )}
+          </div>
+
+          {/* Withdrawals */}
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+              <IconCalendar className="w-6 h-6 text-orange-600" />
+              Withdrawal Requests
+            </h2>
+            {myWithdrawals.length > 0 ? (
+              <div className="space-y-4">
+                {myWithdrawals.map(withdrawal => (
+                  <div key={withdrawal.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl border border-orange-100">
+                    <div>
+                      <p className="font-bold text-gray-800">KES {withdrawal.amount.toLocaleString()}</p>
+                      <p className="text-sm text-gray-500">
+                        {new Date(withdrawal.createdAt).toLocaleDateString()}
+                      </p>
                     </div>
-                )}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="bg-white p-8 rounded-lg shadow-md">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                  <IconPhone className="w-5 h-5 text-blue-500" /> M-Pesa Activity
-                </h2>
-                <MpesaSessionTimeline sessions={mpesaSessions} />
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                      withdrawal.status === 'approved' ? 'bg-blue-100 text-blue-700' :
+                      withdrawal.status === 'sent' ? 'bg-green-100 text-green-700' :
+                      withdrawal.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {withdrawal.status.toUpperCase()}
+                    </span>
+                  </div>
+                ))}
               </div>
-
-              <div className="bg-white p-8 rounded-lg shadow-md">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                  <IconHash className="w-5 h-5 text-blue-500" /> Ministry Accounts
-                </h2>
-                <AccountsSnapshot accounts={myAccounts.length ? myAccounts : accounts.slice(0, 2)} />
+            ) : (
+              <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
+                <p className="text-gray-500">No withdrawal requests</p>
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="bg-white p-8 rounded-lg shadow-md">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                  <IconCalendar className="w-5 h-5 text-blue-500" /> Withdrawal Requests
-                </h2>
-                <WithdrawalList withdrawals={myWithdrawals.length ? myWithdrawals : withdrawals} currentUserName={user.name} />
-              </div>
-
-              <div className="bg-white p-8 rounded-lg shadow-md">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                  <IconTarget className="w-5 h-5 text-blue-500" /> Tickets Linked to You
-                </h2>
-                <TicketsSummary tickets={myTickets} />
-              </div>
-            </div>
-
-             {/* Order History */}
-             <div className="bg-white p-8 rounded-lg shadow-md">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Your Order History</h2>
-                {userOrders.length > 0 ? (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="border-b-2 border-gray-200">
-                                <tr>
-                                    <th className="p-4 text-sm font-semibold text-gray-600">Order ID</th>
-                                    <th className="p-4 text-sm font-semibold text-gray-600">Date</th>
-                                    <th className="p-4 text-sm font-semibold text-gray-600">Total</th>
-                                    <th className="p-4 text-sm font-semibold text-gray-600">Status</th>
-                                    <th className="p-4 text-sm font-semibold text-gray-600">Items</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {userOrders.map((order: Order) => (
-                                    <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
-                                        <td className="p-4 font-mono text-xs text-gray-600">#{order.id.split('-')[0]}</td>
-                                        <td className="p-4 text-gray-700">{new Date(order.orderDate).toLocaleDateString()}</td>
-                                        <td className="p-4 text-gray-700">KES {order.totalAmount.toLocaleString()}</td>
-                                        <td className="p-4">
-                                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                                order.status === 'Processing' ? 'bg-yellow-100 text-yellow-800' :
-                                                order.status === 'Shipped' ? 'bg-blue-100 text-blue-800' :
-                                                'bg-green-100 text-green-800'
-                                            }`}>
-                                                {order.status}
-                                            </span>
-                                        </td>
-                                        <td className="p-4 text-gray-500">{order.items.reduce((sum, item) => sum + item.quantity, 0)}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                ) : (
-                    <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-lg">
-                        <p className="text-gray-500 mb-4">You haven't purchased any merchandise yet.</p>
-                        <button onClick={() => setRoute({ page: 'merch' })} className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700">
-                            Browse Merch
-                        </button>
-                    </div>
-                )}
-            </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 };
+
+const StatCard: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  trend?: string;
+  trendUp?: boolean;
+  color?: 'blue' | 'green' | 'purple' | 'orange';
+}> = ({ icon, label, value, trend, trendUp, color = 'blue' }) => {
+  const colorClasses = {
+    blue: 'from-blue-500 to-blue-600',
+    green: 'from-green-500 to-green-600',
+    purple: 'from-purple-500 to-purple-600',
+    orange: 'from-orange-500 to-orange-600',
+  };
+
+  return (
+    <div className="bg-white rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all transform hover:-translate-y-1">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`p-4 rounded-xl bg-gradient-to-br ${colorClasses[color]} text-white shadow-lg`}>
+          {icon}
+        </div>
+        {trend && (
+          <div className={`flex items-center gap-1 text-sm font-semibold ${trendUp ? 'text-green-600' : 'text-red-600'}`}>
+            {trendUp ? <IconArrowUp className="w-4 h-4" /> : <IconArrowDown className="w-4 h-4" />}
+            {trend}
+          </div>
+        )}
+      </div>
+      <p className="text-gray-500 text-sm font-medium mb-1">{label}</p>
+      <p className="text-3xl font-extrabold text-gray-800">{value}</p>
+    </div>
+  );
+};
+
+// Add missing icon component
+const IconUserShield: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+  </svg>
+);
 
 export default DashboardPage;

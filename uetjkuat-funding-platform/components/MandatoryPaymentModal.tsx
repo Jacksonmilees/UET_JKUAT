@@ -147,7 +147,7 @@ const MandatoryPaymentModal: React.FC<MandatoryPaymentModalProps> = ({
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <p className="text-sm text-blue-800 font-semibold mb-1">Amount: KES {MANDATORY_CONTRIBUTION_AMOUNT}</p>
             <p className="text-xs text-blue-700">
-              This is a one-time mandatory contribution required for all UET JKUAT members each term.
+              This is a one-time mandatory contribution required for all UET JKUAT members each semester.
             </p>
           </div>
 

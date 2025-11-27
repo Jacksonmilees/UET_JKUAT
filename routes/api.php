@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\UploadController;
 use Illuminate\Http\Request;
 
 // Debug route to confirm middleware registration
@@ -145,6 +146,7 @@ Route::middleware(ApiKeyMiddleware::class)
         Route::get('transactions/{id}', [TransactionController::class, 'show']);
         Route::get('accounts/{reference}/transactions', [TransactionController::class, 'getAccountTransactions']);
         Route::get('reports/finance', [ReportController::class, 'finance'])->name('reports.finance');
+        Route::post('/uploads', [UploadController::class, 'store'])->name('uploads.store');
         
         Route::post('/airtime/purchase', [AirtimeController::class, 'purchase']);
         Route::get('/airtime/balance', [AirtimeController::class, 'balance']);

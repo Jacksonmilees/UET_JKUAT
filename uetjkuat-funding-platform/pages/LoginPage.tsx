@@ -68,14 +68,29 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
     };
 
     return (
-        <AuthLayout title="Sign in to your account">
-            <div className="rounded-lg bg-blue-50 border border-blue-100 p-4 mb-6">
-                <h3 className="text-sm font-semibold text-blue-800 mb-2">UET JKUAT Member Reminder</h3>
-                <ul className="list-disc list-inside text-xs text-blue-700 space-y-1">
-                    <li>If you haven't completed your mandatory <span className="font-semibold">KES 100</span> term contribution, you'll be prompted to pay after signing in.</li>
-                    <li>This is a one-time payment per term required for all members.</li>
-                    <li>Additional contributions to projects are always welcome and appreciated.</li>
-                    <li>Need help? Reach the finance team via <a href="mailto:finance@uetjkuat.org" className="underline">finance@uetjkuat.org</a>.</li>
+        <AuthLayout title="Welcome Back! 👋">
+            <div className="rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 p-6 mb-6 shadow-sm">
+                <h3 className="text-base font-bold text-blue-900 mb-3 flex items-center gap-2">
+                    <span className="text-2xl">💡</span>
+                    UET JKUAT Member Reminder
+                </h3>
+                <ul className="space-y-2 text-sm text-blue-800">
+                    <li className="flex items-start gap-2">
+                        <span className="text-blue-600 mt-0.5">•</span>
+                        <span>If you haven't completed your mandatory <span className="font-bold bg-blue-200 px-2 py-0.5 rounded">KES 100</span> term contribution, you'll be prompted to pay after signing in.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                        <span className="text-blue-600 mt-0.5">•</span>
+                        <span>This is a one-time payment per term required for all members.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                        <span className="text-blue-600 mt-0.5">•</span>
+                        <span>Additional contributions to projects are always welcome and appreciated! 🙏</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                        <span className="text-blue-600 mt-0.5">•</span>
+                        <span>Need help? Reach the finance team via <a href="mailto:finance@uetjkuat.org" className="underline font-semibold hover:text-blue-600">finance@uetjkuat.org</a></span>
+                    </li>
                 </ul>
             </div>
             <form className="space-y-6" onSubmit={handleSubmit}>
@@ -142,9 +157,17 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300"
+                        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-base font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all"
                     >
-                        {isLoading ? 'Signing in...' : 'Sign in'}
+                        {isLoading ? (
+                            <span className="flex items-center gap-2">
+                                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Signing in...
+                            </span>
+                        ) : 'Sign in to Dashboard →'}
                     </button>
                 </div>
             </form>
