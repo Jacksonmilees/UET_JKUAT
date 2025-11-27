@@ -96,6 +96,12 @@ Route::prefix('v1')->group(function () {
     Route::get('/tickets/my', function () {
         return response()->json(['status' => 'success', 'data' => []]);
     });
+    
+    // M-Pesa transaction logs (public read access)
+    Route::get('/mpesa-transactions', function () {
+        $logs = \App\Models\MpesaTransactionLog::latest()->take(100)->get();
+        return response()->json(['status' => 'success', 'data' => $logs]);
+    });
 });
 
 // Simple Auth routes for frontend (public path /api/auth/*)
@@ -111,7 +117,20 @@ Route::prefix('auth')->group(function () {
                 'required' => false,
                 'paid' => true,
                 'amount' => 0,
-                'lastPaymentDate' => now()->toISOString(),
+                'lastPaymentDate' => now()->toDateTimeString(),
+            ]
+        ]);
+    });
+    
+    // Also add under /api/v1 for consistency
+    Route::get('/v1/mandatory-contribution', function () {
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'required' => false,
+                'paid' => true,
+                'amount' => 0,
+                'lastPaymentDate' => now()->toDateTimeString(),
             ]
         ]);
     });
