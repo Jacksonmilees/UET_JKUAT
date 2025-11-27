@@ -150,6 +150,52 @@ Route::middleware(ApiKeyMiddleware::class)
         
         Route::post('/airtime/purchase', [AirtimeController::class, 'purchase']);
         Route::get('/airtime/balance', [AirtimeController::class, 'balance']);
+        
+        // News Management (CRUD)
+        Route::post('/news', [\App\Http\Controllers\API\NewsController::class, 'store']);
+        Route::put('/news/{id}', [\App\Http\Controllers\API\NewsController::class, 'update']);
+        Route::delete('/news/{id}', [\App\Http\Controllers\API\NewsController::class, 'destroy']);
+        
+        // Announcements
+        Route::get('/announcements', [\App\Http\Controllers\API\AnnouncementController::class, 'index']);
+        Route::get('/announcements/{id}', [\App\Http\Controllers\API\AnnouncementController::class, 'show']);
+        Route::post('/announcements', [\App\Http\Controllers\API\AnnouncementController::class, 'store']);
+        Route::put('/announcements/{id}', [\App\Http\Controllers\API\AnnouncementController::class, 'update']);
+        Route::delete('/announcements/{id}', [\App\Http\Controllers\API\AnnouncementController::class, 'destroy']);
+        Route::put('/announcements/{id}/toggle', [\App\Http\Controllers\API\AnnouncementController::class, 'toggleActive']);
+        
+        // User Management (Admin)
+        Route::get('/users', [\App\Http\Controllers\API\UserController::class, 'index']);
+        Route::get('/users/{id}', [\App\Http\Controllers\API\UserController::class, 'show']);
+        Route::put('/users/{id}', [\App\Http\Controllers\API\UserController::class, 'update']);
+        Route::delete('/users/{id}', [\App\Http\Controllers\API\UserController::class, 'destroy']);
+        Route::get('/users/{id}/stats', [\App\Http\Controllers\API\UserController::class, 'getStats']);
+        Route::put('/users/{id}/password', [\App\Http\Controllers\API\UserController::class, 'updatePassword']);
+        Route::put('/users/{id}/toggle-status', [\App\Http\Controllers\API\UserController::class, 'toggleStatus']);
+        
+        // Orders
+        Route::get('/orders', [\App\Http\Controllers\API\OrderController::class, 'getAllOrders']); // Admin
+        Route::get('/orders/my', [\App\Http\Controllers\API\OrderController::class, 'index']); // User
+        Route::post('/orders', [\App\Http\Controllers\API\OrderController::class, 'store']);
+        Route::get('/orders/{id}', [\App\Http\Controllers\API\OrderController::class, 'show']);
+        Route::put('/orders/{id}/status', [\App\Http\Controllers\API\OrderController::class, 'updateStatus']);
+        Route::put('/orders/{id}/payment', [\App\Http\Controllers\API\OrderController::class, 'updatePaymentStatus']);
+        
+        // Merchandise
+        Route::get('/merchandise', [\App\Http\Controllers\API\MerchandiseController::class, 'index']);
+        Route::get('/merchandise/{id}', [\App\Http\Controllers\API\MerchandiseController::class, 'show']);
+        Route::post('/merchandise', [\App\Http\Controllers\API\MerchandiseController::class, 'store']);
+        Route::put('/merchandise/{id}', [\App\Http\Controllers\API\MerchandiseController::class, 'update']);
+        Route::delete('/merchandise/{id}', [\App\Http\Controllers\API\MerchandiseController::class, 'destroy']);
+        Route::put('/merchandise/{id}/stock', [\App\Http\Controllers\API\MerchandiseController::class, 'updateStock']);
+        
+        // Members
+        Route::get('/members', [\App\Http\Controllers\API\MemberController::class, 'index']);
+        Route::get('/members/mmid/{mmid}', [\App\Http\Controllers\API\MemberController::class, 'getByMMID']);
+        Route::post('/members/search', [\App\Http\Controllers\API\MemberController::class, 'search']);
+        Route::post('/members', [\App\Http\Controllers\API\MemberController::class, 'store']);
+        Route::put('/members/{id}', [\App\Http\Controllers\API\MemberController::class, 'update']);
+        Route::get('/members/{id}/stats', [\App\Http\Controllers\API\MemberController::class, 'getStats']);
     });
 
 Route::prefix('v1')->group(function () {

@@ -7,6 +7,7 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import { CartProvider } from './contexts/CartContext';
 import { NewsProvider } from './contexts/NewsContext';
 import { AIProvider } from './contexts/AIContext';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import Layout from './components/common/Layout';
 import HomePage from './pages/HomePage';
 import ProjectDetailPage from './pages/ProjectDetailPage';
@@ -18,6 +19,7 @@ import MerchPage from './pages/MerchPage';
 import CartPage from './pages/CartPage';
 import AdminPage from './pages/AdminPage';
 import { Route, RoutePage } from './types';
+import { registerServiceWorker } from './utils/pwa';
 
 const AppContent: React.FC = () => {
     const [route, setInternalRoute] = useState<Route>({ page: 'home' });
@@ -117,22 +119,29 @@ const AppContent: React.FC = () => {
 
 
 const App: React.FC = () => {
+    // Register service worker on mount
+    useEffect(() => {
+        registerServiceWorker();
+    }, []);
+
     return (
-        <NotificationProvider>
-            <AIProvider>
-                <AuthProvider>
-                    <FinanceProvider>
-                        <ProjectProvider>
-                            <CartProvider>
-                                <NewsProvider>
-                                   <AppContent />
-                                </NewsProvider>
-                            </CartProvider>
-                        </ProjectProvider>
-                    </FinanceProvider>
-                </AuthProvider>
-            </AIProvider>
-        </NotificationProvider>
+        <ErrorBoundary>
+            <NotificationProvider>
+                <AIProvider>
+                    <AuthProvider>
+                        <FinanceProvider>
+                            <ProjectProvider>
+                                <CartProvider>
+                                    <NewsProvider>
+                                       <AppContent />
+                                    </NewsProvider>
+                                </CartProvider>
+                            </ProjectProvider>
+                        </FinanceProvider>
+                    </AuthProvider>
+                </AIProvider>
+            </NotificationProvider>
+        </ErrorBoundary>
     );
 };
 
