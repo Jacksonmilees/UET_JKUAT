@@ -20,7 +20,7 @@ class CreateTicketsTable extends Migration
             $table->timestamps();
 
             // Add foreign key constraint
-            $table->foreign('member_mmid')->references('MMID')->on('moutsystem.members')->onDelete('cascade');
+            $table->foreign('member_mmid')->references('MMID')->on('members')->onDelete('cascade');
         });
     }
 
