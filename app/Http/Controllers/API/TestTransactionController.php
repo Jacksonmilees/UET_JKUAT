@@ -23,9 +23,38 @@ class TestTransactionController extends Controller
             $account = Account::first();
             
             if (!$account) {
+                // Get or create account type
+                $accountType = DB::table('account_types')->where('name', 'General')->first();
+                if (!$accountType) {
+                    $accountTypeId = DB::table('account_types')->insertGetId([
+                        'name' => 'General',
+                        'description' => 'General Account',
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                } else {
+                    $accountTypeId = $accountType->id;
+                }
+                
+                // Get or create account subtype
+                $accountSubtype = DB::table('account_subtypes')->where('name', 'Main')->first();
+                if (!$accountSubtype) {
+                    $accountSubtypeId = DB::table('account_subtypes')->insertGetId([
+                        'account_type_id' => $accountTypeId,
+                        'name' => 'Main',
+                        'description' => 'Main Account',
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                } else {
+                    $accountSubtypeId = $accountSubtype->id;
+                }
+                
                 $account = Account::create([
                     'reference' => 'MAIN-ACCOUNT',
                     'name' => 'Main Account',
+                    'account_type_id' => $accountTypeId,
+                    'account_subtype_id' => $accountSubtypeId,
                     'type' => 'general',
                     'balance' => 0,
                     'status' => 'active',
