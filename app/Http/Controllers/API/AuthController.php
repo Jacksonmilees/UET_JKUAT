@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class AuthController extends Controller
@@ -29,6 +30,11 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
+            Log::warning('Registration validation failed', [
+                'errors' => $validator->errors()->toArray(),
+                'request_data' => $request->except(['password'])
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
