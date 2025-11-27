@@ -9,20 +9,23 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-   // In the migration file:
-public function up()
-{
-    Schema::table('accounts', function (Blueprint $table) {
-        $table->json('metadata')->nullable();
-    });
-}
+    public function up(): void
+    {
+        Schema::table('accounts', function (Blueprint $table) {
+            if (!Schema::hasColumn('accounts', 'metadata')) {
+                $table->json('metadata')->nullable();
+            }
+        });
+    }
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
         Schema::table('accounts', function (Blueprint $table) {
-            //
+            if (Schema::hasColumn('accounts', 'metadata')) {
+                $table->dropColumn('metadata');
+            }
         });
     }
 };
