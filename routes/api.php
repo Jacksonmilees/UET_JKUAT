@@ -125,6 +125,10 @@ Route::prefix('v1')->group(function () {
     Route::post('/test-transactions/create', [\App\Http\Controllers\API\TestTransactionController::class, 'createTestTransactions']);
     Route::delete('/test-transactions/clear', [\App\Http\Controllers\API\TestTransactionController::class, 'clearTestTransactions']);
     Route::get('/test-transactions/stats', [\App\Http\Controllers\API\TestTransactionController::class, 'getCallbackStats']);
+    
+    // M-Pesa import endpoints (import real transactions)
+    Route::post('/mpesa/import-real-transactions', [\App\Http\Controllers\API\MpesaImportController::class, 'importRealTransactions']);
+    Route::get('/mpesa/import-stats', [\App\Http\Controllers\API\MpesaImportController::class, 'getImportStats']);
 });
 
 // Simple Auth routes for frontend (public path /api/auth/*)
