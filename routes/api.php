@@ -120,6 +120,11 @@ Route::prefix('v1')->group(function () {
             return response()->json(['status' => 'error', 'message' => $e->getMessage(), 'data' => []]);
         }
     });
+    
+    // Test transaction endpoints (for debugging)
+    Route::post('/test-transactions/create', [\App\Http\Controllers\API\TestTransactionController::class, 'createTestTransactions']);
+    Route::delete('/test-transactions/clear', [\App\Http\Controllers\API\TestTransactionController::class, 'clearTestTransactions']);
+    Route::get('/test-transactions/stats', [\App\Http\Controllers\API\TestTransactionController::class, 'getCallbackStats']);
 });
 
 // Simple Auth routes for frontend (public path /api/auth/*)

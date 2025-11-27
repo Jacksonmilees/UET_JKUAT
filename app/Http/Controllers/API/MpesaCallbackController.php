@@ -38,7 +38,16 @@ class MpesaCallbackController extends Controller
 
     public function handle(Request $request)
     {
-        Log::info('Received M-Pesa callback', ['payload' => $request->all()]);
+        // Enhanced logging for debugging
+        Log::info('=== M-PESA CALLBACK RECEIVED ===', [
+            'timestamp' => now()->toDateTimeString(),
+            'ip' => $request->ip(),
+            'method' => $request->method(),
+            'url' => $request->fullUrl(),
+            'headers' => $request->headers->all(),
+            'payload' => $request->all(),
+            'raw_content' => $request->getContent()
+        ]);
 
         try {
             $callbackData = $request->all();
