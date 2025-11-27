@@ -16,6 +16,12 @@ class AuthController extends Controller
 {
     public function register(Request $request)
     {
+        // Log incoming request for debugging
+        Log::info('Registration attempt', [
+            'request_data' => $request->except(['password']),
+            'content_type' => $request->header('Content-Type'),
+        ]);
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
@@ -30,9 +36,10 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            Log::warning('Registration validation failed', [
+            Log::error('Registration validation failed', [
                 'errors' => $validator->errors()->toArray(),
-                'request_data' => $request->except(['password'])
+                'request_data' => $request->except(['password']),
+                'all_input' => $request->all(),
             ]);
             
             return response()->json([
@@ -42,39 +49,58 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Generate unique member ID
-        $memberId = MemberIdService::generate();
-        $token = Str::random(60);
+        try {
+            // Generate unique member ID
+            $memberId = MemberIdService::generate();
+            $token = Str::random(60);
 
-        // Determine role
-        $role = ($request->get('email') === 'admin@uetjkuat.com') ? 'admin' : 'user';
+            // Determine role
+            $role = ($request->get('email') === 'admin@uetjkuat.com') ? 'admin' : 'user';
 
-        $user = User::create([
-            'name' => $request->get('name'),
-            'email' => $request->get('email'),
-            'password' => Hash::make($request->get('password')),
-            'member_id' => $memberId,
-            'phone_number' => $request->get('phoneNumber'),
-            'year_of_study' => $request->get('yearOfStudy'),
-            'course' => $request->get('course'),
-            'college' => $request->get('college'),
-            'admission_number' => $request->get('admissionNumber'),
-            'ministry_interest' => $request->get('ministryInterest'),
-            'residence' => $request->get('residence'),
-            'role' => $role,
-            'status' => 'active',
-            'registration_completed_at' => Carbon::now(),
-            'remember_token' => $token,
-        ]);
+            $user = User::create([
+                'name' => $request->get('name'),
+                'email' => $request->get('email'),
+                'password' => Hash::make($request->get('password')),
+                'member_id' => $memberId,
+                'phone_number' => $request->get('phoneNumber'),
+                'year_of_study' => $request->get('yearOfStudy'),
+                'course' => $request->get('course'),
+                'college' => $request->get('college'),
+                'admission_number' => $request->get('admissionNumber'),
+                'ministry_interest' => $request->get('ministryInterest'),
+                'residence' => $request->get('residence'),
+                'role' => $role,
+                'status' => 'active',
+                'registration_completed_at' => Carbon::now(),
+                'remember_token' => $token,
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'user' => $user->getProfileData(),
-                'token' => $token,
-            ],
-            'message' => 'Registration successful! Your member ID is: ' . $memberId,
-        ]);
+            Log::info('User registered successfully', [
+                'user_id' => $user->id,
+                'member_id' => $memberId,
+                'email' => $user->email,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'user' => $user->getProfileData(),
+                    'token' => $token,
+                ],
+                'message' => 'Registration successful! Your member ID is: ' . $memberId,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Registration failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->except(['password']),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Registration failed: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function login(Request $request)
