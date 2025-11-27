@@ -1,5 +1,5 @@
-
 import React from 'react';
+import { Rocket, Info, ChevronRight, Sparkles } from 'lucide-react';
 
 const Hero: React.FC = () => {
   const scrollToProjects = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -12,52 +12,81 @@ const Hero: React.FC = () => {
 
   return (
     <section 
-      className="relative bg-gradient-to-br from-blue-900 via-indigo-900 to-purple-900 text-white flex items-center justify-center overflow-hidden"
-      style={{
-        backgroundImage: 'url(https://picsum.photos/seed/church/1600/900)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        minHeight: 'calc(100vh - 73px)',
-      }}
+      className="relative bg-secondary-900 text-white flex items-center justify-center overflow-hidden min-h-[85vh]"
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/90 via-indigo-900/85 to-purple-900/90"></div>
+      {/* Background with Overlay */}
+      <div 
+        className="absolute inset-0 z-0 opacity-20"
+        style={{
+          backgroundImage: 'url(https://images.unsplash.com/photo-1438232992991-995b7058bbb3?q=80&w=2673&auto=format&fit=crop)', // High quality abstract/texture
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      ></div>
       
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-      </div>
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-secondary-900/80 via-secondary-900/90 to-secondary-900 z-0"></div>
+      
+      {/* Animated Glow Orbs */}
+      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-primary-500/20 rounded-full blur-[100px] animate-pulse"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary-600/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
 
-      <div className="relative container mx-auto px-6 py-24 md:py-32 text-center z-10">
-        <div className="mb-6 inline-block">
-          <span className="text-6xl md:text-8xl animate-bounce">✨</span>
+      <div className="relative container mx-auto px-6 py-12 z-10 flex flex-col items-center text-center">
+        
+        {/* Badge */}
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary-800/50 border border-secondary-700 backdrop-blur-md mb-8 animate-fade-in shadow-glass">
+          <Sparkles className="w-4 h-4 text-primary-400" />
+          <span className="text-sm font-medium text-primary-100">Empowering Faith & Community</span>
         </div>
-        <h1 className="text-5xl md:text-7xl font-extrabold leading-tight mb-6 text-white">
-          <span className="bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 bg-clip-text text-transparent">
-            UET JKUAT
-          </span>
-          <br />
-          <span className="text-3xl md:text-5xl font-semibold text-blue-100">
-            Empowering Faith, Building Community 🙏
+
+        {/* Main Heading */}
+        <h1 className="text-5xl md:text-7xl lg:text-8xl font-serif font-bold leading-tight mb-6 tracking-tight">
+          <span className="block text-secondary-50">UET JKUAT</span>
+          <span className="bg-gradient-to-r from-primary-300 via-primary-500 to-primary-400 bg-clip-text text-transparent drop-shadow-sm">
+            Funding Platform
           </span>
         </h1>
-        <p className="text-lg md:text-2xl text-blue-100 max-w-4xl mx-auto mb-10 leading-relaxed">
-          Join the <span className="font-bold text-yellow-300">Uttermost Evangelistic Team (UET) JKUAT</span> in funding projects that make a difference. Your contribution, big or small, helps us build a stronger, more vibrant campus ministry and spread the Gospel to the ends of the earth. 🌍
+
+        {/* Subheading */}
+        <p className="text-lg md:text-xl text-secondary-300 max-w-2xl mx-auto mb-10 leading-relaxed font-light">
+          Join the movement. Support impactful projects, purchase merchandise, and help us build a stronger, more vibrant ministry.
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+
+        {/* CTA Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto animate-slide-up">
           <a 
             href="#projects"
             onClick={scrollToProjects}
-            className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold py-4 px-10 rounded-2xl hover:from-blue-600 hover:to-indigo-700 transition duration-300 ease-in-out transform hover:scale-110 shadow-2xl hover:shadow-blue-500/50 flex items-center gap-2"
+            className="group relative px-8 py-4 bg-primary-600 hover:bg-primary-500 text-white font-semibold rounded-xl transition-all duration-300 shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] flex items-center justify-center gap-3 overflow-hidden"
           >
-            Explore Projects 🚀
+            <span className="relative z-10 flex items-center gap-2">
+              Explore Projects <Rocket className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-primary-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </a>
+          
           <a 
             href="#about"
-            className="bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white font-bold py-4 px-10 rounded-2xl hover:bg-white/20 transition duration-300 ease-in-out transform hover:scale-110 shadow-2xl flex items-center gap-2"
+            className="px-8 py-4 bg-secondary-800/50 hover:bg-secondary-800 text-secondary-100 font-medium rounded-xl border border-secondary-700 backdrop-blur-sm transition-all duration-300 hover:border-primary-500/50 flex items-center justify-center gap-3"
           >
-            Learn More 📖
+            Learn More <Info className="w-5 h-5" />
           </a>
+        </div>
+
+        {/* Stats / Social Proof (Optional) */}
+        <div className="mt-16 grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-16 border-t border-secondary-800/50 pt-8">
+            <div className="text-center">
+                <p className="text-3xl font-bold text-white">50+</p>
+                <p className="text-sm text-secondary-400 uppercase tracking-wider">Projects</p>
+            </div>
+            <div className="text-center">
+                <p className="text-3xl font-bold text-white">100%</p>
+                <p className="text-sm text-secondary-400 uppercase tracking-wider">Transparent</p>
+            </div>
+             <div className="hidden md:block text-center">
+                <p className="text-3xl font-bold text-white">24/7</p>
+                <p className="text-sm text-secondary-400 uppercase tracking-wider">Support</p>
+            </div>
         </div>
       </div>
     </section>
