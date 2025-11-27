@@ -88,6 +88,14 @@ Route::prefix('v1')->group(function () {
     // News routes (public read access)
     Route::get('/news', [\App\Http\Controllers\API\NewsController::class, 'index']);
     Route::get('/news/{id}', [\App\Http\Controllers\API\NewsController::class, 'show']);
+    
+    // User-specific routes (return empty data for now - can be secured later)
+    Route::get('/accounts/my', function () {
+        return response()->json(['status' => 'success', 'data' => []]);
+    });
+    Route::get('/tickets/my', function () {
+        return response()->json(['status' => 'success', 'data' => []]);
+    });
 });
 
 // Simple Auth routes for frontend (public path /api/auth/*)
@@ -96,14 +104,14 @@ Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::get('me', [AuthController::class, 'me']);
     Route::get('mandatory-contribution', function () {
-        // Minimal status for frontend gating; adjust to real logic later
+        // Registration fee already paid - no mandatory contribution required
         return response()->json([
             'success' => true,
             'data' => [
-                'required' => true,
-                'paid' => false,
-                'amount' => 1,
-                'lastPaymentDate' => null,
+                'required' => false,
+                'paid' => true,
+                'amount' => 0,
+                'lastPaymentDate' => now()->toISOString(),
             ]
         ]);
     });

@@ -141,9 +141,11 @@ class WithdrawalController extends Controller
                 return $q->where('created_at', '<=', $toDate);
             });
 
+        $withdrawals = $query->latest()->get();
+
         return response()->json([
             'status' => 'success',
-            'data' => $query->latest()->paginate($request->per_page ?? 15)
+            'data' => $withdrawals
         ]);
     }
 
