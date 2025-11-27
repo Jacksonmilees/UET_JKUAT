@@ -79,20 +79,15 @@ Route::prefix('v1')->group(function () {
     Route::get('/projects', [ProjectController::class, 'index']); // Public read access
     Route::get('/projects/{id}', [ProjectController::class, 'show']); // Public read access
     
-    // Public fallbacks to reduce 404s on frontend (limited data; secure endpoints remain under API key)
+    // Public access to transactions and withdrawals (read-only)
     Route::get('/transactions', [TransactionController::class, 'index']);
-    Route::get('/withdrawals', function () {
-        return response()->json(['data' => []]);
-    });
-    Route::get('/tickets/my', function () {
-        return response()->json(['data' => []]);
-    });
-    Route::get('/accounts/my', function () {
-        return response()->json(['data' => []]);
-    });
-    Route::get('/users', function () {
-        return response()->json(['data' => []]);
-    });
+    Route::get('/transactions/{id}', [TransactionController::class, 'show']);
+    Route::get('/withdrawals', [WithdrawalController::class, 'getWithdrawals']);
+    Route::get('/withdrawals/{id}', [WithdrawalController::class, 'getWithdrawal']);
+    
+    // News routes (public read access)
+    Route::get('/news', [\App\Http\Controllers\API\NewsController::class, 'index']);
+    Route::get('/news/{id}', [\App\Http\Controllers\API\NewsController::class, 'show']);
 });
 
 // Simple Auth routes for frontend (public path /api/auth/*)
@@ -132,18 +127,13 @@ Route::middleware(ApiKeyMiddleware::class)
         Route::get('/account-types', [AccountController::class, 'getAccountTypes']);
         Route::get('/account-subtypes', [AccountController::class, 'getAccountSubtypes']);
         
-        // Withdrawal Routes
+        // Withdrawal Routes (write operations only - reads are public)
         Route::post('/withdrawals/initiate', [WithdrawalController::class, 'initiateWithdrawal'])
             ->name('withdrawals.initiate');
-        Route::get('/withdrawals', [WithdrawalController::class, 'getWithdrawals'])
-            ->name('withdrawals.list');
-        Route::get('/withdrawals/{id}', [WithdrawalController::class, 'getWithdrawal'])
-            ->name('withdrawals.show');
         Route::post('/withdrawals/send-otp', [WithdrawalController::class, 'sendOTP'])
             ->name('withdrawals.sendOTP');
         
-        Route::get('transactions', [TransactionController::class, 'index']);
-        Route::get('transactions/{id}', [TransactionController::class, 'show']);
+        // Transaction routes (account-specific transactions require API key)
         Route::get('accounts/{reference}/transactions', [TransactionController::class, 'getAccountTransactions']);
         Route::get('reports/finance', [ReportController::class, 'finance'])->name('reports.finance');
         Route::post('/uploads', [UploadController::class, 'store'])->name('uploads.store');

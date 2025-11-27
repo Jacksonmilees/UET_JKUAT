@@ -4,7 +4,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration
+class UpdateWithdrawalsTable extends Migration
 {
     public function up()
     {
@@ -21,17 +21,24 @@ return new class extends Migration
             // Ensure amount is decimal with proper precision
             $table->decimal('amount', 15, 2)->change();
 
-            // Foreign key constraint already exists from create_withdrawals migration
-            // Skipping to avoid duplicate constraint error
+            // Add foreign key constraint to account_id if not exists
+            try {
+                $table->foreign('account_id')
+                      ->references('id')
+                      ->on('accounts')
+                      ->onDelete('cascade');
+            } catch (\Exception $e) {
+                // Foreign key might already exist
+                \Log::info('Foreign key on account_id already exists or cannot be added: ' . $e->getMessage());
+            }
         });
 
         // Populate new columns with default values for existing records
-        // PostgreSQL uses gen_random_uuid() instead of UUID()
-        DB::statement("UPDATE withdrawals SET reference = CONCAT('WD-', gen_random_uuid()::text) WHERE reference IS NULL");
+        DB::statement("UPDATE withdrawals SET reference = CONCAT('WD-', UUID()) WHERE reference IS NULL");
         
         // If initiated_by_name contains useful data, you might want to copy it to initiated_by
-        // Note: initiated_by_name column may not exist, so skip this for now
-        // DB::statement("UPDATE withdrawals SET initiated_by = initiated_by_name WHERE initiated_by IS NULL AND initiated_by_name IS NOT NULL");
+        // Assuming initiated_by_name might contain some identifier
+        DB::statement("UPDATE withdrawals SET initiated_by = initiated_by_name WHERE initiated_by IS NULL AND initiated_by_name IS NOT NULL");
     }
 
     public function down()
@@ -53,4 +60,4 @@ return new class extends Migration
             }
         });
     }
-};
+}
