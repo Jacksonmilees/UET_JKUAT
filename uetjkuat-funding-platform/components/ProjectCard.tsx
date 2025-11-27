@@ -1,6 +1,6 @@
 import React from 'react';
 import { Project } from '../types';
-import { Clock, CheckCircle, ArrowRight, Heart } from 'lucide-react';
+import { Clock, CheckCircle, Heart } from 'lucide-react';
 
 interface ProjectCardProps {
   project: Project;
@@ -16,24 +16,24 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onContributeClick, o
 
   return (
     <div
-      className="group relative bg-secondary-800 rounded-3xl overflow-hidden border border-secondary-700/50 hover:border-primary-500/50 transition-all duration-500 hover:shadow-[0_0_30px_rgba(245,158,11,0.15)] flex flex-col h-full"
+      className="group relative bg-card rounded-xl overflow-hidden border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg flex flex-col h-full"
       role="button"
       tabIndex={0}
       onClick={() => onCardClick(project.id)}
       onKeyDown={(e) => e.key === 'Enter' && onCardClick(project.id)}
     >
       {/* Image Section */}
-      <div className="relative h-64 overflow-hidden">
+      <div className="relative h-56 overflow-hidden">
         <img
           src={project.featuredImage}
           alt={project.title}
-          className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+          className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-secondary-900 via-secondary-900/20 to-transparent opacity-90"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60"></div>
 
         {/* Category Badge */}
         <div className="absolute top-4 left-4">
-          <span className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary-950 bg-primary-400 rounded-full shadow-glow">
+          <span className="px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-primary-foreground bg-primary/90 backdrop-blur-sm rounded-md shadow-sm">
             {project.category}
           </span>
         </div>
@@ -41,58 +41,52 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onContributeClick, o
         {/* Status Badge */}
         <div className="absolute top-4 right-4">
           {isFunded ? (
-            <span className="flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-emerald-100 bg-emerald-900/80 backdrop-blur-md rounded-full border border-emerald-700">
+            <span className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-green-700 bg-green-100/90 backdrop-blur-sm rounded-md border border-green-200">
               <CheckCircle className="w-3 h-3" /> Funded
             </span>
           ) : hasEnded ? (
-            <span className="px-3 py-1 text-xs font-bold text-secondary-400 bg-secondary-900/80 backdrop-blur-md rounded-full border border-secondary-700">
+            <span className="px-2.5 py-1 text-xs font-semibold text-muted-foreground bg-secondary/90 backdrop-blur-sm rounded-md border border-border">
               Ended
             </span>
           ) : (
-            <span className="flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-primary-100 bg-secondary-900/80 backdrop-blur-md rounded-full border border-secondary-700">
-              <Clock className="w-3 h-3 text-primary-400" /> {daysLeft} Days Left
+            <span className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-primary-foreground bg-black/50 backdrop-blur-sm rounded-md border border-white/10">
+              <Clock className="w-3 h-3" /> {daysLeft} Days Left
             </span>
           )}
         </div>
       </div>
 
       {/* Content Section */}
-      <div className="relative p-6 flex-grow flex flex-col -mt-12">
+      <div className="relative p-5 flex-grow flex flex-col">
         {/* Title */}
-        <div className="mb-6">
-          <h3 className="text-2xl font-bold text-white mb-2 leading-tight group-hover:text-primary-400 transition-colors">
+        <div className="mb-4">
+          <h3 className="text-xl font-bold text-card-foreground mb-2 leading-tight group-hover:text-primary transition-colors line-clamp-2">
             {project.title}
           </h3>
-          <div className="h-1 w-12 bg-primary-500 rounded-full"></div>
         </div>
 
-        <div className="mt-auto space-y-6">
+        <div className="mt-auto space-y-5">
           {/* Progress Bar */}
           <div className="space-y-2">
             <div className="flex justify-between text-sm font-medium">
-              <span className="text-secondary-300">Progress</span>
-              <span className="text-primary-400">{Math.round(progress)}%</span>
+              <span className="text-muted-foreground">Progress</span>
+              <span className="text-primary">{Math.round(progress)}%</span>
             </div>
-            <div className="h-2 w-full bg-secondary-700 rounded-full overflow-hidden">
+            <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all duration-1000 ${isFunded ? 'bg-emerald-500' : 'bg-gradient-to-r from-primary-600 to-primary-400'}`}
+                className={`h-full rounded-full transition-all duration-1000 ${isFunded ? 'bg-green-500' : 'bg-primary'}`}
                 style={{ width: `${progress}%` }}
-              >
-                {/* Shimmer Effect */}
-                {!isFunded && !hasEnded && (
-                  <div className="w-full h-full animate-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent" style={{ backgroundSize: '200% 100%' }}></div>
-                )}
-              </div>
+              />
             </div>
           </div>
 
           {/* Stats */}
-          <div className="flex justify-between items-end border-t border-secondary-700/50 pt-4">
+          <div className="flex justify-between items-end pt-4 border-t border-border">
             <div>
-              <p className="text-xs text-secondary-400 uppercase tracking-wider mb-1">Raised</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Raised</p>
               <div className="flex items-baseline gap-1">
-                <span className="text-lg font-bold text-white">KES {project.currentAmount.toLocaleString()}</span>
-                <span className="text-xs text-secondary-500">/ {project.fundingGoal.toLocaleString()}</span>
+                <span className="text-lg font-bold text-foreground">KES {project.currentAmount.toLocaleString()}</span>
+                <span className="text-xs text-muted-foreground">/ {project.fundingGoal.toLocaleString()}</span>
               </div>
             </div>
 
@@ -102,14 +96,14 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onContributeClick, o
                 onContributeClick(project)
               }}
               disabled={isFunded || hasEnded}
-              className={`group/btn relative px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 overflow-hidden ${isFunded || hasEnded
-                  ? 'bg-secondary-700 text-secondary-400 cursor-not-allowed'
-                  : 'bg-primary-500 text-primary-950 hover:bg-primary-400 shadow-glow hover:shadow-glow-lg'
+              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 ${isFunded || hasEnded
+                ? 'bg-secondary text-muted-foreground cursor-not-allowed'
+                : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md'
                 }`}
             >
-              <span className="relative z-10 flex items-center gap-2">
+              <span className="flex items-center gap-2">
                 {isFunded ? 'Funded' : hasEnded ? 'Ended' : 'Back Project'}
-                {!isFunded && !hasEnded && <Heart className="w-4 h-4 fill-current" />}
+                {!isFunded && !hasEnded && <Heart className="w-4 h-4" />}
               </span>
             </button>
           </div>

@@ -27,19 +27,18 @@ const Header: React.FC<HeaderProps> = ({ setRoute, currentRoute }) => {
     { name: 'Merch', page: 'merch' },
     { name: 'News', page: 'news' },
     { name: 'About', page: 'home', hash: '#about' },
-
   ];
 
   return (
     <>
-      <header className="bg-secondary-900/95 shadow-lg sticky top-0 z-40 border-b border-secondary-800 backdrop-blur-md transition-all duration-300">
+      <header className="bg-background/95 backdrop-blur-md border-b border-border sticky top-0 z-40 transition-all duration-300">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           {/* Logo */}
           <button onClick={() => setRoute({ page: 'home' })} className="flex items-center gap-2 focus:outline-none group">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-all duration-300">
-              <span className="text-white font-serif font-bold text-xl">U</span>
+            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-300">
+              <span className="text-primary-foreground font-bold text-xl">U</span>
             </div>
-            <span className="text-2xl font-serif font-bold text-white tracking-tight group-hover:text-primary-400 transition-colors">
+            <span className="text-xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
               UET JKUAT
             </span>
           </button>
@@ -71,13 +70,13 @@ const Header: React.FC<HeaderProps> = ({ setRoute, currentRoute }) => {
                     }
                   }}
                   className={`relative px-2 py-1 text-sm font-medium transition-colors duration-300 ${isActive || isHomeHashActive
-                      ? 'text-primary-400'
-                      : 'text-secondary-400 hover:text-primary-300'
+                    ? 'text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
                     }`}
                 >
                   {link.name}
                   {(isActive || isHomeHashActive) && (
-                    <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary-500 rounded-full shadow-glow animate-fade-in"></span>
+                    <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-full animate-fade-in"></span>
                   )}
                 </a>
               )
@@ -88,12 +87,12 @@ const Header: React.FC<HeaderProps> = ({ setRoute, currentRoute }) => {
           <div className="hidden md:flex items-center space-x-4">
             <button
               onClick={() => setRoute({ page: 'cart' })}
-              className="relative p-2 text-secondary-400 hover:text-primary-400 transition-colors group"
+              className="relative p-2 text-muted-foreground hover:text-foreground transition-colors group"
               aria-label="Cart"
             >
-              <ShoppingCart className="w-6 h-6 group-hover:scale-110 transition-transform" />
+              <ShoppingCart className="w-5 h-5 group-hover:scale-110 transition-transform" />
               {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary-500 text-primary-950 text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center shadow-glow animate-scale-in">
+                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center shadow-sm">
                   {itemCount}
                 </span>
               )}
@@ -103,13 +102,13 @@ const Header: React.FC<HeaderProps> = ({ setRoute, currentRoute }) => {
               <>
                 <button
                   onClick={() => setRoute({ page: 'dashboard' })}
-                  className="flex items-center gap-2 bg-secondary-800 text-white px-4 py-2 rounded-xl hover:bg-secondary-700 border border-secondary-700 transition-all duration-300 font-medium shadow-sm hover:shadow-md hover:border-primary-500/30">
-                  <LayoutDashboard className="w-4 h-4 text-primary-400" />
+                  className="flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-2 rounded-lg hover:bg-secondary/80 transition-all duration-300 font-medium text-sm border border-border">
+                  <LayoutDashboard className="w-4 h-4" />
                   Dashboard
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-2 text-secondary-400 hover:text-red-400 px-3 py-2 rounded-xl hover:bg-red-500/10 transition-all duration-300 font-medium">
+                  className="flex items-center gap-2 text-muted-foreground hover:text-destructive px-3 py-2 rounded-lg hover:bg-destructive/10 transition-all duration-300">
                   <LogOut className="w-5 h-5" />
                 </button>
               </>
@@ -117,13 +116,13 @@ const Header: React.FC<HeaderProps> = ({ setRoute, currentRoute }) => {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setRoute({ page: 'login' })}
-                  className="text-secondary-300 hover:text-white font-medium transition-colors"
+                  className="text-muted-foreground hover:text-foreground font-medium transition-colors text-sm"
                 >
                   Login
                 </button>
                 <button
                   onClick={() => setRoute({ page: 'register' })}
-                  className="bg-primary-600 text-white px-5 py-2 rounded-xl hover:bg-primary-500 transition-all duration-300 font-bold shadow-glow hover:shadow-glow-lg transform hover:-translate-y-0.5"
+                  className="bg-primary text-primary-foreground px-5 py-2 rounded-lg hover:bg-primary/90 transition-all duration-300 font-medium text-sm shadow-sm hover:shadow-md"
                 >
                   Register
                 </button>
@@ -133,19 +132,19 @@ const Header: React.FC<HeaderProps> = ({ setRoute, currentRoute }) => {
 
           {/* Mobile Menu Toggle */}
           <div className="md:hidden flex items-center space-x-4">
-            <button onClick={() => setRoute({ page: 'cart' })} className="relative text-secondary-400 hover:text-primary-400 p-2">
+            <button onClick={() => setRoute({ page: 'cart' })} className="relative text-muted-foreground hover:text-foreground p-2">
               <ShoppingCart className="w-6 h-6" />
               {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary-500 text-primary-950 text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center shadow-glow">
+                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
                   {itemCount}
                 </span>
               )}
             </button>
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="text-secondary-200 hover:text-white focus:outline-none p-2"
+              className="text-muted-foreground hover:text-foreground focus:outline-none p-2"
             >
-              <Menu className="h-7 w-7" />
+              <Menu className="h-6 w-6" />
             </button>
           </div>
         </div>
