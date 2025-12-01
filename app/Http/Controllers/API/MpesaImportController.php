@@ -28,12 +28,11 @@ class MpesaImportController extends Controller
         try {
             Log::info('Starting M-Pesa transaction import');
 
-            // Fetch transactions from your M-Pesa callback storage
-            $externalUrl = 'https://test.moutjkuatministry.cloud/api/get-latest-transactions';
+            // Fetch transactions from your own backend (stored M-Pesa callbacks)
+            // Use the same Heroku backend to fetch stored transactions
+            $externalUrl = 'https://uetjkuat-54286e10a43b.herokuapp.com/api/v1/transactions';
             
-            $response = Http::withOptions([
-                'verify' => false, // Bypass SSL verification
-            ])->timeout(30)->get($externalUrl);
+            $response = Http::timeout(30)->get($externalUrl);
             
             if (!$response->successful()) {
                 return response()->json([
