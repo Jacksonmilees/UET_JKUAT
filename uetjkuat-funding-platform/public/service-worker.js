@@ -1,4 +1,4 @@
-const CACHE_NAME = 'uet-jkuat-v1';
+const CACHE_NAME = 'uet-jkuat-v2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -40,6 +40,12 @@ self.addEventListener('activate', (event) => {
 
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', (event) => {
+  // NEVER cache API requests - always fetch fresh
+  if (event.request.url.includes('/api/')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
