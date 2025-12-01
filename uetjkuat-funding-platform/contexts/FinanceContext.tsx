@@ -161,10 +161,7 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     // Load data from API
     const loadTransactions = useCallback(async () => {
         try {
-            if (!HAS_API_KEY) {
-                setTransactions([]);
-                return;
-            }
+            // Transactions endpoint is public - no API key needed
             const response = await api.accounts.getTransactions();
             if (response.success && response.data) {
                 const transformed = response.data.map(transformTransaction);
@@ -172,16 +169,13 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
             }
         } catch (error) {
             console.error('Error loading transactions:', error);
+            setTransactions([]); // Set empty array on error
         }
     }, []);
 
     const loadDonations = useCallback(async () => {
         try {
-            if (!HAS_API_KEY) {
-                setDonations([]);
-                return;
-            }
-            // Derive from transactions endpoint
+            // Transactions endpoint is public - no API key needed
             const response = await api.transactions.getAll({ sort_by: 'created_at', sort_direction: 'desc' });
             if (response.success && response.data) {
                 const txs = response.data as any[];
@@ -203,6 +197,7 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
             }
         } catch (error) {
             console.error('Error loading donations:', error);
+            setDonations([]); // Set empty array on error
         }
     }, []);
 
