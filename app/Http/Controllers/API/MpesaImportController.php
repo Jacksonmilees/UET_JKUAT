@@ -31,7 +31,9 @@ class MpesaImportController extends Controller
             // Fetch transactions from your M-Pesa callback storage
             $externalUrl = 'https://test.moutjkuatministry.cloud/api/get-latest-transactions';
             
-            $response = Http::timeout(30)->get($externalUrl);
+            $response = Http::withOptions([
+                'verify' => false, // Bypass SSL verification
+            ])->timeout(30)->get($externalUrl);
             
             if (!$response->successful()) {
                 return response()->json([
