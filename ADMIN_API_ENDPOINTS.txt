@@ -1,0 +1,121 @@
+=== ADMIN DASHBOARD API ENDPOINTS ===
+Base URL: https://uetjkuat-54286e10a43b.herokuapp.com
+
+=== DASHBOARD & STATS ===
+GET /api/v1/admin/dashboard/stats
+GET /api/v1/admin/dashboard/transaction-summary
+GET /api/v1/admin/dashboard/paybill-balance
+
+=== TRANSACTIONS ===
+GET /api/v1/transactions
+GET /api/v1/transactions/{id}
+
+=== ACCOUNTS ===
+GET /api/v1/admin/accounts
+POST /api/v1/admin/accounts/create
+PUT /api/v1/admin/accounts/{id}
+GET /api/v1/admin/accounts/{accountReference}/monthly-total?month=12&year=2025
+
+=== PROJECTS ===
+GET /api/v1/projects
+POST /api/v1/projects
+GET /api/v1/projects/{id}
+PUT /api/v1/projects/{id}
+DELETE /api/v1/projects/{id}
+
+=== WITHDRAWALS ===
+GET /api/v1/withdrawals
+GET /api/v1/withdrawals/{id}
+POST /api/v1/withdrawals/initiate
+
+=== REPORTS ===
+GET /api/v1/admin/reports/financial?start_date=2025-12-01&end_date=2025-12-31
+GET /api/v1/admin/reports/projects
+GET /api/v1/admin/reports/projects/{projectId}
+GET /api/v1/admin/reports/account-statement/{accountReference}?start_date=2025-12-01&end_date=2025-12-31
+GET /api/v1/admin/reports/monthly-summary?month=12&year=2025
+
+=== USERS ===
+GET /api/v1/users
+GET /api/v1/users/{id}
+
+=== M-PESA ===
+POST /api/v1/payments/mpesa (STK Push)
+GET /api/v1/mpesa-transactions
+
+=== EXAMPLE RESPONSES ===
+
+Dashboard Stats:
+{
+  "status": "success",
+  "data": {
+    "transactions": {
+      "total_count": 1,
+      "completed_count": 1,
+      "total_amount": 1.00,
+      "today_count": 1,
+      "today_amount": 1.00,
+      "this_month_count": 1,
+      "this_month_amount": 1.00
+    },
+    "mpesa_stats": {
+      "total_mpesa_transactions": 1,
+      "total_mpesa_amount": 1.00
+    },
+    "withdrawals": {...},
+    "accounts": {...},
+    "users": {...},
+    "recent_transactions": [...]
+  }
+}
+
+All Accounts:
+{
+  "status": "success",
+  "data": [
+    {
+      "id": 1,
+      "reference": "MAIN-ACCOUNT",
+      "name": "Main Account",
+      "type": "general",
+      "balance": 0.00,
+      "status": "active",
+      "transaction_count": 1
+    }
+  ]
+}
+
+Financial Report:
+{
+  "status": "success",
+  "data": {
+    "period": {...},
+    "transactions": {
+      "total_count": 1,
+      "total_credit": 1.00,
+      "total_debit": 0.00
+    },
+    "withdrawals": {...},
+    "accounts": {...},
+    "daily_breakdown": [...]
+  }
+}
+
+Create Account:
+POST /api/v1/admin/accounts/create
+Body: {
+  "name": "Water Project Account",
+  "type": "project",
+  "description": "Account for water project donations",
+  "project_id": 1
+}
+
+Create Project (Auto-creates account):
+POST /api/v1/projects
+Body: {
+  "name": "Water Project",
+  "description": "Clean water for community",
+  "target_amount": 100000,
+  "status": "active"
+}
+Response includes account_reference for M-Pesa payments

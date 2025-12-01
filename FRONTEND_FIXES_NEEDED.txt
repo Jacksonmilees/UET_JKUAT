@@ -1,0 +1,152 @@
+=== FRONTEND ROUTING ISSUES TO FIX ===
+
+PROBLEM: Clicking buttons in admin dashboard redirects to homepage
+
+SOLUTION: Fix your Vercel frontend routing
+
+=== WHAT TO CHECK IN YOUR FRONTEND CODE ===
+
+1. REACT ROUTER (if using React):
+   - Check that routes are properly defined
+   - Make sure <Link> components use correct paths
+   - Verify that onClick handlers don't prevent default navigation
+
+2. NEXT.JS (if using Next.js):
+   - Check pages/admin/* files exist
+   - Verify router.push() calls use correct paths
+   - Make sure middleware isn't redirecting
+
+3. COMMON ISSUES:
+   - Missing route definitions
+   - Incorrect href/to attributes
+   - onClick handlers calling preventDefault()
+   - Middleware redirecting to home
+   - Missing authentication checks redirecting
+
+=== CORRECT FRONTEND ROUTES ===
+
+/admin/dashboard -> Dashboard with stats
+/admin/transactions -> Transaction list
+/admin/accounts -> Account management
+/admin/projects -> Project management
+/admin/reports -> Report generation
+/admin/settings -> Settings page
+/admin/withdrawals -> Withdrawal management
+/admin/users -> User management
+
+=== API CALLS FOR EACH PAGE ===
+
+Dashboard (/admin/dashboard):
+  - GET /api/v1/admin/dashboard/stats
+  - Display: total transactions, amounts, users, accounts
+
+Transactions (/admin/transactions):
+  - GET /api/v1/transactions
+  - Display: list of all transactions with filters
+
+Accounts (/admin/accounts):
+  - GET /api/v1/admin/accounts
+  - POST /api/v1/admin/accounts/create (for create button)
+  - Display: list of accounts with balances
+
+Projects (/admin/projects):
+  - GET /api/v1/projects
+  - POST /api/v1/projects (auto-creates account!)
+  - Display: list of projects with progress
+
+Reports (/admin/reports):
+  - GET /api/v1/admin/reports/financial
+  - GET /api/v1/admin/reports/monthly-summary
+  - Display: financial reports and charts
+
+Settings (/admin/settings):
+  - Your custom settings logic
+  - User profile updates, etc.
+
+=== EXAMPLE REACT ROUTER FIX ===
+
+// In your App.js or Routes.js
+<Routes>
+  <Route path="/admin" element={<AdminLayout />}>
+    <Route path="dashboard" element={<Dashboard />} />
+    <Route path="transactions" element={<Transactions />} />
+    <Route path="accounts" element={<Accounts />} />
+    <Route path="projects" element={<Projects />} />
+    <Route path="reports" element={<Reports />} />
+    <Route path="settings" element={<Settings />} />
+  </Route>
+</Routes>
+
+// In your Sidebar/Navigation
+<Link to="/admin/dashboard">Dashboard</Link>
+<Link to="/admin/transactions">Transactions</Link>
+<Link to="/admin/accounts">Accounts</Link>
+<Link to="/admin/settings">Settings</Link>
+
+=== EXAMPLE NEXT.JS FIX ===
+
+// Create these files:
+pages/admin/dashboard.js
+pages/admin/transactions.js
+pages/admin/accounts.js
+pages/admin/projects.js
+pages/admin/reports.js
+pages/admin/settings.js
+
+// In your navigation:
+<Link href="/admin/dashboard">Dashboard</Link>
+<Link href="/admin/transactions">Transactions</Link>
+<Link href="/admin/settings">Settings</Link>
+
+=== DATA FETCHING EXAMPLES ===
+
+// Dashboard Stats
+const fetchDashboardStats = async () => {
+  const response = await fetch('https://uetjkuat-54286e10a43b.herokuapp.com/api/v1/admin/dashboard/stats');
+  const data = await response.json();
+  return data.data;
+};
+
+// Transactions
+const fetchTransactions = async () => {
+  const response = await fetch('https://uetjkuat-54286e10a43b.herokuapp.com/api/v1/transactions');
+  const data = await response.json();
+  return data.data;
+};
+
+// Accounts
+const fetchAccounts = async () => {
+  const response = await fetch('https://uetjkuat-54286e10a43b.herokuapp.com/api/v1/admin/accounts');
+  const data = await response.json();
+  return data.data;
+};
+
+// Create Account
+const createAccount = async (accountData) => {
+  const response = await fetch('https://uetjkuat-54286e10a43b.herokuapp.com/api/v1/admin/accounts/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(accountData)
+  });
+  return await response.json();
+};
+
+=== BACKEND IS WORKING ===
+✓ All API endpoints tested and working
+✓ Dashboard stats: Working
+✓ Transactions: Working
+✓ Accounts: Working
+✓ Reports: Working
+✓ Project auto-account creation: Working
+
+=== ISSUE IS IN FRONTEND ===
+✗ Routing not configured correctly
+✗ Buttons redirecting to homepage
+✗ Need to fix Vercel frontend code
+
+=== TELL YOUR FRONTEND DEVELOPER ===
+1. Check routing configuration
+2. Verify all admin pages exist
+3. Fix navigation links
+4. Test each button click
+5. Use the API endpoints listed above
