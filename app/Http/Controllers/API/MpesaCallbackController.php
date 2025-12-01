@@ -123,7 +123,16 @@ class MpesaCallbackController extends Controller
 
         // Find the pending ticket using the CheckoutRequestID
         $checkoutRequestId = $stkCallback['CheckoutRequestID'];
-        $ticket = Ticket::where('checkout_request_id', $checkoutRequestId)->first();
+        
+        // Try to find ticket, but handle if column doesn't exist
+        $ticket = null;
+        try {
+            $ticket = Ticket::where('checkout_request_id', $checkoutRequestId)->first();
+        } catch (\Exception $e) {
+            Log::info('Ticket lookup failed (column may not exist), processing as direct payment', [
+                'error' => $e->getMessage()
+            ]);
+        }
 
         // If no ticket found, create a direct payment transaction
         if (!$ticket) {
