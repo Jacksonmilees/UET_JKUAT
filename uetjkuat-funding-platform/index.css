@@ -72,6 +72,14 @@
     body {
         @apply bg-background text-foreground;
     }
+
+    input, select, textarea {
+        @apply text-white;
+    }
+
+    input::placeholder, select::placeholder, textarea::placeholder {
+        @apply text-gray-400;
+    }
 }
 
 /* Custom Scrollbar */
