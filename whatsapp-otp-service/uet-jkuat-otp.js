@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.OTP_PORT || 5001;
+const PORT = process.env.PORT || process.env.OTP_PORT || 5001;
 
 app.use(bodyParser.json());
 app.use(express.static('public'));
@@ -140,7 +140,7 @@ async function initializeWhatsApp() {
         }
         
         const launchOptions = {
-            headless: false, // Set to "new" for production
+            headless: "new", // Headless for Heroku
             userDataDir: userDataDir,
             args: [
                 '--no-sandbox',
@@ -149,9 +149,13 @@ async function initializeWhatsApp() {
                 '--disable-web-security',
                 '--disable-gpu',
                 '--no-first-run',
-                '--disable-default-apps'
+                '--disable-default-apps',
+                '--disable-background-timer-throttling',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-renderer-backgrounding'
             ],
-            defaultViewport: null
+            defaultViewport: null,
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
         };
         
         console.log('🔧 Launching Chrome for UET JKUAT...');
