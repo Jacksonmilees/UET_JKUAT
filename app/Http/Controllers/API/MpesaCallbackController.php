@@ -123,13 +123,90 @@ class MpesaCallbackController extends Controller
 
         // Find the pending ticket using the CheckoutRequestID
         $checkoutRequestId = $stkCallback['CheckoutRequestID'];
-        $ticket = Ticket::where('payment_status', 'pending')
-                       ->where('checkout_request_id', $checkoutRequestId)
-                       ->first();
+        $ticket = Ticket::where('checkout_request_id', $checkoutRequestId)->first();
 
+        // If no ticket found, create a direct payment transaction
         if (!$ticket) {
-            Log::error('Ticket not found for CheckoutRequestID: ' . $checkoutRequestId);
-            return $this->errorResponse('Ticket not found', 404);
+            Log::info('No ticket found - processing as direct payment', [
+                'checkout_request_id' => $checkoutRequestId,
+                'amount' => $amount,
+                'phone' => $phoneNumber
+            ]);
+            
+            // Get or create main account
+            $account = Account::first();
+            if (!$account) {
+                // Create account if none exists
+                $accountType = DB::table('account_types')->where('code', 'GEN')->first();
+                if (!$accountType) {
+                    $accountTypeId = DB::table('account_types')->insertGetId([
+                        'name' => 'General',
+                        'code' => 'GEN',
+                        'description' => 'General Account',
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                } else {
+                    $accountTypeId = $accountType->id;
+                }
+
+                $accountSubtype = DB::table('account_subtypes')->where('code', 'MAIN')->first();
+                if (!$accountSubtype) {
+                    $accountSubtypeId = DB::table('account_subtypes')->insertGetId([
+                        'account_type_id' => $accountTypeId,
+                        'name' => 'Main',
+                        'code' => 'MAIN',
+                        'description' => 'Main Account',
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                } else {
+                    $accountSubtypeId = $accountSubtype->id;
+                }
+
+                $account = Account::create([
+                    'reference' => 'MPESA-MAIN',
+                    'name' => 'M-Pesa Main Account',
+                    'account_type_id' => $accountTypeId,
+                    'account_subtype_id' => $accountSubtypeId,
+                    'type' => 'general',
+                    'balance' => 0,
+                    'status' => 'active',
+                    'metadata' => ['source' => 'mpesa_callback']
+                ]);
+            }
+
+            // Create transaction
+            $transaction = Transaction::create([
+                'account_id' => $account->id,
+                'transaction_id' => $mpesaReceiptNumber,
+                'amount' => $amount,
+                'type' => 'credit',
+                'payment_method' => 'mpesa',
+                'reference' => $mpesaReceiptNumber,
+                'status' => 'completed',
+                'phone_number' => $phoneNumber,
+                'payer_name' => 'Direct Payment',
+                'metadata' => [
+                    'transaction_type' => 'Direct M-Pesa Payment',
+                    'mpesa_transaction_id' => $mpesaReceiptNumber,
+                    'transaction_time' => $transactionDate,
+                    'checkout_request_id' => $checkoutRequestId,
+                ],
+                'processed_at' => now()
+            ]);
+
+            // Update account balance
+            $account->balance += $amount;
+            $account->save();
+
+            Log::info('Direct payment transaction created', [
+                'transaction_id' => $transaction->id,
+                'amount' => $amount,
+                'account_balance' => $account->balance
+            ]);
+
+            return $this->successResponse('Direct payment processed successfully', $transaction->id);
         }
 
         // Update all relevant columns
