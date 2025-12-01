@@ -105,12 +105,7 @@ const FinanceDashboard: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      if (!HAS_API_KEY) {
-        setTransactions([]);
-        setWithdrawals([]);
-        setProjects([]);
-        return;
-      }
+      // All endpoints are public - no API key needed
       const [txRes, wdRes, projRes] = await Promise.all([
         api.transactions.getAll({
           sort_by: 'created_at',
