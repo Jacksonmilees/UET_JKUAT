@@ -105,9 +105,13 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
 
             if (verifyData.success) {
                 // OTP verified, now register user
+                console.log('Registering with data:', { ...formData, password: '***' });
                 const success = await register({ ...formData, password });
                 if (success) {
                     setShowPaymentModal(true);
+                } else {
+                    // Registration failed, show error from AuthContext
+                    setOtpError('Registration failed. Please check the form and try again.');
                 }
             } else {
                 setOtpError(verifyData.message || 'Invalid OTP');
@@ -259,9 +263,9 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
                 </form>
                 ) : (
                 <form className="space-y-4" onSubmit={handleVerifyOTP}>
-                    {otpError && (
+                    {(otpError || error) && (
                         <div className="rounded-lg bg-destructive/10 p-3">
-                            <p className="text-sm font-medium text-destructive">{otpError}</p>
+                            <p className="text-sm font-medium text-destructive">{otpError || error}</p>
                         </div>
                     )}
 
