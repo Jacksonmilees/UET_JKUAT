@@ -33,6 +33,9 @@ const getPastDate = (days: number) => {
 
 export const MANDATORY_CONTRIBUTION_AMOUNT = 1;
 
+// API Configuration
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://uet-jkuat.onrender.com/api';
+
 const mockContributors: Contributor[] = [
     { name: 'Alice Johnson', avatar: 'https://i.pravatar.cc/150?u=alice' },
     { name: 'Bob Williams', avatar: 'https://i.pravatar.cc/150?u=bob' },

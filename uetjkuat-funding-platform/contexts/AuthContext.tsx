@@ -18,6 +18,7 @@ interface AuthContextType {
   toggleUserRole: (userId: number) => Promise<void>;
   deleteUser: (userId: number) => Promise<void>;
   refreshUser: () => Promise<void>;
+  setUser: (user: User | null) => void;
 }
 
 export const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -227,6 +228,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       toggleUserRole, 
       deleteUser,
       refreshUser,
+      setUser,
     }}>
       {children}
     </AuthContext.Provider>

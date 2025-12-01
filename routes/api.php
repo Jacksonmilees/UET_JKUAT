@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\OTPAuthController;
 use App\Http\Controllers\API\UploadController;
 use Illuminate\Http\Request;
 
@@ -154,6 +155,12 @@ Route::prefix('auth')->group(function () {
     Route::post('register', [AuthController::class, 'register']);
     Route::post('login', [AuthController::class, 'login']);
     Route::get('me', [AuthController::class, 'me']);
+    
+    // OTP Authentication routes
+    Route::post('otp/request', [OTPAuthController::class, 'requestOTP']);
+    Route::post('otp/verify', [OTPAuthController::class, 'verifyOTPAndLogin']);
+    Route::get('otp/status', [OTPAuthController::class, 'checkOTPServiceStatus']);
+    
     Route::get('mandatory-contribution', function () {
         // Registration fee already paid - no mandatory contribution required
         return response()->json([
