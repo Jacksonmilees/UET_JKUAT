@@ -129,6 +129,11 @@ Route::prefix('v1')->group(function () {
     // M-Pesa import endpoints (import real transactions)
     Route::post('/mpesa/import-real-transactions', [\App\Http\Controllers\API\MpesaImportController::class, 'importRealTransactions']);
     Route::get('/mpesa/import-stats', [\App\Http\Controllers\API\MpesaImportController::class, 'getImportStats']);
+    
+    // Admin Dashboard endpoints
+    Route::get('/admin/dashboard/stats', [\App\Http\Controllers\API\AdminDashboardController::class, 'getDashboardStats']);
+    Route::get('/admin/dashboard/paybill-balance', [\App\Http\Controllers\API\AdminDashboardController::class, 'getPayBillBalance']);
+    Route::get('/admin/dashboard/transaction-summary', [\App\Http\Controllers\API\AdminDashboardController::class, 'getTransactionSummary']);
 });
 
 // Simple Auth routes for frontend (public path /api/auth/*)
