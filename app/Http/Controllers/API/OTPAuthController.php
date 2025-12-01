@@ -41,7 +41,7 @@ class OTPAuthController extends Controller
 
         // Check if user exists by email or phone
         $user = User::where('email', $identifier)
-            ->orWhere('phoneNumber', $identifier)
+            ->orWhere('phone_number', $identifier)
             ->first();
 
         if (!$user) {
@@ -58,7 +58,7 @@ class OTPAuthController extends Controller
         try {
             // Call WhatsApp OTP service
             $response = Http::timeout(10)->post("{$this->otpServiceUrl}/send-otp", [
-                'phone' => $isPhone ? $identifier : $user->phoneNumber,
+                'phone' => $isPhone ? $identifier : $user->phone_number,
                 'email' => !$isPhone ? $identifier : $user->email,
                 'customMessage' => "Hello {$user->name},\n\nYour UET JKUAT login verification code is: {otp}\n\nValid for 5 minutes.\n\n_UET JKUAT Ministry Platform_"
             ]);
@@ -68,12 +68,12 @@ class OTPAuthController extends Controller
                 
                 return response()->json([
                     'success' => true,
-                    'message' => 'OTP sent successfully',
+                    'message' => 'OTP sent successfully via WhatsApp',
                     'user' => [
                         'id' => $user->id,
                         'name' => $user->name,
                         'email' => $user->email,
-                        'phoneNumber' => $user->phoneNumber
+                        'phoneNumber' => $user->phone_number
                     ],
                     'otpSent' => true,
                     'expiresIn' => '5 minutes',

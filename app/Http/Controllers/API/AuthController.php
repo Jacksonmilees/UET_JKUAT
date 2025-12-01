@@ -26,13 +26,18 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6',
-            'phoneNumber' => 'nullable|string|max:20',
+            'phoneNumber' => 'nullable|string|max:20|unique:users,phone_number',
             'yearOfStudy' => 'nullable|string|max:50',
             'course' => 'nullable|string|max:255',
             'college' => 'nullable|string|max:255',
             'admissionNumber' => 'nullable|string|max:50|unique:users,admission_number',
             'ministryInterest' => 'nullable|string|max:255',
             'residence' => 'nullable|string|max:255',
+        ], [
+            'email.unique' => 'This email is already registered. Please use a different email or login.',
+            'phoneNumber.unique' => 'This phone number is already registered. Please use a different number.',
+            'admissionNumber.unique' => 'This admission number is already registered.',
+            'password.min' => 'Password must be at least 6 characters long.',
         ]);
 
         if ($validator->fails()) {
