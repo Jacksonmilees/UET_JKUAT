@@ -276,7 +276,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
                     </div>
                 </div>
 
-                <div className="flex items-center justify-end">
+                <div className="flex items-center justify-between">
+                    <button
+                        type="button"
+                        onClick={() => setRoute({ page: 'forgot-password' })}
+                        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                        Forgot password?
+                    </button>
                     <button
                         type="button"
                         onClick={() => setRoute({ page: 'register' })}

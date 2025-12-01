@@ -15,6 +15,7 @@ import DashboardPage from './pages/DashboardPage';
 import NewsPage from './pages/NewsPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import MerchPage from './pages/MerchPage';
 import CartPage from './pages/CartPage';
 import AdminPage from './pages/AdminPage';
@@ -99,6 +100,8 @@ const AppContent: React.FC = () => {
                  return <LoginPage setRoute={setRoute} />;
             case 'register':
                 return <RegisterPage setRoute={setRoute} />;
+            case 'forgot-password':
+                return <ForgotPasswordPage setRoute={setRoute} />;
             case 'merch':
                 return <MerchPage setRoute={setRoute} />;
             case 'cart':

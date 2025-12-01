@@ -1,13 +1,14 @@
 
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Route, RegisterCredentials } from '../types';
 import AuthLayout from '../components/common/AuthLayout';
 import {
     Lock, Mail, User, Phone, Calendar,
-    Book, Building, Hash, HeartHandshake, Home, Loader2
+    Book, Building, Hash, HeartHandshake, Home, Loader2, KeyRound, Smartphone
 } from 'lucide-react';
+import { API_BASE_URL } from '../constants';
 import MandatoryPaymentModal from '../components/MandatoryPaymentModal';
 
 interface RegisterPageProps {
@@ -24,6 +25,21 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [formError, setFormError] = useState('');
     const [showPaymentModal, setShowPaymentModal] = useState(false);
+    
+    // OTP states
+    const [step, setStep] = useState<'form' | 'otp'>('form');
+    const [otp, setOtp] = useState('');
+    const [otpLoading, setOtpLoading] = useState(false);
+    const [otpError, setOtpError] = useState('');
+    const [resendTimer, setResendTimer] = useState(0);
+
+    // Resend timer
+    useEffect(() => {
+        if (resendTimer > 0) {
+            const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [resendTimer]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -33,6 +49,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
     const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setFormError('');
+        setOtpError('');
 
         if (Object.values(formData).some(val => val === '') || !password || !confirmPassword) {
             setFormError('Please fill in all fields.');
@@ -47,11 +64,84 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
             return;
         }
 
-        // Register user first
-        const success = await register({ ...formData, password });
-        if (success) {
-            // After successful registration, show payment modal
-            setShowPaymentModal(true);
+        // Send OTP to phone number
+        setOtpLoading(true);
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/otp/request`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ identifier: formData.phoneNumber })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setStep('otp');
+                setResendTimer(60);
+            } else {
+                setFormError(data.message || 'Failed to send OTP. Please check your phone number.');
+            }
+        } catch (err) {
+            setFormError('Network error. Please try again.');
+        } finally {
+            setOtpLoading(false);
+        }
+    };
+
+    const handleVerifyOTP = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setOtpError('');
+        setOtpLoading(true);
+
+        try {
+            // Verify OTP
+            const verifyResponse = await fetch(`${API_BASE_URL}/auth/otp/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ identifier: formData.phoneNumber, otp })
+            });
+
+            const verifyData = await verifyResponse.json();
+
+            if (verifyData.success) {
+                // OTP verified, now register user
+                const success = await register({ ...formData, password });
+                if (success) {
+                    setShowPaymentModal(true);
+                }
+            } else {
+                setOtpError(verifyData.message || 'Invalid OTP');
+            }
+        } catch (err) {
+            setOtpError('Network error. Please try again.');
+        } finally {
+            setOtpLoading(false);
+        }
+    };
+
+    const handleResendOTP = async () => {
+        setOtpError('');
+        setOtpLoading(true);
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/otp/request`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ identifier: formData.phoneNumber })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setResendTimer(60);
+                setOtpError('');
+            } else {
+                setOtpError(data.message || 'Failed to resend OTP');
+            }
+        } catch (err) {
+            setOtpError('Network error. Please try again.');
+        } finally {
+            setOtpLoading(false);
         }
     };
 
@@ -95,6 +185,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
     return (
         <>
             <AuthLayout title="Create Account">
+                {step === 'form' ? (
                 <form className="space-y-4" onSubmit={handleFormSubmit}>
                     {(error || formError) && (
                         <div className="rounded-lg bg-destructive/10 p-3">
@@ -151,16 +242,90 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
                     </div>
 
                     <div>
-                        <button type="submit" disabled={isLoading} className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-                            {isLoading ? (
+                        <button type="submit" disabled={otpLoading} className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                            {otpLoading ? (
                                 <span className="flex items-center gap-2">
                                     <Loader2 className="animate-spin h-4 w-4" />
-                                    Processing...
+                                    Sending OTP...
                                 </span>
-                            ) : 'Create Account & Pay KES 100'}
+                            ) : (
+                                <span className="flex items-center gap-2">
+                                    <Smartphone className="h-4 w-4" />
+                                    Continue with WhatsApp OTP
+                                </span>
+                            )}
                         </button>
                     </div>
                 </form>
+                ) : (
+                <form className="space-y-4" onSubmit={handleVerifyOTP}>
+                    {otpError && (
+                        <div className="rounded-lg bg-destructive/10 p-3">
+                            <p className="text-sm font-medium text-destructive">{otpError}</p>
+                        </div>
+                    )}
+
+                    <div className="rounded-lg bg-green-500/10 p-3">
+                        <p className="text-sm font-medium text-green-600">
+                            OTP sent to {formData.phoneNumber} via WhatsApp
+                        </p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">
+                            Enter OTP Code
+                        </label>
+                        <div className="relative">
+                            <KeyRound className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                            <input
+                                type="text"
+                                value={otp}
+                                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                className="w-full rounded-lg border border-input bg-background pl-10 pr-4 py-2 text-foreground text-center text-2xl tracking-widest font-mono placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                placeholder="000000"
+                                maxLength={6}
+                                required
+                                disabled={otpLoading}
+                            />
+                        </div>
+                        <p className="text-xs text-muted-foreground text-center">
+                            Check your WhatsApp for the 6-digit code
+                        </p>
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={otpLoading || otp.length !== 6}
+                        className="w-full rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                        {otpLoading || isLoading ? (
+                            <>
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                                {isLoading ? 'Creating Account...' : 'Verifying...'}
+                            </>
+                        ) : (
+                            'Verify & Create Account'
+                        )}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={handleResendOTP}
+                        disabled={resendTimer > 0 || otpLoading}
+                        className="w-full text-sm text-muted-foreground hover:text-foreground disabled:opacity-50"
+                    >
+                        {resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : 'Resend OTP'}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => setStep('form')}
+                        className="w-full text-sm text-muted-foreground hover:text-foreground"
+                    >
+                        ← Back to form
+                    </button>
+                </form>
+                )}
             </AuthLayout>
 
             <MandatoryPaymentModal
