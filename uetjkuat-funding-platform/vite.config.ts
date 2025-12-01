@@ -34,7 +34,7 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'import.meta.env.VITE_API_URL': JSON.stringify(env.VITE_API_URL || 'https://uetjkuat.herokuapp.com/api')
+      'import.meta.env.VITE_API_URL': JSON.stringify(env.VITE_API_URL || 'https://uetjkuat-54286e10a43b.herokuapp.com/api')
     },
     resolve: {
       alias: {
