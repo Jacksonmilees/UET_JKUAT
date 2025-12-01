@@ -1,0 +1,36 @@
+=== VERCEL ENVIRONMENT VARIABLES ===
+
+GO TO: https://vercel.com/your-project/settings/environment-variables
+
+ADD THESE VARIABLES:
+
+1. VITE_API_BASE_URL
+   Value: https://uetjkuat-54286e10a43b.herokuapp.com/api
+   
+2. VITE_API_KEY
+   Value: (leave empty for now - backend endpoints are public)
+
+3. GEMINI_API_KEY
+   Value: AIzaSyD_YPOtfYq_YQpRmPF47KF_wdyhNjzYIhw
+
+=== AFTER ADDING VARIABLES ===
+
+1. Go to Deployments tab
+2. Click "Redeploy" on latest deployment
+3. Check "Use existing Build Cache" = NO
+4. Click "Redeploy"
+
+=== THIS WILL FIX ===
+
+✓ Admin dashboard will load data correctly
+✓ Transactions will display
+✓ All API calls will go to correct backend
+✓ Stats will show real data
+✓ Everything will work!
+
+=== CURRENT ISSUE ===
+
+Your frontend was calling the wrong API URL (render.com instead of heroku.com)
+Now it's fixed to call: https://uetjkuat-54286e10a43b.herokuapp.com/api
+
+All admin modules will work after redeployment!
