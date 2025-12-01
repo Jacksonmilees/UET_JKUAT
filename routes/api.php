@@ -134,6 +134,19 @@ Route::prefix('v1')->group(function () {
     Route::get('/admin/dashboard/stats', [\App\Http\Controllers\API\AdminDashboardController::class, 'getDashboardStats']);
     Route::get('/admin/dashboard/paybill-balance', [\App\Http\Controllers\API\AdminDashboardController::class, 'getPayBillBalance']);
     Route::get('/admin/dashboard/transaction-summary', [\App\Http\Controllers\API\AdminDashboardController::class, 'getTransactionSummary']);
+    
+    // Account Management endpoints
+    Route::post('/admin/accounts/create', [\App\Http\Controllers\API\AccountManagementController::class, 'createAccount']);
+    Route::get('/admin/accounts', [\App\Http\Controllers\API\AccountManagementController::class, 'getAllAccounts']);
+    Route::get('/admin/accounts/{accountReference}/monthly-total', [\App\Http\Controllers\API\AccountManagementController::class, 'getAccountMonthlyTotal']);
+    Route::put('/admin/accounts/{id}', [\App\Http\Controllers\API\AccountManagementController::class, 'updateAccount']);
+    
+    // Report Generation endpoints
+    Route::get('/admin/reports/financial', [\App\Http\Controllers\API\ReportGenerationController::class, 'generateFinancialReport']);
+    Route::get('/admin/reports/projects', [\App\Http\Controllers\API\ReportGenerationController::class, 'generateProjectReport']);
+    Route::get('/admin/reports/projects/{projectId}', [\App\Http\Controllers\API\ReportGenerationController::class, 'generateProjectReport']);
+    Route::get('/admin/reports/account-statement/{accountReference}', [\App\Http\Controllers\API\ReportGenerationController::class, 'generateAccountStatement']);
+    Route::get('/admin/reports/monthly-summary', [\App\Http\Controllers\API\ReportGenerationController::class, 'generateMonthlySummary']);
 });
 
 // Simple Auth routes for frontend (public path /api/auth/*)
