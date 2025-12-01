@@ -11,7 +11,7 @@ ADD THESE VARIABLES:
    Value: (leave empty for now - backend endpoints are public)
 
 3. GEMINI_API_KEY
-   Value: AIzaSyD_YPOtfYq_YQpRmPF47KF_wdyhNjzYIhw
+   Value: 
 
 === AFTER ADDING VARIABLES ===
 
