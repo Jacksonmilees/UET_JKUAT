@@ -146,7 +146,50 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'overview':
-        return <OverviewDashboard stats={overviewStats} setActiveTab={setActiveTab} />;
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold">Overview</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-card p-6 rounded-lg border border-border">
+                <div className="text-sm text-muted-foreground">Total Transactions</div>
+                <div className="text-3xl font-bold mt-2">{overviewStats.totalTransactions}</div>
+              </div>
+              <div className="bg-card p-6 rounded-lg border border-border">
+                <div className="text-sm text-muted-foreground">Total Revenue</div>
+                <div className="text-3xl font-bold mt-2">KES {overviewStats.totalRevenue.toLocaleString()}</div>
+              </div>
+              <div className="bg-card p-6 rounded-lg border border-border">
+                <div className="text-sm text-muted-foreground">Total Users</div>
+                <div className="text-3xl font-bold mt-2">{overviewStats.totalUsers}</div>
+              </div>
+              <div className="bg-card p-6 rounded-lg border border-border">
+                <div className="text-sm text-muted-foreground">Active Projects</div>
+                <div className="text-3xl font-bold mt-2">{overviewStats.activeProjects}</div>
+              </div>
+            </div>
+            <div className="bg-card p-6 rounded-lg border border-border">
+              <h3 className="text-lg font-semibold mb-4">Recent Transactions</h3>
+              {transactions.length > 0 ? (
+                <div className="space-y-2">
+                  {transactions.slice(0, 5).map((tx: any) => (
+                    <div key={tx.id} className="flex justify-between items-center p-3 bg-secondary/50 rounded">
+                      <div>
+                        <div className="font-medium">{tx.payerName || 'Unknown'}</div>
+                        <div className="text-sm text-muted-foreground">{tx.reference}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold">KES {Number(tx.amount).toLocaleString()}</div>
+                        <div className="text-sm text-muted-foreground">{tx.status}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-muted-foreground py-8">No transactions yet</div>
+              )}
+            </div>
+          </div>
+        );
       case 'users':
         return <UserManagement onUserDelete={(user: User) => setItemToDelete({ type: 'user', id: user.id, name: user.name })} />;
       case 'projects':
