@@ -35,6 +35,13 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
     const [otpError, setOtpError] = useState('');
     const [resendTimer, setResendTimer] = useState(0);
 
+    const normalizePhone = (value: string) => {
+        const digits = value.replace(/\D/g, '');
+        if (digits.startsWith('0')) return `254${digits.slice(1)}`;
+        if (digits.startsWith('254')) return digits;
+        return `254${digits}`;
+    };
+
     // Resend timer
     useEffect(() => {
         if (resendTimer > 0) {
@@ -79,7 +86,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
             const response = await fetch(`${API_BASE_URL}/auth/otp/request`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ identifier: trimmedPhone })
+                body: JSON.stringify({ identifier: normalizePhone(trimmedPhone) })
             });
 
             const data = await response.json();
@@ -107,7 +114,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
             const verifyResponse = await fetch(`${API_BASE_URL}/auth/otp/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ identifier: formData.phoneNumber, otp })
+                body: JSON.stringify({ identifier: normalizePhone(formData.phoneNumber), otp })
             });
 
             const verifyData = await verifyResponse.json();
@@ -142,7 +149,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
             const response = await fetch(`${API_BASE_URL}/auth/otp/request`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ identifier: formData.phoneNumber })
+                body: JSON.stringify({ identifier: normalizePhone(formData.phoneNumber) })
             });
 
             const data = await response.json();

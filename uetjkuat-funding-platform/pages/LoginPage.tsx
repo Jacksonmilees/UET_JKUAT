@@ -32,6 +32,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
     const [otpUser, setOtpUser] = useState<any>(null);
     const [resendTimer, setResendTimer] = useState(0);
 
+    const normalizePhone = (value: string) => {
+        const digits = value.replace(/\D/g, '');
+        if (digits.startsWith('0')) return `254${digits.slice(1)}`;
+        if (digits.startsWith('254')) return digits;
+        return `254${digits}`;
+    };
+
     // Check mandatory contribution after login
     useEffect(() => {
         const checkMandatoryPayment = async () => {
@@ -90,8 +97,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
     }, [resendTimer]);
 
     // Request OTP
-    const handleRequestOTP = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleRequestOTP = async (e?: React.FormEvent) => {
+        e?.preventDefault();
         setOtpError('');
         setFormError('');
         
@@ -112,10 +119,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
         setOtpLoading(true);
         
         try {
+            const identifierPayload = isPhone ? normalizePhone(trimmedIdentifier) : trimmedIdentifier;
             const response = await fetch(`${API_BASE_URL}/auth/otp/request`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ identifier: trimmedIdentifier })
+                body: JSON.stringify({ identifier: identifierPayload })
             });
             
             const data = await response.json();
@@ -148,10 +156,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
         setOtpLoading(true);
         
         try {
+            const trimmedIdentifier = identifier.trim();
+            const isPhone = /^(0|254)\d{9}$/.test(trimmedIdentifier.replace(/\s|\+/g, ''));
+            const identifierPayload = isPhone ? normalizePhone(trimmedIdentifier) : trimmedIdentifier;
+
             const response = await fetch(`${API_BASE_URL}/auth/otp/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ identifier, otp })
+                body: JSON.stringify({ identifier: identifierPayload, otp })
             });
             
             const data = await response.json();
@@ -184,8 +196,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
     // Resend OTP
     const handleResendOTP = () => {
         setOtp('');
-        setOtpSent(false);
-        setResendTimer(0);
+        handleRequestOTP();
     };
 
     // Switch login method
