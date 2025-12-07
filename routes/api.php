@@ -23,6 +23,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\OTPAuthController;
 use App\Http\Controllers\API\UploadController;
+use App\Http\Controllers\API\OnboardingController;
 use Illuminate\Http\Request;
 
 // Debug route to confirm middleware registration
@@ -79,6 +80,14 @@ Route::post('/mpesa/balance/timeout', [MpesaBalanceController::class, 'handleTim
 Route::prefix('v1')->group(function () {
     Route::get('/projects', [ProjectController::class, 'index']); // Public read access
     Route::get('/projects/{id}', [ProjectController::class, 'show']); // Public read access
+    Route::get('/projects/{project}/donations', [ProjectController::class, 'donations']);
+
+    // User-scoped convenience endpoints using bearer token (no API key required)
+    Route::get('/accounts/my', [AccountController::class, 'myAccounts']);
+    Route::get('/accounts/balance', [AccountController::class, 'getBalance']);
+    Route::get('/transactions/my', [TransactionController::class, 'myTransactions']);
+    Route::get('/withdrawals/my', [WithdrawalController::class, 'getMyWithdrawals']);
+    Route::get('/tickets/my', [TicketController::class, 'getMyTickets']);
     
     // Public access to transactions and withdrawals (read-only)
     Route::get('/transactions', [TransactionController::class, 'index']);
@@ -271,6 +280,10 @@ Route::prefix('v1')->group(function () {
     Route::post('/payments/mpesa', [MpesaController::class, 'initiateSTKPush']);
     Route::get('/payments/mpesa/status/{checkoutRequestId}', [MpesaController::class, 'queryTransactionStatus']);
     Route::get('/tickets/completed/all', [TicketController::class, 'getAllCompletedTickets']);
+
+    // Onboarding mandatory payment flow
+    Route::post('/onboarding/initiate', [OnboardingController::class, 'initiate']);
+    Route::get('/onboarding/status', [OnboardingController::class, 'status']);
     
     // News routes
     Route::get('/news', [\App\Http\Controllers\API\NewsController::class, 'index']);

@@ -60,6 +60,9 @@ export interface AuthResponse {
     created_at?: string;
     updated_at?: string;
     member_id_info?: string;
+    mandatory_paid?: boolean;
+    mandatory_amount?: number;
+    mandatory_last_payment_date?: string | null;
   };
   token: string;
 }
@@ -635,6 +638,16 @@ const announcementsApi = {
   toggleActive: async (id: string) => apiRequest(`/v1/announcements/${id}/toggle`, { method: 'PUT' }),
 };
 
+// Onboarding (mandatory contribution)
+const onboardingApi = {
+  initiate: async (phone_number: string): Promise<ApiResponse<any>> =>
+    apiRequest('/v1/onboarding/initiate', {
+      method: 'POST',
+      body: JSON.stringify({ phone_number }),
+    }),
+  status: async (): Promise<ApiResponse<any>> => apiRequest('/v1/onboarding/status'),
+};
+
 // Orders API
 const ordersApi = {
   getAll: async (params?: Record<string, string>) => apiRequest('/v1/orders' + (params ? '?' + new URLSearchParams(params).toString() : '')),
@@ -703,6 +716,7 @@ export default {
   announcements: announcementsApi,
   orders: ordersApi,
   merchandise: merchandiseApi,
+  onboarding: onboardingApi,
   getToken,
   setToken,
   removeToken,

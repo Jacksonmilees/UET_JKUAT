@@ -216,6 +216,37 @@ class TransactionController extends Controller
     }
 
     /**
+     * Get transactions tied to the authenticated user (by phone or user_id in metadata).
+     */
+    public function myTransactions(Request $request)
+    {
+        $user = $this->getUserFromBearer($request);
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        $query = Transaction::with(['account:id,reference,name,type,status'])
+            ->where(function ($q) use ($user) {
+                $q->where('phone_number', $user->phone_number)
+                  ->orWhere('metadata->user_id', $user->id);
+            })
+            ->orderBy('created_at', 'desc');
+
+        $transactions = $query->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $transactions->map(function ($transaction) {
+                return $this->transformTransaction($transaction);
+            }),
+            'total_count' => $transactions->count(),
+        ]);
+    }
+
+    /**
      * Resolve account using multiple lookup methods
      */
     protected function resolveAccount($reference)

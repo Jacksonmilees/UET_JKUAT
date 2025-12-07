@@ -59,6 +59,7 @@ interface FinanceContextType {
     mpesaSessions: MpesaSession[];
     mandatoryContributionAmount: number;
     isLoading: boolean;
+    refreshMandatoryStatus: () => Promise<void>;
     initiateProjectContribution: (
         payload: InitiateProjectContributionPayload
     ) => Promise<{ session: MpesaSession; success: boolean; message?: string }>;
@@ -157,6 +158,7 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [mpesaSessions, setMpesaSessions] = useState<MpesaSession[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [serverMandatoryStatus, setServerMandatoryStatus] = useState<MandatoryContributionStatus | null>(null);
 
     // Load data from API
     const loadTransactions = useCallback(async () => {
@@ -243,6 +245,22 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
         }
     }, []);
 
+    // Sync mandatory status from auth payload so UI reflects latest server knowledge immediately.
+    useEffect(() => {
+        if (user?.mandatoryPaid !== undefined) {
+            setServerMandatoryStatus({
+                requiredAmount: user.mandatoryAmount ?? MANDATORY_CONTRIBUTION_AMOUNT,
+                contributedAmount: user.mandatoryPaid
+                    ? (user.mandatoryAmount ?? MANDATORY_CONTRIBUTION_AMOUNT)
+                    : 0,
+                isCleared: !!user.mandatoryPaid,
+                lastContributionDate: user.mandatoryLastPaymentDate,
+            });
+        } else if (!user) {
+            setServerMandatoryStatus(null);
+        }
+    }, [user?.mandatoryPaid, user?.mandatoryAmount, user?.mandatoryLastPaymentDate]);
+
     // Load data on mount and when user changes
     useEffect(() => {
         if (user) {
@@ -251,8 +269,9 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
             loadAccounts();
             loadWithdrawals();
             loadTickets();
+            refreshMandatoryStatus();
         }
-    }, [user, loadTransactions, loadDonations, loadAccounts, loadWithdrawals, loadTickets]);
+    }, [user, loadTransactions, loadDonations, loadAccounts, loadWithdrawals, loadTickets, refreshMandatoryStatus]);
 
     const recordManualDonation = useCallback(
         (payload: RecordManualDonationPayload): Donation => {
@@ -465,6 +484,11 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     const getMandatoryStatus = useCallback(
         (userId?: number): MandatoryContributionStatus => {
+            // Prefer server state when available
+            if (serverMandatoryStatus) {
+                return serverMandatoryStatus;
+            }
+
             if (!userId) {
                 return {
                     requiredAmount: MANDATORY_CONTRIBUTION_AMOUNT,
@@ -492,8 +516,26 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
                 lastContributionDate,
             };
         },
-        [donations]
+        [donations, serverMandatoryStatus]
     );
+
+    const refreshMandatoryStatus = useCallback(async () => {
+        try {
+            const response = await api.onboarding.status();
+            if (response.success && response.data) {
+                const data = response.data;
+                setServerMandatoryStatus({
+                    requiredAmount: data.amount ?? MANDATORY_CONTRIBUTION_AMOUNT,
+                    contributedAmount: data.paid ? (data.amount ?? MANDATORY_CONTRIBUTION_AMOUNT) : 0,
+                    isCleared: !!data.paid,
+                    lastContributionDate: data.lastPaymentDate,
+                });
+            }
+        } catch (error) {
+            console.error('Error refreshing mandatory status:', error);
+            setServerMandatoryStatus(null);
+        }
+    }, []);
 
     const refreshTransactions = useCallback(async () => {
         await loadTransactions();
@@ -524,6 +566,7 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
             mpesaSessions,
             mandatoryContributionAmount: MANDATORY_CONTRIBUTION_AMOUNT,
             isLoading,
+            refreshMandatoryStatus,
             initiateProjectContribution,
             recordManualDonation,
             getUserDonations,
@@ -546,6 +589,7 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
             tickets,
             mpesaSessions,
             isLoading,
+            refreshMandatoryStatus,
             initiateProjectContribution,
             recordManualDonation,
             getUserDonations,

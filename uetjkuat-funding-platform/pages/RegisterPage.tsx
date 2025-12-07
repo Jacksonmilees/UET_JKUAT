@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useFinance } from '../contexts/FinanceContext';
 import { Route, RegisterCredentials } from '../types';
 import AuthLayout from '../components/common/AuthLayout';
 import {
     Lock, Mail, User, Phone, Calendar,
-    Book, Building, Hash, HeartHandshake, Home, Loader2, KeyRound, Smartphone
+    Book, Building, Hash, HeartHandshake, Home, Loader2, KeyRound, Smartphone, ShieldCheck
 } from 'lucide-react';
 import { API_BASE_URL } from '../constants';
 import MandatoryPaymentModal from '../components/MandatoryPaymentModal';
@@ -16,7 +17,8 @@ interface RegisterPageProps {
 }
 
 const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
-    const { register, isLoading, error } = useAuth();
+    const { register, isLoading, error, refreshUser } = useAuth();
+    const { refreshMandatoryStatus } = useFinance();
     const [formData, setFormData] = useState<Omit<RegisterCredentials, 'password'>>({
         name: '', email: '', phoneNumber: '', yearOfStudy: 'First Year',
         course: '', college: '', admissionNumber: '', ministryInterest: '', residence: ''
@@ -51,8 +53,15 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
         setFormError('');
         setOtpError('');
 
+        const trimmedPhone = formData.phoneNumber.trim();
+        const isValidPhone = /^(0|254)\d{9}$/.test(trimmedPhone.replace(/\s|\+/g, ''));
+
         if (Object.values(formData).some(val => val === '') || !password || !confirmPassword) {
             setFormError('Please fill in all fields.');
+            return;
+        }
+        if (!isValidPhone) {
+            setFormError('Enter a valid Safaricom number (2547XXXXXXXX or 07XXXXXXXX).');
             return;
         }
         if (password !== confirmPassword) {
@@ -70,7 +79,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
             const response = await fetch(`${API_BASE_URL}/auth/otp/request`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ identifier: formData.phoneNumber })
+                body: JSON.stringify({ identifier: trimmedPhone })
             });
 
             const data = await response.json();
@@ -108,6 +117,8 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
                 console.log('Registering with data:', { ...formData, password: '***' });
                 const success = await register({ ...formData, password });
                 if (success) {
+                    await refreshUser();
+                    await refreshMandatoryStatus();
                     setShowPaymentModal(true);
                 } else {
                     // Registration failed, show error from AuthContext
@@ -152,6 +163,8 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
     const handlePaymentSuccess = async () => {
         // Payment successful, redirect to dashboard
         setShowPaymentModal(false);
+        await refreshUser();
+        await refreshMandatoryStatus();
         setRoute({ page: 'dashboard' });
     };
 
@@ -189,6 +202,17 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
     return (
         <>
             <AuthLayout title="Create Account">
+                <div className="rounded-lg bg-secondary/50 border border-border p-4 mb-6">
+                    <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-primary" />
+                        Quick checklist
+                    </h3>
+                    <ul className="space-y-1 text-xs text-muted-foreground list-disc list-inside">
+                        <li>Use your WhatsApp Safaricom number (2547XXXXXXXX or 07XXXXXXXX).</li>
+                        <li>Mandatory term contribution of KES 100 will be requested after account creation.</li>
+                        <li>Keep your admission details handy; they are required for verification.</li>
+                    </ul>
+                </div>
                 {step === 'form' ? (
                 <form className="space-y-4" onSubmit={handleFormSubmit}>
                     {(error || formError) && (
@@ -222,6 +246,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
                                     onChange={(e) => setPassword(e.target.value)}
                                     className="block w-full pl-10 pr-3 py-2 border border-input rounded-lg bg-background text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary sm:text-sm transition-colors"
                                 />
+                                <p className="text-xs text-muted-foreground mt-1">Minimum 6 characters; include numbers for stronger security.</p>
                             </div>
                         </div>
                         <div>

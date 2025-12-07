@@ -152,6 +152,15 @@ class ProjectController extends Controller
         return $this->successResponse($project->load('donations'));
     }
 
+    /**
+     * List donations for a given project (public).
+     */
+    public function donations(Project $project)
+    {
+        $donations = $project->donations()->latest()->get();
+        return $this->successResponse($donations);
+    }
+
     public function update(UpdateProjectRequest $request, Project $project)
     {
         $project->update($request->validated());

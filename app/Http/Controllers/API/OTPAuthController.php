@@ -120,7 +120,7 @@ class OTPAuthController extends Controller
 
         // Find user
         $user = User::where('email', $identifier)
-            ->orWhere('phoneNumber', $identifier)
+            ->orWhere('phone_number', $identifier)
             ->first();
 
         if (!$user) {
@@ -136,7 +136,7 @@ class OTPAuthController extends Controller
         try {
             // Verify OTP with WhatsApp service
             $response = Http::timeout(10)->post("{$this->otpServiceUrl}/verify-otp", [
-                'phone' => $isPhone ? $identifier : $user->phoneNumber,
+                'phone' => $isPhone ? $identifier : $user->phone_number,
                 'email' => !$isPhone ? $identifier : $user->email,
                 'otp' => $otp
             ]);
@@ -159,14 +159,16 @@ class OTPAuthController extends Controller
                             'id' => $user->id,
                             'name' => $user->name,
                             'email' => $user->email,
-                            'phoneNumber' => $user->phoneNumber,
+                            // Provide both camelCase and snake_case for frontend compatibility
+                            'phoneNumber' => $user->phone_number,
+                            'phone_number' => $user->phone_number,
                             'role' => $user->role,
                             'avatar' => $user->avatar,
                             'status' => $user->status,
-                            'yearOfStudy' => $user->yearOfStudy,
+                            'yearOfStudy' => $user->year_of_study,
                             'course' => $user->course,
                             'college' => $user->college,
-                            'admissionNumber' => $user->admissionNumber
+                            'admissionNumber' => $user->admission_number
                         ],
                         'token' => $token,
                         'loginMethod' => 'otp'

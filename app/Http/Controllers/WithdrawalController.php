@@ -149,6 +149,35 @@ class WithdrawalController extends Controller
         ]);
     }
 
+    /**
+     * Get withdrawals requested by the authenticated user.
+     */
+    public function getMyWithdrawals(Request $request)
+    {
+        $user = $this->getUserFromBearer($request);
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        $withdrawals = Withdrawal::with(['account', 'transaction'])
+            ->where(function ($q) use ($user) {
+                $q->where('initiated_by', $user->id)
+                  ->orWhere('metadata->user_id', $user->id)
+                  ->orWhere('phone_number', $user->phone_number)
+                  ->orWhere('metadata->initiator_phone', $user->phone_number);
+            })
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $withdrawals
+        ]);
+    }
+
     public function getWithdrawal($id)
     {
         $withdrawal = Withdrawal::with(['account', 'transaction'])

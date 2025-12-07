@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import MpesaPaymentStatus from './MpesaPaymentStatus';
 import { MpesaSession } from '../types';
 import { MANDATORY_CONTRIBUTION_AMOUNT } from '../constants';
+import api from '../services/api';
 
 interface MandatoryPaymentModalProps {
   isOpen: boolean;
@@ -24,7 +25,7 @@ const MandatoryPaymentModal: React.FC<MandatoryPaymentModalProps> = ({
   const [error, setError] = useState('');
   const [mpesaSession, setMpesaSession] = useState<MpesaSession | null>(null);
   const { user } = useAuth();
-  const { initiateProjectContribution, checkMpesaStatus } = useFinance();
+  const { checkMpesaStatus, refreshMandatoryStatus } = useFinance();
 
   useEffect(() => {
     if (user?.phoneNumber) {
@@ -62,22 +63,24 @@ const MandatoryPaymentModal: React.FC<MandatoryPaymentModalProps> = ({
     const formattedPhone = formatPhoneNumber(phoneNumber);
 
     try {
-      // Initiate mandatory contribution payment
-      // Using a special project ID or account for mandatory contributions
-      const result = await initiateProjectContribution({
-        projectId: 0, // Special ID for mandatory contribution
-        projectTitle: 'UET JKUAT Mandatory Term Contribution',
-        amount: MANDATORY_CONTRIBUTION_AMOUNT,
-        phoneNumber: formattedPhone,
-        userId: user?.id,
-        donorName: user?.name || 'New Member',
-      });
-
-      if (result.success && result.session) {
-        setMpesaSession(result.session);
-      } else {
-        setError(result.message || 'Failed to initiate payment. Please try again.');
+      const response = await api.onboarding.initiate(formattedPhone);
+      if (!response.success || !response.data) {
+        setError(response.error || response.message || 'Failed to initiate payment.');
+        return;
       }
+
+      const session: MpesaSession = {
+        id: response.data.checkoutRequestId,
+        amount: response.data.amount,
+        phoneNumber: formattedPhone,
+        projectId: 0,
+        projectTitle: 'Mandatory Contribution',
+        status: 'pending',
+        initiatedAt: new Date().toISOString(),
+        checkoutRequestId: response.data.checkoutRequestId,
+        merchantRequestId: response.data.merchantRequestId,
+      };
+      setMpesaSession(session);
     } catch (err: any) {
       setError(err.message || 'Failed to initiate payment. Please try again.');
     }
@@ -85,6 +88,7 @@ const MandatoryPaymentModal: React.FC<MandatoryPaymentModalProps> = ({
 
   const handlePaymentComplete = async () => {
     setMpesaSession(null);
+    await refreshMandatoryStatus();
     onSuccess();
   };
 
@@ -113,8 +117,8 @@ const MandatoryPaymentModal: React.FC<MandatoryPaymentModalProps> = ({
             </h2>
             <p className="text-gray-600">
               {isRegistration
-                ? 'To complete your registration, please make the mandatory term contribution of KES 100.'
-                : 'You need to complete your mandatory term contribution of KES 100 to access the platform.'}
+                ? `To complete your registration, please make the mandatory term contribution of KES ${MANDATORY_CONTRIBUTION_AMOUNT}.`
+                : `You need to complete your mandatory term contribution of KES ${MANDATORY_CONTRIBUTION_AMOUNT} to access the platform.`}
             </p>
           </div>
 

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use App\Models\Transaction;
 use Carbon\Carbon;
 
 class AuthController extends Controller
@@ -89,7 +90,10 @@ class AuthController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'user' => $user->getProfileData(),
+                    'user' => array_merge(
+                        $user->getProfileData(),
+                        $this->getMandatoryStatus($user->id)
+                    ),
                     'token' => $token,
                 ],
                 'message' => 'Registration successful! Your member ID is: ' . $memberId,
@@ -139,7 +143,10 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'user' => $user->getProfileData(),
+                'user' => array_merge(
+                    $user->getProfileData(),
+                    $this->getMandatoryStatus($user->id)
+                ),
                 'token' => $token,
             ],
         ]);
@@ -160,8 +167,30 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $user->getProfileData(),
+            'data' => array_merge(
+                $user->getProfileData(),
+                $this->getMandatoryStatus($user->id)
+            ),
         ]);
+    }
+
+    /**
+     * Compute mandatory contribution status for a user from transactions tagged mandatory_contribution.
+     */
+    private function getMandatoryStatus(int $userId): array
+    {
+        $latest = Transaction::where('metadata->purpose', 'mandatory_contribution')
+            ->where('metadata->user_id', $userId)
+            ->latest()
+            ->first();
+
+        $paid = $latest && $latest->status === 'completed';
+
+        return [
+            'mandatory_paid' => $paid,
+            'mandatory_amount' => 100,
+            'mandatory_last_payment_date' => $paid ? ($latest->processed_at?->toDateTimeString() ?? $latest->updated_at?->toDateTimeString()) : null,
+        ];
     }
 }
 

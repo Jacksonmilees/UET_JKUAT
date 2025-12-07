@@ -31,10 +31,10 @@ const getPastDate = (days: number) => {
     return date.toISOString();
 }
 
-export const MANDATORY_CONTRIBUTION_AMOUNT = 1;
+export const MANDATORY_CONTRIBUTION_AMOUNT = 100;
 
-// API Configuration
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://uetjkuat.herokuapp.com/api';
+// API Configuration (single source of truth for frontend)
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://uetjkuat-54286e10a43b.herokuapp.com/api';
 
 const mockContributors: Contributor[] = [
     { name: 'Alice Johnson', avatar: 'https://i.pravatar.cc/150?u=alice' },

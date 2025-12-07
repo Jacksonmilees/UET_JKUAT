@@ -10,6 +10,7 @@ use App\Services\PaymentNotificationService;
 use App\Models\Transaction;
 use App\Models\Account;
 use App\Models\Ticket;
+use App\Models\User;
 use App\Exceptions\PaymentProcessingException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -124,6 +125,58 @@ class MpesaCallbackController extends Controller
         // Find the pending ticket using the CheckoutRequestID
         $checkoutRequestId = $stkCallback['CheckoutRequestID'];
         
+        // First, try to find a pending transaction we created (e.g., mandatory contribution)
+        $pendingTxn = Transaction::where('metadata->checkout_request_id', $checkoutRequestId)->first();
+
+        if ($pendingTxn) {
+            DB::beginTransaction();
+            try {
+                $pendingTxn->update([
+                    'amount' => $amount,
+                    'status' => 'completed',
+                    'reference' => $mpesaReceiptNumber,
+                    'phone_number' => $phoneNumber,
+                    'processed_at' => now(),
+                    'metadata' => array_merge($pendingTxn->metadata ?? [], [
+                        'mpesa_transaction_id' => $mpesaReceiptNumber,
+                        'transaction_time' => $transactionDate,
+                    ])
+                ]);
+
+                // Update account balance safely
+                if ($pendingTxn->account) {
+                    $pendingTxn->account->balance += $amount;
+                    $pendingTxn->account->save();
+                }
+
+                // If this was a mandatory contribution, mark user as active and set registration date
+                if (($pendingTxn->metadata['purpose'] ?? null) === 'mandatory_contribution' && isset($pendingTxn->metadata['user_id'])) {
+                    $user = User::find($pendingTxn->metadata['user_id']);
+                    if ($user) {
+                        $user->status = 'active';
+                        if (!$user->registration_completed_at) {
+                            $user->registration_completed_at = now();
+                        }
+                        $user->save();
+                    }
+                }
+
+                DB::commit();
+
+                return $this->successResponse('Payment processed', [
+                    'transaction_id' => $pendingTxn->id,
+                    'reference' => $mpesaReceiptNumber,
+                    'amount' => $amount,
+                ]);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Failed to finalize pending transaction from STK callback', [
+                    'error' => $e->getMessage(),
+                    'checkout_request_id' => $checkoutRequestId,
+                ]);
+            }
+        }
+
         // Try to find ticket, but handle if column doesn't exist
         $ticket = null;
         try {

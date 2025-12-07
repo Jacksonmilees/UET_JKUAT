@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use App\Models\Account;
 use App\Http\Resources\AccountResource;
 use App\Http\Resources\TransactionResource;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class AccountController extends Controller
 {
@@ -16,6 +18,101 @@ class AccountController extends Controller
     public function __construct(AccountService $accountService)
     {
         $this->accountService = $accountService;
+    }
+
+    /**
+     * Return or auto-create the user's personal wallet account using bearer token auth.
+     */
+    public function myAccounts(Request $request)
+    {
+        $user = $this->getUserFromBearer($request);
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        // Try to find existing wallet tied to this user
+        $account = Account::where('metadata->user_id', $user->id)->first();
+
+        if (!$account) {
+            // Ensure account type/subtype exist
+            $accountType = DB::table('account_types')->where('code', 'GEN')->first();
+            if (!$accountType) {
+                $accountTypeId = DB::table('account_types')->insertGetId([
+                    'name' => 'General',
+                    'code' => 'GEN',
+                    'description' => 'General Account',
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            } else {
+                $accountTypeId = $accountType->id;
+            }
+
+            $accountSubtype = DB::table('account_subtypes')->where('code', 'WALLET')->first();
+            if (!$accountSubtype) {
+                $accountSubtypeId = DB::table('account_subtypes')->insertGetId([
+                    'account_type_id' => $accountTypeId,
+                    'name' => 'Wallet',
+                    'code' => 'WALLET',
+                    'description' => 'Personal Wallet Account',
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            } else {
+                $accountSubtypeId = $accountSubtype->id;
+            }
+
+            $reference = 'USR-' . $user->id . '-' . strtoupper(Str::random(4));
+
+            $account = Account::create([
+                'account_type_id' => $accountTypeId,
+                'account_subtype_id' => $accountSubtypeId,
+                'name' => $user->name . ' Wallet',
+                'reference' => $reference,
+                'type' => 'personal',
+                'balance' => 0,
+                'status' => 'active',
+                'metadata' => [
+                    'user_id' => $user->id,
+                    'user_name' => $user->name,
+                    'phone_number' => $user->phone_number,
+                    'created_via' => 'api/my',
+                ],
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [new AccountResource($account)]
+        ]);
+    }
+
+    /**
+     * Get the primary wallet balance for the authenticated user.
+     */
+    public function getBalance(Request $request)
+    {
+        $user = $this->getUserFromBearer($request);
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        $account = Account::where('metadata->user_id', $user->id)->first();
+        $balance = $account?->balance ?? 0;
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'balance' => (float) $balance,
+                'account_reference' => $account?->reference,
+            ]
+        ]);
     }
 
     public function index(Request $request)

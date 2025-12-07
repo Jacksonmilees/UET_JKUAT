@@ -264,6 +264,31 @@ class TicketController extends Controller
         }
     }
 
+    /**
+     * Return tickets belonging to the authenticated user (by member_id or phone number).
+     */
+    public function getMyTickets(Request $request)
+    {
+        $user = $this->getUserFromBearer($request);
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        $tickets = Ticket::query()
+            ->when($user->member_id, fn ($q) => $q->orWhere('member_mmid', $user->member_id))
+            ->orWhere('phone_number', $user->phone_number)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $tickets,
+        ]);
+    }
+
     public function winnerSelection(Request $request)
     {
         try {

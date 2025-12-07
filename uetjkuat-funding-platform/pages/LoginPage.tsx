@@ -3,17 +3,18 @@ import { useAuth } from '../contexts/AuthContext';
 import { useFinance } from '../contexts/FinanceContext';
 import { Route } from '../types';
 import AuthLayout from '../components/common/AuthLayout';
-import { Lock, Mail, Info, Loader2, Smartphone, KeyRound } from 'lucide-react';
+import { Lock, Mail, Info, Loader2, Smartphone, KeyRound, ShieldCheck } from 'lucide-react';
 import MandatoryPaymentModal from '../components/MandatoryPaymentModal';
 import { API_BASE_URL } from '../constants';
+import api from '../services/api';
 
 interface LoginPageProps {
     setRoute: (route: Route) => void;
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
-    const { login, isLoading, error, user, setUser } = useAuth();
-    const { getMandatoryStatus, refreshTransactions } = useFinance();
+    const { login, isLoading, error, user, setUser, refreshUser } = useAuth();
+    const { getMandatoryStatus, refreshTransactions, refreshMandatoryStatus } = useFinance();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [formError, setFormError] = useState('');
@@ -37,6 +38,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
             if (justLoggedIn && user && !hasCheckedPayment.current) {
                 hasCheckedPayment.current = true;
                 await refreshTransactions();
+                await refreshMandatoryStatus();
                 const mandatoryStatus = await getMandatoryStatus(user.id);
 
                 if (!mandatoryStatus.isCleared && user.role !== 'admin') {
@@ -73,7 +75,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
 
     const handlePaymentSuccess = async () => {
         setShowPaymentModal(false);
+        await refreshUser();
         await refreshTransactions();
+        await refreshMandatoryStatus();
         setRoute({ page: 'dashboard' });
     };
 
@@ -91,8 +95,17 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
         setOtpError('');
         setFormError('');
         
-        if (!identifier) {
+        const trimmedIdentifier = identifier.trim();
+        const isEmail = /@/.test(trimmedIdentifier);
+        const isPhone = /^(0|254)\d{9}$/.test(trimmedIdentifier.replace(/\s|\+/g, ''));
+
+        if (!trimmedIdentifier) {
             setOtpError('Please enter your email or phone number');
+            return;
+        }
+
+        if (!isEmail && !isPhone) {
+            setOtpError('Enter a valid email or Safaricom number (2547XXXXXXXX or 07XXXXXXXX)');
             return;
         }
         
@@ -102,7 +115,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
             const response = await fetch(`${API_BASE_URL}/auth/otp/request`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ identifier })
+                body: JSON.stringify({ identifier: trimmedIdentifier })
             });
             
             const data = await response.json();
@@ -144,9 +157,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
             const data = await response.json();
             
             if (data.success && data.user) {
-                // Login successful
+                // Persist token if provided then sync canonical user profile.
+                if (data.token) {
+                    api.setToken(data.token);
+                }
                 setUser(data.user);
-                localStorage.setItem('user', JSON.stringify(data.user));
+                await refreshUser();
                 
                 // Check admin role
                 if (data.user.role === 'admin') {
@@ -195,6 +211,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
                     <li>Mandatory term contribution: <span className="font-medium text-foreground">KES 100</span>.</li>
                     <li>One-time payment per term.</li>
                     <li>Additional contributions welcome.</li>
+                    <li className="flex items-center gap-1 text-foreground"><ShieldCheck className="h-3 w-3 text-primary" /> WhatsApp OTP supported.</li>
                 </ul>
             </div>
             {/* Login Method Toggle */}

@@ -60,6 +60,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           role: userData.role === 'super_admin' ? 'admin' : userData.role,
           status: userData.status,
           phoneNumber: userData.phone_number,
+          mandatoryPaid: userData.mandatory_paid,
+          mandatoryAmount: userData.mandatory_amount,
+          mandatoryLastPaymentDate: userData.mandatory_last_payment_date,
         });
       }
     } catch (err) {
@@ -84,6 +87,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           role: userData.role === 'super_admin' ? 'admin' : userData.role,
           status: userData.status,
           phoneNumber: userData.phone_number,
+          mandatoryPaid: userData.mandatory_paid,
+          mandatoryAmount: userData.mandatory_amount,
+          mandatoryLastPaymentDate: userData.mandatory_last_payment_date,
         });
         addNotification(`Welcome back, ${userData.name}!`);
         setIsLoading(false);
@@ -123,6 +129,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           admissionNumber: credentials.admissionNumber,
           ministryInterest: credentials.ministryInterest,
           residence: credentials.residence,
+          mandatoryPaid: userData.mandatory_paid,
+          mandatoryAmount: userData.mandatory_amount,
+          mandatoryLastPaymentDate: userData.mandatory_last_payment_date,
         });
         addNotification(`Welcome, ${userData.name}! Your account has been created.`);
         setIsLoading(false);
@@ -200,6 +209,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           role: u.role === 'super_admin' ? 'admin' : u.role,
           status: u.status,
           phoneNumber: u.phone_number,
+          mandatoryPaid: u.mandatory_paid,
+          mandatoryAmount: u.mandatory_amount,
+          mandatoryLastPaymentDate: u.mandatory_last_payment_date,
         }));
         setUsers(usersData);
       }

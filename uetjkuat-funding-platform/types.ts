@@ -41,6 +41,9 @@ export interface User {
   admissionNumber?: string;
   ministryInterest?: string;
   residence?: string;
+  mandatoryPaid?: boolean;
+  mandatoryAmount?: number;
+  mandatoryLastPaymentDate?: string;
 }
 
 export type RegisterCredentials = {
