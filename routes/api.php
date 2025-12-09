@@ -194,9 +194,10 @@ Route::prefix('v1')->group(function () {
     Route::get('/merchandise', [\App\Http\Controllers\API\MerchandiseController::class, 'index']);
     Route::get('/merchandise/{id}', [\App\Http\Controllers\API\MerchandiseController::class, 'show']);
     
-    // Uploads (public access)
+    // Uploads (public access for GET, authenticated POST)
     Route::get('/uploads', [\App\Http\Controllers\API\UploadController::class, 'index']);
     Route::get('/uploads/{id}', [\App\Http\Controllers\API\UploadController::class, 'show']);
+    Route::post('/uploads', [\App\Http\Controllers\API\UploadController::class, 'store']);
     
     // Members search (public)
     Route::get('/members', [\App\Http\Controllers\API\MemberController::class, 'index']);

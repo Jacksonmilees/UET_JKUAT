@@ -11,8 +11,10 @@ const ChairpersonSection: React.FC<ChairpersonSectionProps> = ({ compact = false
 
   // Default values if not set in settings
   const chairName = settings.chair_name || 'Boniface Mwanzia David';
-  const chairTitle = settings.chair_title || 'Chairperson – UET JKUAT (2025/2026)';
+  const chairTitle = settings.chair_title || 'Chairperson – UET JKUAT';
   const chairImage = settings.chair_image || 'https://i.pravatar.cc/400?u=boniface-chair';
+  const spiritualYear = settings.spiritual_year || '2024/2025';
+  const chairMessage = settings.chair_message || '"But grow in the grace and knowledge of our Lord and Savior Jesus Christ. To Him be glory both now and forever! Amen." — 2 Peter 3:18';
 
   if (loading) {
     return (
@@ -83,7 +85,7 @@ const ChairpersonSection: React.FC<ChairpersonSectionProps> = ({ compact = false
             {/* Badge */}
             <div className="absolute -bottom-3 -right-3 bg-primary text-primary-foreground px-4 py-2 rounded-xl shadow-lg flex items-center gap-2">
               <Award className="w-4 h-4" />
-              <span className="text-sm font-bold">2025/2026</span>
+              <span className="text-sm font-bold">{spiritualYear}</span>
             </div>
           </div>
 
@@ -92,7 +94,7 @@ const ChairpersonSection: React.FC<ChairpersonSectionProps> = ({ compact = false
             {/* Title Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
               <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-              <span className="text-sm font-semibold text-primary">{chairTitle}</span>
+              <span className="text-sm font-semibold text-primary">{chairTitle} ({spiritualYear})</span>
             </div>
 
             {/* Name */}
@@ -117,10 +119,8 @@ const ChairpersonSection: React.FC<ChairpersonSectionProps> = ({ compact = false
             <div className="relative bg-secondary/50 rounded-2xl p-6 border border-border">
               <Quote className="absolute top-4 left-4 w-8 h-8 text-primary/20" />
               <blockquote className="relative z-10 pl-8 italic text-foreground font-medium">
-                "But grow in the grace and knowledge of our Lord and Savior Jesus Christ. 
-                To Him be glory both now and forever! Amen."
+                {chairMessage}
               </blockquote>
-              <p className="mt-3 pl-8 text-sm text-muted-foreground">— 2 Peter 3:18</p>
             </div>
 
             {/* Action Buttons */}

@@ -28,6 +28,8 @@ interface SystemSettings {
   chair_name: string;
   chair_title: string;
   chair_image: string | null;
+  chair_message: string;
+  spiritual_year: string;
   organization_name: string;
   organization_tagline: string;
   hero_images: HeroImage[];
@@ -47,6 +49,8 @@ const SettingsManagement: React.FC = () => {
     chair_name: '',
     chair_title: 'Chairperson',
     chair_image: null,
+    chair_message: '',
+    spiritual_year: '2024/2025',
     organization_name: 'UET JKUAT',
     organization_tagline: 'Empowering Students Through Technology',
     hero_images: [],
@@ -105,42 +109,32 @@ const SettingsManagement: React.FC = () => {
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      showError('Image must be less than 5MB');
+    // Validate file size (max 2MB for base64 storage)
+    if (file.size > 2 * 1024 * 1024) {
+      showError('Image must be less than 2MB');
       return;
     }
 
     try {
       setUploadingImage(true);
       
-      // Create preview
+      // Convert to base64 and store directly (works on Heroku)
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPreviewImage(reader.result as string);
+        const base64Data = reader.result as string;
+        setPreviewImage(base64Data);
+        setSettings(prev => ({ ...prev, chair_image: base64Data }));
+        showSuccess('Image loaded successfully. Click Save to persist.');
+        setUploadingImage(false);
+      };
+      reader.onerror = () => {
+        showError('Failed to read image file');
+        setUploadingImage(false);
       };
       reader.readAsDataURL(file);
-
-      // Upload to server using the uploads API
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('type', 'chair');
-      
-      const response = await api.uploads.uploadImage(formData);
-
-      if (response.success && response.data?.url) {
-        setSettings(prev => ({ ...prev, chair_image: response.data!.url }));
-        setPreviewImage(response.data.url);
-        showSuccess('Image uploaded successfully');
-      } else {
-        throw new Error(response.error || 'Upload failed');
-      }
     } catch (error: any) {
       console.error('Error uploading image:', error);
       showError(error.message || 'Failed to upload image');
-      // Revert preview if upload failed
-      setPreviewImage(settings.chair_image);
-    } finally {
       setUploadingImage(false);
     }
   };
@@ -173,42 +167,42 @@ const SettingsManagement: React.FC = () => {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      showError('Image must be less than 5MB');
+    if (file.size > 2 * 1024 * 1024) {
+      showError('Image must be less than 2MB');
       return;
     }
 
     try {
       setUploadingHeroImage(true);
       
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('type', 'hero');
-      
-      const response = await api.uploads.uploadImage(formData);
-
-      if (response.success && response.data?.url) {
+      // Convert to base64 and store directly (works on Heroku)
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64Data = reader.result as string;
         const newHeroImage: HeroImage = {
-          url: response.data.url,
+          url: base64Data,
           alt: file.name.replace(/\.[^/.]+$/, '').replace(/_/g, ' ')
         };
         setSettings(prev => ({
           ...prev,
           hero_images: [...prev.hero_images, newHeroImage]
         }));
-        showSuccess('Hero image uploaded successfully');
-      } else {
-        throw new Error(response.error || 'Upload failed');
-      }
+        showSuccess('Hero image added. Click Save to persist.');
+        setUploadingHeroImage(false);
+        // Reset file input
+        if (heroFileInputRef.current) {
+          heroFileInputRef.current.value = '';
+        }
+      };
+      reader.onerror = () => {
+        showError('Failed to read image file');
+        setUploadingHeroImage(false);
+      };
+      reader.readAsDataURL(file);
     } catch (error: any) {
       console.error('Error uploading hero image:', error);
       showError(error.message || 'Failed to upload hero image');
-    } finally {
       setUploadingHeroImage(false);
-      // Reset file input
-      if (heroFileInputRef.current) {
-        heroFileInputRef.current.value = '';
-      }
     }
   };
 
@@ -358,7 +352,28 @@ const SettingsManagement: React.FC = () => {
               />
               
               <p className="text-xs text-muted-foreground mt-2">
-                Max size: 5MB. Supported: JPG, PNG, GIF
+                Max size: 2MB. Supported: JPG, PNG, GIF
+              </p>
+            </div>
+
+            {/* Chair Image URL - Alternative */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">
+                Or Enter Image URL
+              </label>
+              <input
+                type="url"
+                value={settings.chair_image?.startsWith('data:') ? '' : (settings.chair_image || '')}
+                onChange={(e) => {
+                  const url = e.target.value;
+                  setSettings(prev => ({ ...prev, chair_image: url || null }));
+                  setPreviewImage(url || null);
+                }}
+                placeholder="https://example.com/image.jpg"
+                className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Use an external URL (e.g., from Google Drive, Imgur) for larger images
               </p>
             </div>
 
@@ -388,6 +403,40 @@ const SettingsManagement: React.FC = () => {
                 placeholder="e.g., Chairperson, President"
                 className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               />
+            </div>
+
+            {/* Spiritual Year */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">
+                Spiritual Year
+              </label>
+              <input
+                type="text"
+                value={settings.spiritual_year}
+                onChange={(e) => setSettings(prev => ({ ...prev, spiritual_year: e.target.value }))}
+                placeholder="e.g., 2024/2025"
+                className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Current spiritual/academic year displayed on the About page
+              </p>
+            </div>
+
+            {/* Chair Message */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">
+                Chair Message / Quote
+              </label>
+              <textarea
+                value={settings.chair_message}
+                onChange={(e) => setSettings(prev => ({ ...prev, chair_message: e.target.value }))}
+                placeholder="Enter a welcome message or quote from the chairperson..."
+                rows={4}
+                className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                This message appears in the About section
+              </p>
             </div>
           </div>
         </div>

@@ -48,6 +48,7 @@ interface ProjectListProps {
   setSortOption: (option: string) => void;
   isLoading?: boolean;
   onRefresh?: () => Promise<void>;
+  hideHeader?: boolean;
 }
 
 const ProjectList: React.FC<ProjectListProps> = ({
@@ -60,7 +61,8 @@ const ProjectList: React.FC<ProjectListProps> = ({
   sortOption,
   setSortOption,
   isLoading = false,
-  onRefresh
+  onRefresh,
+  hideHeader = false
 }) => {
   const [refreshing, setRefreshing] = useState(false);
 
@@ -74,24 +76,26 @@ const ProjectList: React.FC<ProjectListProps> = ({
   return (
     <section id="projects" className="py-16 md:py-24 bg-background relative">
       <div className="container mx-auto px-6 relative z-10">
-        <div className="text-center mb-16">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <h2 className="text-4xl md:text-5xl font-bold text-foreground">Active Projects</h2>
-            {onRefresh && (
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing || isLoading}
-                className="p-2 rounded-full hover:bg-secondary transition-colors disabled:opacity-50"
-                title="Refresh projects"
-              >
-                <RefreshCw className={`w-5 h-5 text-muted-foreground ${refreshing ? 'animate-spin' : ''}`} />
-              </button>
-            )}
+        {!hideHeader && (
+          <div className="text-center mb-16">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <h2 className="text-4xl md:text-5xl font-bold text-foreground">Active Projects</h2>
+              {onRefresh && (
+                <button
+                  onClick={handleRefresh}
+                  disabled={refreshing || isLoading}
+                  className="p-2 rounded-full hover:bg-secondary transition-colors disabled:opacity-50"
+                  title="Refresh projects"
+                >
+                  <RefreshCw className={`w-5 h-5 text-muted-foreground ${refreshing ? 'animate-spin' : ''}`} />
+                </button>
+              )}
+            </div>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Support a cause that matters to you. Each project is a step towards strengthening our community and faith.
+            </p>
           </div>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Support a cause that matters to you. Each project is a step towards strengthening our community and faith.
-          </p>
-        </div>
+        )}
 
         {/* Filter and Sort Controls */}
         <div className="flex flex-col lg:flex-row justify-between items-center mb-12 gap-6 bg-secondary/30 p-4 rounded-xl border border-border">

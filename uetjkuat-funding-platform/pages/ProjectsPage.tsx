@@ -23,6 +23,11 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({ setRoute }) => {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Filter to show only active projects
+  const activeProjects = filteredAndSortedProjects.filter(
+    (project) => project.status === 'active' || project.status === 'ongoing'
+  );
+
   const handleOpenContributeModal = (project: Project) => {
     setSelectedProject(project);
     setIsModalOpen(true);
@@ -40,19 +45,9 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({ setRoute }) => {
   return (
     <div className="min-h-screen py-8">
       <div className="container mx-auto px-4">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">Our Projects</h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Explore our initiatives and contribute to causes that matter. 
-            Every contribution helps us make a difference.
-          </p>
-          <div className="h-1 w-24 bg-primary mx-auto mt-6 rounded-full"></div>
-        </div>
-
-        {/* Project List */}
+        {/* Project List - Active Projects Only */}
         <ProjectList 
-          projects={filteredAndSortedProjects} 
+          projects={activeProjects} 
           onContributeClick={handleOpenContributeModal}
           onCardClick={handleCardClick}
           categories={categories}
@@ -62,6 +57,7 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({ setRoute }) => {
           setSortOption={setSortOption}
           isLoading={isLoading}
           onRefresh={refreshProjects}
+          hideHeader={true}
         />
 
         {/* Contribution Modal */}
