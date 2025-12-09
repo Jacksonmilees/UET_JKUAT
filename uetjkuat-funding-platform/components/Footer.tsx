@@ -1,5 +1,5 @@
 import React from 'react';
-import { Facebook, Instagram, Twitter, Mail, MapPin } from 'lucide-react';
+import { Facebook, Instagram, Twitter, Mail, MapPin, Phone } from 'lucide-react';
 
 const Footer: React.FC = () => {
   return (
@@ -35,9 +35,12 @@ const Footer: React.FC = () => {
               <p className="flex items-center gap-2 hover:text-white transition-colors">
                 <MapPin className="w-4 h-4 text-primary-500" /> Juja, Kenya
               </p>
-              <p className="flex items-center gap-2 hover:text-white transition-colors">
-                <Mail className="w-4 h-4 text-primary-500" /> info@uetjkuat.org
-              </p>
+              <a href="mailto:support@uetjkuat.com" className="flex items-center gap-2 hover:text-white transition-colors">
+                <Mail className="w-4 h-4 text-primary-500" /> support@uetjkuat.com
+              </a>
+              <a href="tel:+254700088271" className="flex items-center gap-2 hover:text-white transition-colors">
+                <Phone className="w-4 h-4 text-primary-500" /> 0700 088 271
+              </a>
             </div>
 
             <div className="flex justify-center md:justify-start space-x-4">
