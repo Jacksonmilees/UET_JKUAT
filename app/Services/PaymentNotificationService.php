@@ -51,7 +51,7 @@ class PaymentNotificationService
      * **NEW METHOD: Notify treasurers about withdrawal activities**
      * This method sends notifications to all treasurers about withdrawal attempts (success or failure)
      */
-    public function notifyTreasurersAboutWithdrawal($withdrawal, string $status, string $errorMessage = null)
+    public function notifyTreasurersAboutWithdrawal($withdrawal, string $status, ?string $errorMessage = null)
     {
         try {
             Log::info('Starting withdrawal notification to treasurers', [
@@ -135,7 +135,7 @@ class PaymentNotificationService
     /**
      * Send withdrawal notification to individual treasurer
      */
-    protected function sendWithdrawalNotificationToTreasurer($treasurer, $withdrawal, string $status, string $errorMessage = null)
+    protected function sendWithdrawalNotificationToTreasurer($treasurer, $withdrawal, string $status, ?string $errorMessage = null)
     {
         $timestamp = now()->addHours(3)->format('d/m/Y H:i');
         $amount = number_format($withdrawal->amount ?? 0, 2);
