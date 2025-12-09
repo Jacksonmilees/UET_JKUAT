@@ -44,11 +44,19 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
         const checkMandatoryPayment = async () => {
             if (justLoggedIn && user && !hasCheckedPayment.current) {
                 hasCheckedPayment.current = true;
+                
+                // Admins go directly to admin dashboard
+                if (user.role === 'admin' || user.role === 'super_admin') {
+                    setRoute({ page: 'admin' });
+                    setJustLoggedIn(false);
+                    return;
+                }
+                
                 await refreshTransactions();
                 await refreshMandatoryStatus();
                 const mandatoryStatus = await getMandatoryStatus(user.id);
 
-                if (!mandatoryStatus.isCleared && user.role !== 'admin') {
+                if (!mandatoryStatus.isCleared) {
                     setShowPaymentModal(true);
                 } else {
                     setRoute({ page: 'dashboard' });
@@ -70,12 +78,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
 
         const success = await login({ email, password });
         if (success) {
-            // Route immediately, then run mandatory check in background
-            if (email.toLowerCase() === 'admin@uetjkuat.com') {
-                setRoute({ page: 'admin' });
-            } else {
-                setRoute({ page: 'dashboard' });
-            }
+            // The login function updates the user state, we need to wait for it
+            // For now, route to dashboard and let the user context handle admin redirect
             setJustLoggedIn(true);
         }
     };
@@ -176,8 +180,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
                 setUser(data.user);
                 await refreshUser();
                 
-                // Check admin role
-                if (data.user.role === 'admin') {
+                // Check admin role - redirect admins to admin dashboard
+                if (data.user.role === 'admin' || data.user.role === 'super_admin') {
                     setRoute({ page: 'admin' });
                 } else {
                     setRoute({ page: 'dashboard' });

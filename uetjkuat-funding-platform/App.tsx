@@ -90,8 +90,8 @@ const AppContent: React.FC = () => {
     }, []);
 
     const renderPage = () => {
-        // Admin route protection
-        if (route.page === 'admin' && user?.role !== 'admin') {
+        // Admin route protection - allow both admin and super_admin roles
+        if (route.page === 'admin' && user?.role !== 'admin' && user?.role !== 'super_admin') {
             return <HomePage setRoute={setRoute} />;
         }
 

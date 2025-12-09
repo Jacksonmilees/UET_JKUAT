@@ -24,12 +24,16 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, setRoute, currentRoute }) => {
     const { user, logout } = useAuth();
 
+    // Base menu items for all users
     const menuItems = [
         { icon: LayoutDashboard, label: 'Overview', page: 'dashboard' },
         { icon: FolderHeart, label: 'Projects', page: 'home' },
-        { icon: CreditCard, label: 'My Donations', page: 'dashboard' }, // Donations are shown in dashboard
+        { icon: CreditCard, label: 'My Donations', page: 'dashboard' },
         { icon: ShoppingBag, label: 'Shop', page: 'merch' },
     ];
+    
+    // Add admin panel link for admins
+    const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
     const handleNavigation = (page: string) => {
         setRoute({ page: page as any });
@@ -89,6 +93,23 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, setRoute, currentR
                                 {item.label}
                             </button>
                         ))}
+                        
+                        {/* Admin Panel Link - Only for admins */}
+                        {isAdmin && (
+                            <button
+                                onClick={() => handleNavigation('admin')}
+                                className={`
+                  w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors mt-4 border-t border-border pt-4
+                  ${currentRoute === 'admin'
+                                        ? 'bg-primary/10 text-primary'
+                                        : 'text-primary hover:bg-primary/10'
+                                    }
+                `}
+                            >
+                                <Settings className="w-5 h-5" />
+                                Admin Panel
+                            </button>
+                        )}
                     </nav>
 
                     {/* User Profile (Bottom) */}
