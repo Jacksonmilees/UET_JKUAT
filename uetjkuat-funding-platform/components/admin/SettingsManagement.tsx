@@ -14,6 +14,7 @@ import {
   ToggleRight
 } from 'lucide-react';
 import api from '../../services/api';
+import { useNotification } from '../../contexts/NotificationContext';
 
 interface SystemSettings {
   chair_name: string;
@@ -32,6 +33,7 @@ interface SystemSettings {
 }
 
 const SettingsManagement: React.FC = () => {
+  const { showSuccess, showError } = useNotification();
   const [settings, setSettings] = useState<SystemSettings>({
     chair_name: '',
     chair_title: 'Chairperson',
@@ -51,7 +53,6 @@ const SettingsManagement: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -87,13 +88,13 @@ const SettingsManagement: React.FC = () => {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      setNotification({ type: 'error', message: 'Please select an image file' });
+      showError('Please select an image file');
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      setNotification({ type: 'error', message: 'Image must be less than 5MB' });
+      showError('Image must be less than 5MB');
       return;
     }
 
@@ -117,16 +118,13 @@ const SettingsManagement: React.FC = () => {
       if (response.success && response.data?.url) {
         setSettings(prev => ({ ...prev, chair_image: response.data!.url }));
         setPreviewImage(response.data.url);
-        setNotification({ type: 'success', message: 'Image uploaded successfully' });
+        showSuccess('Image uploaded successfully');
       } else {
         throw new Error(response.error || 'Upload failed');
       }
     } catch (error: any) {
       console.error('Error uploading image:', error);
-      setNotification({ 
-        type: 'error', 
-        message: error.message || 'Failed to upload image' 
-      });
+      showError(error.message || 'Failed to upload image');
       // Revert preview if upload failed
       setPreviewImage(settings.chair_image);
     } finally {
@@ -141,15 +139,12 @@ const SettingsManagement: React.FC = () => {
       if (response.data.success) {
         setSettings(prev => ({ ...prev, chair_image: null }));
         setPreviewImage(null);
-        setNotification({ type: 'success', message: 'Image removed successfully' });
+        showSuccess('Image removed successfully');
       } else {
         throw new Error(response.data.error || 'Failed to remove image');
       }
     } catch (error: any) {
-      setNotification({ 
-        type: 'error', 
-        message: error.message || 'Failed to remove image' 
-      });
+      showError(error.message || 'Failed to remove image');
     } finally {
       setSaving(false);
     }
@@ -160,15 +155,12 @@ const SettingsManagement: React.FC = () => {
       setSaving(true);
       const response = await api.put('/settings', settings);
       if (response.data.success) {
-        setNotification({ type: 'success', message: 'Settings saved successfully' });
+        showSuccess('Settings saved successfully');
       } else {
         throw new Error(response.data.error || 'Failed to save settings');
       }
     } catch (error: any) {
-      setNotification({ 
-        type: 'error', 
-        message: error.message || 'Failed to save settings' 
-      });
+      showError(error.message || 'Failed to save settings');
     } finally {
       setSaving(false);
     }
@@ -183,14 +175,6 @@ const SettingsManagement: React.FC = () => {
       }
     }));
   };
-
-  // Clear notification after 5 seconds
-  useEffect(() => {
-    if (notification) {
-      const timer = setTimeout(() => setNotification(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [notification]);
 
   if (loading) {
     return (
@@ -230,22 +214,6 @@ const SettingsManagement: React.FC = () => {
           Save Settings
         </button>
       </div>
-
-      {/* Notification */}
-      {notification && (
-        <div className={`p-4 rounded-lg flex items-center gap-3 ${
-          notification.type === 'success' 
-            ? 'bg-green-500/10 text-green-500 border border-green-500/20' 
-            : 'bg-red-500/10 text-red-500 border border-red-500/20'
-        }`}>
-          {notification.type === 'success' ? (
-            <CheckCircle className="w-5 h-5" />
-          ) : (
-            <AlertCircle className="w-5 h-5" />
-          )}
-          {notification.message}
-        </div>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Chair Image Section */}

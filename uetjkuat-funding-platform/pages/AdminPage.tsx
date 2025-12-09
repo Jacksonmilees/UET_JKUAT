@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useProjects } from '../contexts/ProjectContext';
 import { useNews } from '../contexts/NewsContext';
 import { useFinance } from '../contexts/FinanceContext';
+import { useNotification } from '../contexts/NotificationContext';
 import UserManagement from '../components/admin/UserManagement';
 import ProjectManagement from '../components/admin/ProjectManagement';
 import NewsManagement from '../components/admin/NewsManagement';
@@ -65,6 +66,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
   const { projects, deleteProject } = useProjects();
   const { articles, deleteArticle } = useNews();
   const { transactions, accounts, withdrawals, mpesaSessions } = useFinance();
+  const { showSuccess, showError, showInfo, showWarning } = useNotification();
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
@@ -84,15 +86,26 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
     try {
       if (forceRefresh) {
         setRefreshingBalance(true);
+        showInfo('Querying M-Pesa balance...');
       }
       const response = await api.mpesa.getBalance(forceRefresh);
       if (response.success && response.data) {
-        setPaybillBalance(response.data.balance || 0);
+        const newBalance = response.data.balance || 0;
+        setPaybillBalance(newBalance);
         setBalanceLastUpdated(response.data.last_updated || null);
         setBalanceSource(response.data.source || '');
+        
+        if (forceRefresh && newBalance > 0) {
+          showSuccess(`Balance: KES ${newBalance.toLocaleString()}`);
+        } else if (forceRefresh && response.data.source === 'pending') {
+          showWarning('Balance query pending. Please refresh in a few seconds.');
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching paybill balance:', error);
+      if (forceRefresh) {
+        showError(error.message || 'Failed to fetch balance');
+      }
     } finally {
       setRefreshingBalance(false);
     }
@@ -109,8 +122,10 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
+    showInfo('Refreshing data...');
     await fetchPaybillBalance();
     setRefreshing(false);
+    showSuccess('Data refreshed successfully');
   };
 
   if (user?.role !== 'admin' && user?.role !== 'super_admin') {
@@ -137,12 +152,15 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
     switch (itemToDelete.type) {
       case 'user':
         deleteUser(itemToDelete.id);
+        showSuccess(`User "${itemToDelete.name}" deleted successfully`);
         break;
       case 'project':
         deleteProject(itemToDelete.id);
+        showSuccess(`Project "${itemToDelete.name}" deleted successfully`);
         break;
       case 'news':
         deleteArticle(itemToDelete.id);
+        showSuccess(`Article "${itemToDelete.name}" deleted successfully`);
         break;
     }
     setItemToDelete(null);

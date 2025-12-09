@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Heart, Loader2, CheckCircle, AlertCircle, Share2 } from 'lucide-react';
 import api from '../services/api';
+import { useNotification } from '../contexts/NotificationContext';
 
 interface PublicDonatePageProps {
   projectId: number;
@@ -20,6 +21,7 @@ interface ProjectInfo {
 }
 
 const PublicDonatePage: React.FC<PublicDonatePageProps> = ({ projectId, onBack }) => {
+  const { showSuccess, showError: showErrorToast, showInfo } = useNotification();
   const [project, setProject] = useState<ProjectInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -93,11 +95,14 @@ const PublicDonatePage: React.FC<PublicDonatePageProps> = ({ projectId, onBack }
       if (response.data.success) {
         setCheckoutRequestId(response.data.data?.checkout_request_id);
         setSuccess(true);
+        showSuccess('Payment initiated! Check your phone for M-Pesa prompt');
       } else {
         setError(response.data.message || 'Failed to initiate payment');
+        showErrorToast(response.data.message || 'Failed to initiate payment');
       }
     } catch (err: any) {
       setError(err.message || 'Failed to process donation');
+      showErrorToast(err.message || 'Failed to process donation');
     } finally {
       setSubmitting(false);
     }
@@ -116,7 +121,7 @@ const PublicDonatePage: React.FC<PublicDonatePageProps> = ({ projectId, onBack }
         await navigator.share(shareData);
       } else {
         await navigator.clipboard.writeText(shareUrl);
-        alert('Link copied to clipboard!');
+        showSuccess('Link copied to clipboard!');
       }
     } catch (err) {
       console.error('Share failed:', err);

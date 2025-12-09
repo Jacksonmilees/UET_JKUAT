@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useFinance } from '../contexts/FinanceContext';
+import { useNotification } from '../contexts/NotificationContext';
 import { Route } from '../types';
 import api, { accountsApi } from '../services/api';
 import {
@@ -41,7 +42,8 @@ const RechargeModal: React.FC<{
   onClose: () => void;
   onSuccess: () => void;
   userPhone?: string;
-}> = ({ isOpen, onClose, onSuccess, userPhone }) => {
+  showToast: (message: string, type: 'success' | 'error' | 'info') => void;
+}> = ({ isOpen, onClose, onSuccess, userPhone, showToast }) => {
   const [amount, setAmount] = useState('');
   const [phoneNumber, setPhoneNumber] = useState(userPhone || '');
   const [isLoading, setIsLoading] = useState(false);
@@ -61,6 +63,7 @@ const RechargeModal: React.FC<{
       });
       if (response.success) {
         setSuccess(true);
+        showToast('Payment initiated! Check your phone for M-Pesa prompt', 'success');
         setTimeout(() => {
           onSuccess();
           onClose();
@@ -69,9 +72,11 @@ const RechargeModal: React.FC<{
         }, 2000);
       } else {
         setError(response.message || 'Failed to initiate payment');
+        showToast(response.message || 'Failed to initiate payment', 'error');
       }
     } catch (err: any) {
       setError(err.message || 'Failed to initiate payment');
+      showToast(err.message || 'Failed to initiate payment', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -159,6 +164,7 @@ const RechargeModal: React.FC<{
 const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
   const { user } = useAuth();
   const { orders } = useCart();
+  const { showSuccess, showError, showInfo } = useNotification();
   const {
     getUserTransactions,
     getUserDonations,
@@ -197,6 +203,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
     setIsRefreshing(true);
     await fetchAccountData();
     setIsRefreshing(false);
+    showSuccess('Account data refreshed');
   };
 
   const userTransactions = useMemo(
@@ -231,6 +238,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
+    showSuccess('Copied to clipboard');
   };
 
   if (!user) {
@@ -799,6 +807,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
         onClose={() => setShowRechargeModal(false)}
         onSuccess={fetchAccountData}
         userPhone={user.phoneNumber}
+        showToast={(message, type) => {
+          if (type === 'success') showSuccess(message);
+          else if (type === 'error') showError(message);
+          else showInfo(message);
+        }}
       />
     </div>
   );
