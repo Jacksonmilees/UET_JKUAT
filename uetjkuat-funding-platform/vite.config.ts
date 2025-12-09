@@ -14,26 +14,24 @@ export default defineConfig(({ mode }) => {
       // Fix for "can't access lexical declaration before initialization" error
       rollupOptions: {
         output: {
-          // Ensure proper module ordering to prevent circular dependency issues
-          manualChunks: {
-            'react-vendor': ['react', 'react-dom'],
-            'lucide': ['lucide-react'],
+          // Split code more aggressively to prevent circular dependency issues
+          manualChunks: (id) => {
+            if (id.includes('node_modules')) {
+              if (id.includes('react-dom')) return 'react-dom';
+              if (id.includes('react')) return 'react';
+              if (id.includes('lucide-react')) return 'lucide';
+              return 'vendor';
+            }
+            if (id.includes('/contexts/')) return 'contexts';
+            if (id.includes('/services/')) return 'services';
+            if (id.includes('/pages/')) return 'pages';
+            if (id.includes('/components/')) return 'components';
           },
         },
       },
-      // Use terser for more reliable minification
-      minify: 'terser',
-      terserOptions: {
-        compress: {
-          // Prevent aggressive optimizations that can cause hoisting issues
-          toplevel: false,
-          hoist_funs: false,
-          hoist_vars: false,
-        },
-        mangle: {
-          toplevel: false,
-        },
-      },
+      // Use esbuild (default) but disable minification to test
+      minify: 'esbuild',
+      target: 'es2020',
     },
     server: {
       port: port,
