@@ -2,7 +2,11 @@
 
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 import { GoogleGenAI, GenerateContentResponse, Type } from '@google/genai';
-import { NotificationContext } from './NotificationContext';
+
+// Simple notification helper that doesn't require context import
+const notify = (message: string) => {
+  window.dispatchEvent(new CustomEvent('app-notification', { detail: message }));
+};
 
 interface AIContextType {
     isGenerating: boolean;
@@ -21,7 +25,6 @@ interface AIProviderProps {
 export const AIProvider: React.FC<AIProviderProps> = ({ children }) => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [aiError, setAIError] = useState<string | null>(null);
-    const { addNotification } = useContext(NotificationContext);
 
     // Use Vite-exposed env var
     const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
@@ -32,7 +35,7 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children }) => {
             isGenerating: false,
             aiError: 'API Key not configured.',
             generateContent: async () => {
-                addNotification('AI feature is not configured. Please contact the administrator.');
+                notify('AI feature is not configured. Please contact the administrator.');
                 return null;
             }
         };
@@ -60,7 +63,7 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children }) => {
             console.error("Error generating content with AI:", error);
             const errorMessage = error instanceof Error ? error.message : "An unknown AI error occurred.";
             setAIError(errorMessage);
-            addNotification(`AI Error: ${errorMessage}`);
+            notify(`AI Error: ${errorMessage}`);
             setIsGenerating(false);
             return null;
         }

@@ -11,25 +11,15 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: 'dist',
       emptyOutDir: true,
-      // Fix for "can't access lexical declaration before initialization" error
+      // Simpler chunking - only split vendor modules
       rollupOptions: {
         output: {
-          // Split code more aggressively to prevent circular dependency issues
-          manualChunks: (id) => {
-            if (id.includes('node_modules')) {
-              if (id.includes('react-dom')) return 'react-dom';
-              if (id.includes('react')) return 'react';
-              if (id.includes('lucide-react')) return 'lucide';
-              return 'vendor';
-            }
-            if (id.includes('/contexts/')) return 'contexts';
-            if (id.includes('/services/')) return 'services';
-            if (id.includes('/pages/')) return 'pages';
-            if (id.includes('/components/')) return 'components';
+          manualChunks: {
+            'react-vendor': ['react', 'react-dom'],
+            'lucide': ['lucide-react'],
           },
         },
       },
-      // Use esbuild (default) but disable minification to test
       minify: 'esbuild',
       target: 'es2020',
     },
