@@ -28,10 +28,14 @@ class ApiKeyMiddleware
         
         // Allow if valid Bearer token is provided (authenticated user)
         if ($bearerToken) {
-            // Validate the bearer token
-            $user = \App\Models\User::where('api_token', hash('sha256', $bearerToken))->first();
+            // Validate the bearer token against remember_token (used by auth system)
+            $user = \App\Models\User::where('remember_token', $bearerToken)->first();
             
-            // Also check for simple token match (for development/testing)
+            // Also check api_token field as fallback
+            if (!$user) {
+                $user = \App\Models\User::where('api_token', hash('sha256', $bearerToken))->first();
+            }
+            
             if (!$user) {
                 $user = \App\Models\User::where('api_token', $bearerToken)->first();
             }

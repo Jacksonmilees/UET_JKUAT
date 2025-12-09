@@ -15,6 +15,7 @@ interface AuthContextType {
   user: User | null;
   users: User[];
   isLoading: boolean;
+  isLoadingUsers: boolean;
   error: string | null;
   login: (credentials: LoginCredentials) => Promise<boolean>;
   logout: () => void;
@@ -23,6 +24,7 @@ interface AuthContextType {
   toggleUserRole: (userId: number) => Promise<void>;
   deleteUser: (userId: number) => Promise<void>;
   refreshUser: () => Promise<void>;
+  loadUsers: () => Promise<void>;
   setUser: (user: User | null) => void;
 }
 
@@ -38,6 +40,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Check for existing session on mount
@@ -202,6 +205,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const loadUsers = async (): Promise<void> => {
+    setIsLoadingUsers(true);
     try {
       const response = await api.users.getAll();
       if (response.success && response.data) {
@@ -218,9 +222,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           mandatoryLastPaymentDate: u.mandatory_last_payment_date,
         }));
         setUsers(usersData);
+      } else {
+        console.error('Failed to load users:', response.error);
       }
     } catch (err) {
       console.error('Error loading users:', err);
+    } finally {
+      setIsLoadingUsers(false);
     }
   };
 
@@ -235,7 +243,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     <AuthContext.Provider value={{ 
       user, 
       users, 
-      isLoading, 
+      isLoading,
+      isLoadingUsers, 
       error, 
       login, 
       logout, 
@@ -244,6 +253,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       toggleUserRole, 
       deleteUser,
       refreshUser,
+      loadUsers,
       setUser,
     }}>
       {children}

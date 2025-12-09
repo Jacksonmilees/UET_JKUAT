@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { User } from '../../types';
-import { Trash2, Shield, UserCheck, UserX, Key, Copy, Check, Plus, X, Eye, EyeOff } from 'lucide-react';
+import { Trash2, Shield, UserCheck, UserX, Key, Copy, Check, Plus, X, Eye, EyeOff, RefreshCw, Users } from 'lucide-react';
 import { usersApi } from '../../services/api';
 
 interface UserManagementProps {
@@ -16,7 +16,7 @@ interface PasswordResetResult {
 }
 
 const UserManagement: React.FC<UserManagementProps> = ({ onUserDelete }) => {
-    const { users, toggleUserStatus, toggleUserRole, user: adminUser } = useAuth();
+    const { users, toggleUserStatus, toggleUserRole, user: adminUser, loadUsers, isLoadingUsers } = useAuth();
     const [passwordResetResult, setPasswordResetResult] = useState<PasswordResetResult | null>(null);
     const [isResetting, setIsResetting] = useState<number | null>(null);
     const [copied, setCopied] = useState(false);
@@ -27,6 +27,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUserDelete }) => {
     const [showPassword, setShowPassword] = useState(false);
 
     const isSuperAdmin = adminUser?.role === 'super_admin';
+
+    // Load users on mount
+    useEffect(() => {
+        loadUsers();
+    }, []);
 
     const handleResetPassword = async (userId: number) => {
         setIsResetting(userId);
@@ -88,6 +93,15 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUserDelete }) => {
                     <div className="text-sm text-muted-foreground">
                         Total Users: {users.length}
                     </div>
+                    <button
+                        onClick={() => loadUsers()}
+                        disabled={isLoadingUsers}
+                        className="flex items-center gap-2 px-3 py-2 bg-secondary hover:bg-secondary/80 rounded-lg transition-colors disabled:opacity-50"
+                        title="Refresh Users"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${isLoadingUsers ? 'animate-spin' : ''}`} />
+                        <span className="hidden sm:inline">{isLoadingUsers ? 'Loading...' : 'Refresh'}</span>
+                    </button>
                     {isSuperAdmin && (
                         <button
                             onClick={() => setShowCreateAdmin(true)}
@@ -225,6 +239,26 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUserDelete }) => {
                 </div>
             )}
 
+            {/* Loading State */}
+            {isLoadingUsers && users.length === 0 ? (
+                <div className="bg-card rounded-xl border border-border shadow-sm p-12 text-center">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading users...</p>
+                </div>
+            ) : users.length === 0 ? (
+                /* Empty State */
+                <div className="bg-card rounded-xl border border-border shadow-sm p-12 text-center">
+                    <Users className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+                    <p className="text-lg text-foreground font-semibold">No users found</p>
+                    <p className="text-sm text-muted-foreground mt-1">Users will appear here once registered.</p>
+                    <button
+                        onClick={() => loadUsers()}
+                        className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                    >
+                        Refresh
+                    </button>
+                </div>
+            ) : (
             <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
@@ -323,6 +357,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUserDelete }) => {
                     </table>
                 </div>
             </div>
+            )}
         </div>
     );
 };
