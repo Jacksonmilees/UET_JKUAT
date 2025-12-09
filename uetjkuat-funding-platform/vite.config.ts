@@ -11,6 +11,29 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: 'dist',
       emptyOutDir: true,
+      // Fix for "can't access lexical declaration before initialization" error
+      rollupOptions: {
+        output: {
+          // Ensure proper module ordering to prevent circular dependency issues
+          manualChunks: {
+            'react-vendor': ['react', 'react-dom'],
+            'lucide': ['lucide-react'],
+          },
+        },
+      },
+      // Use terser for more reliable minification
+      minify: 'terser',
+      terserOptions: {
+        compress: {
+          // Prevent aggressive optimizations that can cause hoisting issues
+          toplevel: false,
+          hoist_funs: false,
+          hoist_vars: false,
+        },
+        mangle: {
+          toplevel: false,
+        },
+      },
     },
     server: {
       port: port,
