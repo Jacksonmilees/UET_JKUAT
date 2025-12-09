@@ -11,16 +11,15 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: 'dist',
       emptyOutDir: true,
-      // Simpler chunking - only split vendor modules
+      // Disable all code splitting to prevent circular dependency issues
       rollupOptions: {
         output: {
-          manualChunks: {
-            'react-vendor': ['react', 'react-dom'],
-            'lucide': ['lucide-react'],
-          },
+          // Keep everything in one chunk
+          inlineDynamicImports: true,
         },
       },
-      minify: 'esbuild',
+      // Disable minification completely to prevent variable hoisting issues
+      minify: false,
       target: 'es2020',
     },
     server: {
