@@ -184,22 +184,23 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
     setIsSubmitting(true);
     
     try {
-      // Request OTP first - normalize phone number
+      // Request OTP for registration - normalize phone number
       const normalizedPhone = formData.phone.replace(/\s/g, '').replace(/^0/, '254');
       
-      const response = await fetch(`${API_BASE_URL}/auth/otp/request`, {
+      const response = await fetch(`${API_BASE_URL}/auth/register/otp/request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          identifier: formData.email,
-          phone: normalizedPhone 
+          phone: normalizedPhone,
+          email: formData.email,
+          name: formData.name
         })
       });
       
       const data = await response.json();
       
       if (data.success) {
-        showSuccess('Verification code sent to your phone');
+        showSuccess('Verification code sent to your WhatsApp');
         setShowOtpVerification(true);
         setResendTimer(60);
       } else {
@@ -260,14 +261,23 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
     try {
       const normalizedPhone = formData.phone.replace(/\s/g, '').replace(/^0/, '254');
       
-      // Verify OTP
-      const verifyResponse = await fetch(`${API_BASE_URL}/auth/otp/verify`, {
+      // Verify OTP and create user in one call
+      const verifyResponse = await fetch(`${API_BASE_URL}/auth/register/otp/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          identifier: formData.email,
           phone: normalizedPhone,
-          otp: otpCode 
+          email: formData.email,
+          otp: otpCode,
+          name: formData.name,
+          password: formData.password,
+          phoneNumber: normalizedPhone,
+          yearOfStudy: formData.yearOfStudy,
+          course: formData.course,
+          college: formData.college,
+          admissionNumber: formData.admissionNumber,
+          ministryInterest: formData.ministryInterest,
+          residence: formData.residence,
         })
       });
       
@@ -279,15 +289,22 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
         return;
       }
       
-      // Complete registration
-      await register({
-        ...formData,
-        otp: otpCode,
-      });
+      // Store auth token and user data
+      if (verifyData.data?.token) {
+        localStorage.setItem('auth_token', verifyData.data.token);
+      }
+      if (verifyData.data?.user) {
+        localStorage.setItem('user', JSON.stringify(verifyData.data.user));
+      }
       
-      showSuccess('Account created successfully!');
+      showSuccess('Account created successfully! Welcome to UET JKUAT.');
+      
+      // Redirect to login after a short delay
+      setTimeout(() => {
+        setRoute({ page: 'login' });
+      }, 1500);
     } catch (error: any) {
-      showError('Registration failed');
+      showError('Registration failed. Please try again.');
     } finally {
       setOtpLoading(false);
     }
@@ -300,19 +317,20 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
     try {
       const normalizedPhone = formData.phone.replace(/\s/g, '').replace(/^0/, '254');
       
-      const response = await fetch(`${API_BASE_URL}/auth/otp/request`, {
+      const response = await fetch(`${API_BASE_URL}/auth/register/otp/request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          identifier: formData.email,
-          phone: normalizedPhone 
+          phone: normalizedPhone,
+          email: formData.email,
+          name: formData.name
         })
       });
       
       const data = await response.json();
       
       if (data.success) {
-        showSuccess('New verification code sent');
+        showSuccess('New verification code sent to WhatsApp');
         setResendTimer(60);
         setOtp(['', '', '', '', '', '']);
       } else {

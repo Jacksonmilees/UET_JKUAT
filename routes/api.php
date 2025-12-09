@@ -225,10 +225,14 @@ Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::get('me', [AuthController::class, 'me']);
     
-    // OTP Authentication routes
+    // OTP Authentication routes (for login - user must exist)
     Route::post('otp/request', [OTPAuthController::class, 'requestOTP']);
     Route::post('otp/verify', [OTPAuthController::class, 'verifyOTPAndLogin']);
     Route::get('otp/status', [OTPAuthController::class, 'checkOTPServiceStatus']);
+    
+    // Registration OTP routes (for registration - user doesn't exist yet)
+    Route::post('register/otp/request', [OTPAuthController::class, 'requestRegistrationOTP']);
+    Route::post('register/otp/verify', [OTPAuthController::class, 'verifyRegistrationOTP']);
     
     // Profile update routes (authenticated)
     Route::put('update-profile', [AuthController::class, 'updateProfile']);

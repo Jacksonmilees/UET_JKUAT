@@ -227,4 +227,182 @@ class OTPAuthController extends Controller
             ]);
         }
     }
+
+    /**
+     * Request OTP for registration (user doesn't exist yet)
+     * This is for phone verification during registration
+     */
+    public function requestRegistrationOTP(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'phone' => 'required|string',
+            'email' => 'required|email',
+            'name' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 400);
+        }
+
+        $phone = $request->phone;
+        $email = $request->email;
+        $name = $request->name;
+
+        // Check if email or phone already exists
+        $existingUser = User::where('email', $email)
+            ->orWhere('phone_number', $phone)
+            ->first();
+
+        if ($existingUser) {
+            $field = $existingUser->email === $email ? 'email' : 'phone number';
+            return response()->json([
+                'success' => false,
+                'message' => "This {$field} is already registered. Please login instead.",
+                'error' => 'USER_EXISTS'
+            ], 409);
+        }
+
+        try {
+            // Call WhatsApp OTP service
+            $response = Http::timeout(10)->post("{$this->otpServiceUrl}/send-otp", [
+                'phone' => $phone,
+                'email' => $email,
+                'customMessage' => "Hello {$name},\n\nYour UET JKUAT registration verification code is: {otp}\n\nValid for 5 minutes.\n\n_Welcome to UET JKUAT Ministry Platform_"
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Verification code sent successfully via WhatsApp',
+                    'otpSent' => true,
+                    'expiresIn' => '5 minutes',
+                    'provider' => $data['provider'] ?? 'WhatsApp'
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to send verification code. Please try again.',
+                    'error' => 'OTP_SERVICE_ERROR'
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Registration OTP Service Error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Verification service temporarily unavailable. Please try again later.',
+                'error' => 'OTP_SERVICE_UNAVAILABLE'
+            ], 503);
+        }
+    }
+
+    /**
+     * Verify OTP for registration and create user
+     */
+    public function verifyRegistrationOTP(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'phone' => 'required|string',
+            'email' => 'required|email',
+            'otp' => 'required|string|size:6',
+            'name' => 'required|string|max:255',
+            'password' => 'required|string|min:6',
+            'phoneNumber' => 'nullable|string|max:20',
+            'yearOfStudy' => 'nullable|string|max:50',
+            'course' => 'nullable|string|max:255',
+            'college' => 'nullable|string|max:255',
+            'admissionNumber' => 'nullable|string|max:50',
+            'ministryInterest' => 'nullable|string|max:255',
+            'residence' => 'nullable|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 400);
+        }
+
+        try {
+            // Verify OTP with the OTP service
+            $verifyResponse = Http::timeout(10)->post("{$this->otpServiceUrl}/verify-otp", [
+                'phone' => $request->phone,
+                'otp' => $request->otp
+            ]);
+
+            if ($verifyResponse->successful()) {
+                $verifyData = $verifyResponse->json();
+                
+                if ($verifyData['valid'] ?? false) {
+                    // OTP is valid - create the user
+                    $memberId = \App\Services\MemberIdService::generate();
+                    $token = \Illuminate\Support\Str::random(60);
+                    
+                    // Determine role
+                    $role = ($request->email === 'admin@uetjkuat.com') ? 'admin' : 'user';
+                    
+                    $user = User::create([
+                        'name' => $request->name,
+                        'email' => $request->email,
+                        'password' => Hash::make($request->password),
+                        'member_id' => $memberId,
+                        'phone_number' => $request->phone,
+                        'year_of_study' => $request->yearOfStudy,
+                        'course' => $request->course,
+                        'college' => $request->college,
+                        'admission_number' => $request->admissionNumber,
+                        'ministry_interest' => $request->ministryInterest,
+                        'residence' => $request->residence,
+                        'role' => $role,
+                        'status' => 'active',
+                        'phone_verified_at' => now(),
+                        'registration_completed_at' => now(),
+                        'remember_token' => $token,
+                    ]);
+                    
+                    \Log::info('User registered via OTP', [
+                        'user_id' => $user->id,
+                        'member_id' => $memberId,
+                        'email' => $user->email,
+                    ]);
+                    
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Registration successful! Welcome to UET JKUAT.',
+                        'data' => [
+                            'user' => $user->getProfileData(),
+                            'token' => $token,
+                        ]
+                    ]);
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid or expired verification code. Please try again.',
+                        'error' => 'INVALID_OTP'
+                    ], 400);
+                }
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to verify code. Please try again.',
+                    'error' => 'VERIFICATION_FAILED'
+                ], 400);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Registration OTP Verification Error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Verification service error. Please try again.',
+                'error' => 'SERVICE_ERROR'
+            ], 500);
+        }
+    }
 }
