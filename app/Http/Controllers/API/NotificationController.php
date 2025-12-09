@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Notification;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -11,11 +12,44 @@ use Illuminate\Support\Facades\Auth;
 class NotificationController extends Controller
 {
     /**
+     * Get authenticated user from bearer token
+     */
+    private function getAuthenticatedUser(Request $request): ?User
+    {
+        // First check if already authenticated
+        if (Auth::check()) {
+            return Auth::user();
+        }
+        
+        // Try bearer token authentication
+        $token = $request->bearerToken();
+        if ($token) {
+            // Check for hashed token
+            $user = User::where('api_token', hash('sha256', $token))->first();
+            if (!$user) {
+                // Check for plain token
+                $user = User::where('api_token', $token)->first();
+            }
+            return $user;
+        }
+        
+        return null;
+    }
+    
+    /**
      * Get user's notifications
      */
     public function index(Request $request): JsonResponse
     {
-        $user = Auth::user();
+        $user = $this->getAuthenticatedUser($request);
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Authentication required',
+            ], 401);
+        }
+        
         $perPage = $request->get('per_page', 20);
         $unreadOnly = $request->boolean('unread_only', false);
 
@@ -44,9 +78,18 @@ class NotificationController extends Controller
     /**
      * Get unread count
      */
-    public function unreadCount(): JsonResponse
+    public function unreadCount(Request $request): JsonResponse
     {
-        $user = Auth::user();
+        $user = $this->getAuthenticatedUser($request);
+        
+        if (!$user) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'count' => 0,
+                ],
+            ]);
+        }
         
         return response()->json([
             'success' => true,
@@ -59,9 +102,17 @@ class NotificationController extends Controller
     /**
      * Mark notification as read
      */
-    public function markAsRead(int $id): JsonResponse
+    public function markAsRead(Request $request, int $id): JsonResponse
     {
-        $user = Auth::user();
+        $user = $this->getAuthenticatedUser($request);
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Authentication required',
+            ], 401);
+        }
+        
         $notification = Notification::where('user_id', $user->id)->find($id);
 
         if (!$notification) {
@@ -83,9 +134,17 @@ class NotificationController extends Controller
     /**
      * Mark all notifications as read
      */
-    public function markAllAsRead(): JsonResponse
+    public function markAllAsRead(Request $request): JsonResponse
     {
-        $user = Auth::user();
+        $user = $this->getAuthenticatedUser($request);
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Authentication required',
+            ], 401);
+        }
+        
         $count = Notification::markAllAsRead($user->id);
 
         return response()->json([
@@ -98,9 +157,17 @@ class NotificationController extends Controller
     /**
      * Delete a notification
      */
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
-        $user = Auth::user();
+        $user = $this->getAuthenticatedUser($request);
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Authentication required',
+            ], 401);
+        }
+        
         $notification = Notification::where('user_id', $user->id)->find($id);
 
         if (!$notification) {
@@ -123,9 +190,9 @@ class NotificationController extends Controller
      */
     public function broadcast(Request $request): JsonResponse
     {
-        $user = Auth::user();
+        $user = $this->getAuthenticatedUser($request);
 
-        if (!in_array($user->role, ['admin'])) {
+        if (!$user || !in_array($user->role, ['admin', 'super_admin'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Only admins can broadcast announcements',
@@ -154,9 +221,19 @@ class NotificationController extends Controller
     /**
      * Get recent notifications (for notification bell)
      */
-    public function recent(): JsonResponse
+    public function recent(Request $request): JsonResponse
     {
-        $user = Auth::user();
+        $user = $this->getAuthenticatedUser($request);
+        
+        if (!$user) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'notifications' => [],
+                    'unread_count' => 0,
+                ],
+            ]);
+        }
         
         return response()->json([
             'success' => true,

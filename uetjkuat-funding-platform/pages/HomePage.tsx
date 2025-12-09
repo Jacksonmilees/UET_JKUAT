@@ -18,7 +18,9 @@ const HomePage: React.FC<HomePageProps> = ({ setRoute }) => {
     setFilterCategory,
     sortOption,
     setSortOption,
-    filteredAndSortedProjects
+    filteredAndSortedProjects,
+    isLoading,
+    refreshProjects
   } = useProjects();
   
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -50,6 +52,8 @@ const HomePage: React.FC<HomePageProps> = ({ setRoute }) => {
         setFilterCategory={setFilterCategory}
         sortOption={sortOption}
         setSortOption={setSortOption}
+        isLoading={isLoading}
+        onRefresh={refreshProjects}
       />
       <ContributionModal
         project={selectedProject}

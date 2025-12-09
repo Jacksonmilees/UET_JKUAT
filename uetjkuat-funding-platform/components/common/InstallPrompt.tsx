@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Download, Zap, Smartphone, Shield } from 'lucide-react';
+import { X, Download, Zap, Smartphone, Shield, Wifi, Star } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -23,13 +23,21 @@ const InstallPrompt: React.FC = () => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
 
-      // Show prompt after 3 seconds
+      // Show prompt after 5 seconds
       setTimeout(() => {
         const dismissed = localStorage.getItem('pwa-install-dismissed');
+        const dismissedTime = localStorage.getItem('pwa-install-dismissed-time');
+        
+        // Only show again if dismissed more than 7 days ago
+        if (dismissed && dismissedTime) {
+          const daysSinceDismiss = (Date.now() - parseInt(dismissedTime)) / (1000 * 60 * 60 * 24);
+          if (daysSinceDismiss < 7) return;
+        }
+        
         if (!dismissed) {
           setShowPrompt(true);
         }
-      }, 3000);
+      }, 5000);
     };
 
     // Listen for successful install
@@ -70,64 +78,92 @@ const InstallPrompt: React.FC = () => {
   const handleDismiss = () => {
     setShowPrompt(false);
     localStorage.setItem('pwa-install-dismissed', 'true');
+    localStorage.setItem('pwa-install-dismissed-time', Date.now().toString());
   };
 
   if (isInstalled || !showPrompt) return null;
 
   return (
-    <div className="fixed bottom-20 md:bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-sm z-50 animate-slide-up">
-      <div className="bg-card border border-border rounded-lg shadow-lg p-4 text-foreground">
-        <button
-          onClick={handleDismiss}
-          className="absolute top-2 right-2 text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Dismiss"
-        >
-          <X className="w-4 h-4" />
-        </button>
-
-        <div className="flex items-start gap-4">
-          <div className="flex-shrink-0 bg-primary/10 rounded-lg p-2">
-            <Download className="w-6 h-6 text-primary" />
-          </div>
-
-          <div className="flex-1 pr-6">
-            <h3 className="font-semibold text-sm mb-1">Install App</h3>
-            <p className="text-muted-foreground text-xs mb-3">
-              Get quick access and offline support.
-            </p>
-
-            <div className="flex gap-2">
-              <button
-                onClick={handleInstallClick}
-                className="flex-1 bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-xs font-medium hover:bg-primary/90 transition-all shadow-sm"
-              >
-                Install
-              </button>
-              <button
-                onClick={handleDismiss}
-                className="px-3 py-1.5 text-muted-foreground hover:text-foreground transition-colors text-xs"
-              >
-                Later
-              </button>
+    <div className="fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:max-w-sm z-50 animate-in slide-in-from-bottom-4 fade-in duration-500">
+      <div className="bg-gradient-to-br from-card to-card/95 border border-border rounded-2xl shadow-2xl overflow-hidden">
+        {/* Header with gradient */}
+        <div className="bg-gradient-to-r from-primary/20 to-orange-500/20 px-5 py-4">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-orange-500 p-0.5">
+                <div className="w-full h-full bg-card rounded-[10px] flex items-center justify-center">
+                  <img 
+                    src="/icons/favicon-96x96.png" 
+                    alt="UET JKUAT" 
+                    className="w-8 h-8 rounded-lg"
+                  />
+                </div>
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground">Install UET JKUAT</h3>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                  <span>Better experience as an app</span>
+                </div>
+              </div>
             </div>
+            <button
+              onClick={handleDismiss}
+              className="p-1.5 -mr-1 -mt-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              aria-label="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
-        {/* Features */}
-        <div className="mt-3 pt-3 border-t border-border">
-          <div className="grid grid-cols-3 gap-2 text-[10px]">
-            <div className="text-center">
-              <div className="flex justify-center mb-1"><Zap className="w-3 h-3 text-muted-foreground" /></div>
-              <div className="font-medium">Fast</div>
+        {/* Benefits */}
+        <div className="px-5 py-4">
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="text-center p-2 rounded-lg bg-secondary/50">
+              <div className="flex justify-center mb-1.5">
+                <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
+                  <Wifi className="w-4 h-4 text-green-500" />
+                </div>
+              </div>
+              <div className="text-xs font-medium text-foreground">Offline</div>
+              <div className="text-[10px] text-muted-foreground">Access</div>
             </div>
-            <div className="text-center">
-              <div className="flex justify-center mb-1"><Smartphone className="w-3 h-3 text-muted-foreground" /></div>
-              <div className="font-medium">Native</div>
+            <div className="text-center p-2 rounded-lg bg-secondary/50">
+              <div className="flex justify-center mb-1.5">
+                <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center">
+                  <Zap className="w-4 h-4 text-blue-500" />
+                </div>
+              </div>
+              <div className="text-xs font-medium text-foreground">Faster</div>
+              <div className="text-[10px] text-muted-foreground">Loading</div>
             </div>
-            <div className="text-center">
-              <div className="flex justify-center mb-1"><Shield className="w-3 h-3 text-muted-foreground" /></div>
-              <div className="font-medium">Secure</div>
+            <div className="text-center p-2 rounded-lg bg-secondary/50">
+              <div className="flex justify-center mb-1.5">
+                <div className="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center">
+                  <Smartphone className="w-4 h-4 text-purple-500" />
+                </div>
+              </div>
+              <div className="text-xs font-medium text-foreground">Native</div>
+              <div className="text-[10px] text-muted-foreground">Feel</div>
             </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex gap-3">
+            <button
+              onClick={handleInstallClick}
+              className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-primary to-orange-500 text-white px-4 py-3 rounded-xl text-sm font-semibold hover:opacity-90 transition-all shadow-lg shadow-primary/20"
+            >
+              <Download className="w-4 h-4" />
+              Install App
+            </button>
+            <button
+              onClick={handleDismiss}
+              className="px-4 py-3 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl transition-colors text-sm font-medium"
+            >
+              Not now
+            </button>
           </div>
         </div>
       </div>

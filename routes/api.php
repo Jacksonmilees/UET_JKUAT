@@ -80,6 +80,9 @@ Route::match(['GET', 'POST'], '/mpesa/balance/query', [MpesaBalanceController::c
 Route::post('/mpesa/balance/result', [MpesaBalanceController::class, 'handleResult'])->name('mpesa.balance.result');
 Route::post('/mpesa/balance/timeout', [MpesaBalanceController::class, 'handleTimeout'])->name('mpesa.balance.timeout');
 
+// Settings public route (outside v1 prefix for frontend compatibility)
+Route::get('/settings/public', [\App\Http\Controllers\API\SettingsController::class, 'publicSettings']);
+
 // Public routes (no API key required)
 Route::prefix('v1')->group(function () {
     Route::get('/projects', [ProjectController::class, 'index']); // Public read access
@@ -171,6 +174,49 @@ Route::prefix('v1')->group(function () {
     Route::put('/settings', [\App\Http\Controllers\API\SettingsController::class, 'update']);
     Route::post('/settings/upload-image', [\App\Http\Controllers\API\SettingsController::class, 'uploadChairImage']);
     Route::delete('/settings/chair-image', [\App\Http\Controllers\API\SettingsController::class, 'removeChairImage']);
+    
+    // Public read endpoints for merchandise/announcements (moved outside middleware)
+});
+
+// Public API routes (no API key required) - READ-only access
+Route::prefix('v1')->group(function () {
+    // Settings (public)
+    Route::get('/settings/public', [\App\Http\Controllers\API\SettingsController::class, 'publicSettings']);
+    Route::get('/settings', [\App\Http\Controllers\API\SettingsController::class, 'index']);
+    
+    // Announcements (public read)
+    Route::get('/announcements', [\App\Http\Controllers\API\AnnouncementController::class, 'index']);
+    Route::get('/announcements/{id}', [\App\Http\Controllers\API\AnnouncementController::class, 'show']);
+    
+    // Merchandise (public read)
+    Route::get('/merchandise', [\App\Http\Controllers\API\MerchandiseController::class, 'index']);
+    Route::get('/merchandise/{id}', [\App\Http\Controllers\API\MerchandiseController::class, 'show']);
+    
+    // Uploads (public access)
+    Route::get('/uploads', [\App\Http\Controllers\API\UploadController::class, 'index']);
+    Route::get('/uploads/{id}', [\App\Http\Controllers\API\UploadController::class, 'show']);
+    
+    // Members search (public)
+    Route::get('/members', [\App\Http\Controllers\API\MemberController::class, 'index']);
+    Route::get('/members/mmid/{mmid}', [\App\Http\Controllers\API\MemberController::class, 'getByMMID']);
+    Route::post('/members/search', [\App\Http\Controllers\API\MemberController::class, 'search']);
+    
+    // Notifications (requires bearer token, handled in controller)
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications/recent', [NotificationController::class, 'recent']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+    
+    // Orders (user's own orders - requires bearer token)
+    Route::get('/orders', [\App\Http\Controllers\API\OrderController::class, 'getAllOrders']);
+    Route::get('/orders/my', [\App\Http\Controllers\API\OrderController::class, 'index']);
+    Route::get('/orders/{id}', [\App\Http\Controllers\API\OrderController::class, 'show']);
+    
+    // Users (admin access - requires bearer token with admin role)
+    Route::get('/users', [\App\Http\Controllers\API\UserController::class, 'index']);
+    Route::get('/users/{id}', [\App\Http\Controllers\API\UserController::class, 'show']);
+    Route::get('/users/{id}/stats', [\App\Http\Controllers\API\UserController::class, 'getStats']);
 });
 
 // Simple Auth routes for frontend (public path /api/auth/*)

@@ -10,6 +10,7 @@ import { AIProvider } from './contexts/AIContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import Layout from './components/common/Layout';
+import PWASplashScreen from './components/common/PWASplashScreen';
 import HomePage from './pages/HomePage';
 import ProjectDetailPage from './pages/ProjectDetailPage';
 import DashboardPage from './pages/DashboardPage';
@@ -159,6 +160,7 @@ const App: React.FC = () => {
 
     return (
         <ErrorBoundary>
+            <PWASplashScreen />
             <NotificationProvider>
                 <AIProvider>
                     <AuthProvider>

@@ -116,10 +116,12 @@ const Layout: React.FC<LayoutProps> = ({ children, setRoute, currentRoute }) => 
                 )}
             </main>
 
-            {/* Footer - Hidden on mobile, shown on desktop for non-home pages */}
-            <div className="hidden md:block">
-                <Footer />
-            </div>
+            {/* Footer - Hidden on mobile, shown on desktop only for about page */}
+            {currentRoute === 'about' && (
+                <div className="hidden md:block">
+                    <Footer />
+                </div>
+            )}
 
             {/* Bottom Navigation - Mobile only */}
             <BottomNavigation currentRoute={currentRoute} setRoute={setRoute} />

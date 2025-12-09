@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Check, CheckCheck, X, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Bell, Check, CheckCheck, X, Loader2, RefreshCw } from 'lucide-react';
 import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 interface NotificationData {
   id: number;
@@ -18,10 +19,12 @@ interface NotificationBellProps {
 }
 
 const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }) => {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -36,21 +39,12 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch unread count periodically
-  useEffect(() => {
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000); // Every 30 seconds
-    return () => clearInterval(interval);
-  }, []);
-
-  // Fetch recent notifications when dropdown opens
-  useEffect(() => {
-    if (isOpen) {
-      fetchRecentNotifications();
+  const fetchUnreadCount = useCallback(async () => {
+    // Only fetch if user is logged in
+    if (!user) {
+      setUnreadCount(0);
+      return;
     }
-  }, [isOpen]);
-
-  const fetchUnreadCount = async () => {
     try {
       const response = await api.get('/v1/notifications/unread-count');
       if (response.data.success && response.data.data) {
@@ -58,10 +52,33 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }) => {
       }
     } catch (error) {
       // Silently fail - might not be logged in
+      setUnreadCount(0);
     }
+  }, [user]);
+
+  // Fetch unread count on mount and when user changes (no polling)
+  useEffect(() => {
+    fetchUnreadCount();
+  }, [fetchUnreadCount]);
+
+  // Fetch recent notifications when dropdown opens
+  useEffect(() => {
+    if (isOpen && user) {
+      fetchRecentNotifications();
+    }
+  }, [isOpen, user]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchUnreadCount();
+    if (isOpen) {
+      await fetchRecentNotifications();
+    }
+    setRefreshing(false);
   };
 
   const fetchRecentNotifications = async () => {
+    if (!user) return;
     setLoading(true);
     try {
       const response = await api.get('/v1/notifications/recent');
@@ -161,6 +178,14 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }) => {
           <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
             <h3 className="font-semibold text-foreground">Notifications</h3>
             <div className="flex items-center gap-2">
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="text-muted-foreground hover:text-foreground p-1 disabled:opacity-50"
+                title="Refresh notifications"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              </button>
               {unreadCount > 0 && (
                 <button
                   onClick={markAllAsRead}
