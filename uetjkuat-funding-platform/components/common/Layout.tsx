@@ -17,7 +17,8 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, setRoute, currentRoute }) => {
     // List of routes that should use the Dashboard Layout
-    const dashboardRoutes: RoutePage[] = ['dashboard', 'admin', 'settings' as any]; // Add 'settings' if it becomes a valid route
+    // Note: 'admin' is excluded because AdminPage has its own sidebar
+    const dashboardRoutes: RoutePage[] = ['dashboard', 'settings' as any];
 
     if (dashboardRoutes.includes(currentRoute)) {
         return (

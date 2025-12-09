@@ -37,7 +37,11 @@ import {
   LogOut,
   Menu,
   X,
-  Calendar
+  Calendar,
+  ShoppingBag,
+  Package,
+  Megaphone,
+  Home
 } from 'lucide-react';
 
 interface AdminPageProps {
@@ -227,19 +231,27 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
     }
   };
 
-  const tabs: { id: AdminTab, name: string, icon: React.ReactNode }[] = [
-    { id: 'overview', name: 'Overview', icon: <LayoutDashboard className="w-5 h-5" /> },
-    { id: 'users', name: 'Users', icon: <Users className="w-5 h-5" /> },
-    { id: 'projects', name: 'Projects', icon: <FilePlus className="w-5 h-5" /> },
-    { id: 'accounts', name: 'Accounts', icon: <Wallet className="w-5 h-5" /> },
-    { id: 'transactions', name: 'Transactions', icon: <CreditCard className="w-5 h-5" /> },
-    { id: 'withdrawals', name: 'Withdrawals', icon: <ArrowUpRight className="w-5 h-5" /> },
-    { id: 'tickets', name: 'Tickets', icon: <Ticket className="w-5 h-5" /> },
-    { id: 'directory', name: 'Members', icon: <Users className="w-5 h-5" /> },
-    { id: 'semesters', name: 'Semesters', icon: <Calendar className="w-5 h-5" /> },
-    { id: 'reports', name: 'Reports', icon: <TrendingUp className="w-5 h-5" /> },
-    { id: 'news', name: 'News', icon: <Newspaper className="w-5 h-5" /> },
-    { id: 'finance', name: 'Finance', icon: <Wallet className="w-5 h-5" /> },
+  const tabs: { id: AdminTab, name: string, icon: React.ReactNode, category?: string }[] = [
+    // Main
+    { id: 'overview', name: 'Overview', icon: <LayoutDashboard className="w-5 h-5" />, category: 'Main' },
+    { id: 'users', name: 'Users', icon: <Users className="w-5 h-5" />, category: 'Main' },
+    { id: 'directory', name: 'Members', icon: <Users className="w-5 h-5" />, category: 'Main' },
+    // Projects & Content
+    { id: 'projects', name: 'Projects', icon: <FilePlus className="w-5 h-5" />, category: 'Content' },
+    { id: 'news', name: 'News', icon: <Newspaper className="w-5 h-5" />, category: 'Content' },
+    { id: 'announcements', name: 'Announcements', icon: <Megaphone className="w-5 h-5" />, category: 'Content' },
+    // Finance
+    { id: 'finance', name: 'Finance', icon: <Wallet className="w-5 h-5" />, category: 'Finance' },
+    { id: 'accounts', name: 'Accounts', icon: <CreditCard className="w-5 h-5" />, category: 'Finance' },
+    { id: 'transactions', name: 'Transactions', icon: <CreditCard className="w-5 h-5" />, category: 'Finance' },
+    { id: 'withdrawals', name: 'Withdrawals', icon: <ArrowUpRight className="w-5 h-5" />, category: 'Finance' },
+    // Shop
+    { id: 'merchandise', name: 'Merchandise', icon: <ShoppingBag className="w-5 h-5" />, category: 'Shop' },
+    { id: 'orders', name: 'Orders', icon: <Package className="w-5 h-5" />, category: 'Shop' },
+    // Other
+    { id: 'tickets', name: 'Tickets', icon: <Ticket className="w-5 h-5" />, category: 'Other' },
+    { id: 'semesters', name: 'Semesters', icon: <Calendar className="w-5 h-5" />, category: 'Other' },
+    { id: 'reports', name: 'Reports', icon: <TrendingUp className="w-5 h-5" />, category: 'Other' },
   ];
 
   return (
@@ -249,25 +261,39 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
         <aside className="hidden lg:flex flex-col w-64 border-r border-border bg-card fixed h-full z-10">
           <div className="p-6 border-b border-border">
             <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <span className="text-primary">⚡</span> Admin
+              <span className="text-primary">⚡</span> Admin Panel
             </h1>
           </div>
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-            {tabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                  }`}
-              >
-                {tab.icon}
-                {tab.name}
-              </button>
+          <nav className="flex-1 overflow-y-auto p-4 space-y-4">
+            {['Main', 'Content', 'Finance', 'Shop', 'Other'].map(category => (
+              <div key={category}>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">{category}</p>
+                <div className="space-y-1">
+                  {tabs.filter(tab => tab.category === category).map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                        }`}
+                    >
+                      {tab.icon}
+                      {tab.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
           </nav>
-          <div className="p-4 border-t border-border">
+          <div className="p-4 border-t border-border space-y-2">
+            <button
+              onClick={() => setRoute({ page: 'home' })}
+              className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+            >
+              <Home className="w-5 h-5" />
+              Home
+            </button>
             <button
               onClick={() => setRoute({ page: 'dashboard' })}
               className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
@@ -288,25 +314,39 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
 
         {isMobileMenuOpen && (
           <div className="lg:hidden fixed inset-0 bg-background/80 backdrop-blur-sm z-10 pt-16" onClick={() => setIsMobileMenuOpen(false)}>
-            <div className="bg-card w-64 h-full border-r border-border p-4 overflow-y-auto" onClick={e => e.stopPropagation()}>
-              <nav className="space-y-1">
-                {tabs.map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => {
-                      setActiveTab(tab.id);
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                      }`}
-                  >
-                    {tab.icon}
-                    {tab.name}
-                  </button>
+            <div className="bg-card w-72 h-full border-r border-border p-4 overflow-y-auto" onClick={e => e.stopPropagation()}>
+              <nav className="space-y-4">
+                {['Main', 'Content', 'Finance', 'Shop', 'Other'].map(category => (
+                  <div key={category}>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">{category}</p>
+                    <div className="space-y-1">
+                      {tabs.filter(tab => tab.category === category).map(tab => (
+                        <button
+                          key={tab.id}
+                          onClick={() => {
+                            setActiveTab(tab.id);
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id
+                              ? 'bg-primary/10 text-primary'
+                              : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                            }`}
+                        >
+                          {tab.icon}
+                          {tab.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
-                <div className="pt-4 mt-4 border-t border-border">
+                <div className="pt-4 mt-4 border-t border-border space-y-2">
+                  <button
+                    onClick={() => setRoute({ page: 'home' })}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+                  >
+                    <Home className="w-5 h-5" />
+                    Home
+                  </button>
                   <button
                     onClick={() => setRoute({ page: 'dashboard' })}
                     className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"

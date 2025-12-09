@@ -26,10 +26,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, setRoute, currentR
 
     const menuItems = [
         { icon: LayoutDashboard, label: 'Overview', page: 'dashboard' },
-        { icon: FolderHeart, label: 'Projects', page: 'home' }, // Assuming projects are on home for now or a specific projects page
-        { icon: CreditCard, label: 'Donations', page: 'donations' }, // Need to check if this page exists, otherwise maybe 'cart' or 'history'
+        { icon: FolderHeart, label: 'Projects', page: 'home' },
+        { icon: CreditCard, label: 'My Donations', page: 'dashboard' }, // Donations are shown in dashboard
         { icon: ShoppingBag, label: 'Shop', page: 'merch' },
-        { icon: Settings, label: 'Settings', page: 'settings' },
     ];
 
     const handleNavigation = (page: string) => {
