@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Plus, Edit2, Trash2, Upload, X, Package, DollarSign, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ShoppingCart, Plus, Edit2, Trash2, Upload, X, Package, DollarSign, AlertTriangle, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
 import api from '../../services/api';
+import { ProductCardSkeleton, CardSkeleton } from '../ui/Skeleton';
 
 interface Merchandise {
   id: number;
@@ -54,7 +55,11 @@ const MerchandiseManagement: React.FC = () => {
 
     try {
       setUploadingImage(true);
-      const response = await api.uploads.uploadImage(file);
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', file);
+      formDataUpload.append('type', 'merchandise');
+      
+      const response = await api.uploads.uploadImage(formDataUpload);
       if (response.success && response.data) {
         setFormData({ ...formData, image_url: response.data.url });
       }

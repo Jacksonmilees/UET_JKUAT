@@ -1,12 +1,14 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useProjects } from '../../contexts/ProjectContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { NotificationContext } from '../../contexts/NotificationContext';
 import { useAI } from '../../contexts/AIContext';
-import { Edit2, Sparkles, Trash2, Plus, Image as ImageIcon, Calendar, DollarSign, Target } from 'lucide-react';
+import { Edit2, Sparkles, Trash2, Plus, Image as ImageIcon, Calendar, DollarSign, Target, Upload, Loader2, CreditCard } from 'lucide-react';
 import { Type } from '@google/genai';
 import { Project } from '../../types';
+import api from '../../services/api';
+import { ProjectCardSkeleton } from '../ui/Skeleton';
 
 interface ProjectManagementProps {
     onProjectEdit: (project: Project) => void;
@@ -14,11 +16,14 @@ interface ProjectManagementProps {
 }
 
 const ProjectManagement: React.FC<ProjectManagementProps> = ({ onProjectEdit, onProjectDelete }) => {
-    const { projects, addProject, categories } = useProjects();
+    const { projects, addProject, categories, isLoading } = useProjects();
     const { user } = useAuth();
     const { addNotification } = React.useContext(NotificationContext);
     const { isGenerating, generateContent } = useAI();
     const [aiTopic, setAITopic] = useState('');
+    const [isUploading, setIsUploading] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [formData, setFormData] = useState({
         title: '',
@@ -26,10 +31,11 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onProjectEdit, on
         longDescription: '',
         category: categories.filter(c => c !== 'All')[0] || '',
         fundingGoal: 100000,
-        featuredImage: 'https://picsum.photos/seed/new_project/600/400',
+        featuredImage: '',
         organizer: user?.name || 'Admin',
         impactStatement: '',
-        durationDays: 30
+        durationDays: 30,
+        accountNumber: '', // For tracking donations to specific account
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -37,15 +43,59 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onProjectEdit, on
         setFormData(prev => ({ ...prev, [name]: name === 'fundingGoal' || name === 'durationDays' ? Number(value) : value }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        try {
+            const formDataUpload = new FormData();
+            formDataUpload.append('file', file);
+            formDataUpload.append('type', 'project');
+
+            const response = await api.uploads.uploadImage(formDataUpload);
+            if (response.success && response.data?.url) {
+                setFormData(prev => ({ ...prev, featuredImage: response.data.url }));
+                addNotification('Image uploaded successfully!');
+            } else {
+                addNotification('Failed to upload image');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            addNotification('Failed to upload image');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.title || !formData.description || !formData.longDescription || !formData.impactStatement || formData.fundingGoal <= 0) {
             addNotification("Please fill all required fields.");
             return;
         }
-        addProject(formData);
-        addNotification(`Project "${formData.title}" created successfully!`);
-        // Optionally reset form
+        setIsSubmitting(true);
+        try {
+            await addProject(formData);
+            addNotification(`Project "${formData.title}" created successfully!`);
+            // Reset form
+            setFormData({
+                title: '',
+                description: '',
+                longDescription: '',
+                category: categories.filter(c => c !== 'All')[0] || '',
+                fundingGoal: 100000,
+                featuredImage: '',
+                organizer: user?.name || 'Admin',
+                impactStatement: '',
+                durationDays: 30,
+                accountNumber: '',
+            });
+        } catch (error) {
+            addNotification('Failed to create project');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleGenerateProjectContent = async () => {
@@ -175,18 +225,46 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onProjectEdit, on
                                 <input type="number" name="durationDays" value={formData.durationDays} onChange={handleChange} className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm" />
                             </div>
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-foreground mb-1">Featured Image URL</label>
+                                <label className="block text-sm font-medium text-foreground mb-1">Featured Image</label>
                                 <div className="flex gap-2">
-                                    <input type="text" name="featuredImage" value={formData.featuredImage} onChange={handleChange} className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm" />
-                                    <button type="button" className="p-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors">
-                                        <ImageIcon className="w-5 h-5" />
+                                    <input type="text" name="featuredImage" value={formData.featuredImage} onChange={handleChange} className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm" placeholder="Image URL or upload" />
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handleImageUpload}
+                                        accept="image/*"
+                                        className="hidden"
+                                    />
+                                    <button 
+                                        type="button" 
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={isUploading}
+                                        className="p-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors disabled:opacity-50"
+                                    >
+                                        {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
                                     </button>
                                 </div>
+                                {formData.featuredImage && (
+                                    <div className="mt-2">
+                                        <img src={formData.featuredImage} alt="Preview" className="w-32 h-20 object-cover rounded-lg border border-border" />
+                                    </div>
+                                )}
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-foreground mb-1">Account Number (for tracking)</label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <CreditCard className="w-4 h-4 text-muted-foreground" />
+                                    </div>
+                                    <input type="text" name="accountNumber" value={formData.accountNumber} onChange={handleChange} className="block w-full pl-10 rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm" placeholder="Optional: Link to account for tracking" />
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">Link this project to an account to track donations</p>
                             </div>
                         </div>
                         <div className="flex justify-end pt-4 border-t border-border">
-                            <button type="submit" className="inline-flex justify-center py-2.5 px-6 border border-transparent shadow-sm text-sm font-medium rounded-lg text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all">
-                                Create Project
+                            <button type="submit" disabled={isSubmitting} className="inline-flex justify-center items-center gap-2 py-2.5 px-6 border border-transparent shadow-sm text-sm font-medium rounded-lg text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all disabled:opacity-50">
+                                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                                {isSubmitting ? 'Creating...' : 'Create Project'}
                             </button>
                         </div>
                     </form>

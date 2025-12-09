@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useProjects } from '../contexts/ProjectContext';
 import { useNews } from '../contexts/NewsContext';
@@ -21,7 +21,9 @@ import SemesterManagement from '../components/admin/SemesterManagement';
 import EditProjectModal from '../components/admin/EditProjectModal';
 import EditNewsModal from '../components/admin/EditNewsModal';
 import ConfirmationModal from '../components/common/ConfirmationModal';
+import { OverviewSkeleton, TransactionSkeleton } from '../components/ui/Skeleton';
 import { Route, Project, NewsArticle, User } from '../types';
+import api from '../services/api';
 import {
   LayoutDashboard,
   Users,
@@ -41,7 +43,9 @@ import {
   ShoppingBag,
   Package,
   Megaphone,
-  Home
+  Home,
+  RefreshCw,
+  Banknote
 } from 'lucide-react';
 
 interface AdminPageProps {
@@ -60,11 +64,41 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
   const { transactions, accounts, withdrawals, mpesaSessions } = useFinance();
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [paybillBalance, setPaybillBalance] = useState<number>(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Modal states
   const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
   const [newsToEdit, setNewsToEdit] = useState<NewsArticle | null>(null);
   const [itemToDelete, setItemToDelete] = useState<DeletableItem | null>(null);
+
+  // Fetch Paybill balance
+  const fetchPaybillBalance = async () => {
+    try {
+      const response = await api.mpesa.getBalance();
+      if (response.success && response.data) {
+        setPaybillBalance(response.data.balance || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching paybill balance:', error);
+    }
+  };
+
+  useEffect(() => {
+    const loadInitialData = async () => {
+      setIsLoadingStats(true);
+      await fetchPaybillBalance();
+      setIsLoadingStats(false);
+    };
+    loadInitialData();
+  }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchPaybillBalance();
+    setRefreshing(false);
+  };
 
   if (user?.role !== 'admin' && user?.role !== 'super_admin') {
     return (
@@ -146,52 +180,118 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
       totalMpesaAmount,
       totalTransactions: transactions.length,
       completedTransactions: completedTransactions.length,
+      paybillBalance,
     };
-  }, [transactions, projects, users, withdrawals, accounts, mpesaSessions]);
+  }, [transactions, projects, users, withdrawals, accounts, mpesaSessions, paybillBalance]);
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'overview':
-        return (
+        return isLoadingStats ? (
+          <OverviewSkeleton />
+        ) : (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Overview</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">Dashboard Overview</h2>
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 rounded-lg transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+            </div>
+
+            {/* Primary Stats Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-card p-6 rounded-lg border border-border">
-                <div className="text-sm text-muted-foreground">Total Transactions</div>
-                <div className="text-3xl font-bold mt-2">{overviewStats.totalTransactions}</div>
+              <div className="bg-gradient-to-br from-green-500/10 to-green-600/5 p-6 rounded-xl border border-green-500/20">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-green-500/20 rounded-lg">
+                    <Banknote className="w-5 h-5 text-green-600" />
+                  </div>
+                  <span className="text-sm font-medium text-green-700 dark:text-green-400">Paybill Balance</span>
+                </div>
+                <div className="text-3xl font-bold text-green-600">KES {overviewStats.paybillBalance.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground mt-1">Available in M-Pesa</p>
               </div>
-              <div className="bg-card p-6 rounded-lg border border-border">
-                <div className="text-sm text-muted-foreground">Total Revenue</div>
-                <div className="text-3xl font-bold mt-2">KES {overviewStats.totalRevenue.toLocaleString()}</div>
+
+              <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 p-6 rounded-xl border border-blue-500/20">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-blue-500/20 rounded-lg">
+                    <TrendingUp className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <span className="text-sm font-medium text-blue-700 dark:text-blue-400">Total Contributed</span>
+                </div>
+                <div className="text-3xl font-bold text-blue-600">KES {overviewStats.totalRevenue.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground mt-1">{overviewStats.completedTransactions} transactions</p>
               </div>
-              <div className="bg-card p-6 rounded-lg border border-border">
+
+              <div className="bg-card p-6 rounded-xl border border-border">
                 <div className="text-sm text-muted-foreground">Total Users</div>
                 <div className="text-3xl font-bold mt-2">{overviewStats.totalUsers}</div>
+                <p className="text-xs text-muted-foreground mt-1">{overviewStats.activeUsers} active</p>
               </div>
-              <div className="bg-card p-6 rounded-lg border border-border">
+
+              <div className="bg-card p-6 rounded-xl border border-border">
                 <div className="text-sm text-muted-foreground">Active Projects</div>
                 <div className="text-3xl font-bold mt-2">{overviewStats.activeProjects}</div>
+                <p className="text-xs text-muted-foreground mt-1">of {overviewStats.totalProjects} total</p>
               </div>
             </div>
-            <div className="bg-card p-6 rounded-lg border border-border">
+
+            {/* Secondary Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-card p-6 rounded-xl border border-border">
+                <div className="text-sm text-muted-foreground">Account Balance</div>
+                <div className="text-2xl font-bold mt-2">KES {overviewStats.totalAccountBalance.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground mt-1">{overviewStats.totalAccounts} accounts</p>
+              </div>
+
+              <div className="bg-card p-6 rounded-xl border border-border">
+                <div className="text-sm text-muted-foreground">Total Withdrawn</div>
+                <div className="text-2xl font-bold mt-2 text-orange-600">KES {overviewStats.totalWithdrawn.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground mt-1">{overviewStats.pendingWithdrawals} pending</p>
+              </div>
+
+              <div className="bg-card p-6 rounded-xl border border-border">
+                <div className="text-sm text-muted-foreground">This Week</div>
+                <div className="text-2xl font-bold mt-2">KES {overviewStats.recentTransactions.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground mt-1">Last 7 days</p>
+              </div>
+
+              <div className="bg-card p-6 rounded-xl border border-border">
+                <div className="text-sm text-muted-foreground">M-Pesa Payments</div>
+                <div className="text-2xl font-bold mt-2">KES {overviewStats.totalMpesaAmount.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground mt-1">{overviewStats.recentMpesa} successful</p>
+              </div>
+            </div>
+
+            {/* Recent Transactions */}
+            <div className="bg-card p-6 rounded-xl border border-border">
               <h3 className="text-lg font-semibold mb-4">Recent Transactions</h3>
               {transactions.length > 0 ? (
                 <div className="space-y-2">
                   {transactions.slice(0, 5).map((tx: any) => (
-                    <div key={tx.id} className="flex justify-between items-center p-3 bg-secondary/50 rounded">
+                    <div key={tx.id} className="flex justify-between items-center p-3 bg-secondary/50 rounded-lg hover:bg-secondary transition-colors">
                       <div>
-                        <div className="font-medium">{tx.payerName || 'Unknown'}</div>
+                        <div className="font-medium">{tx.payerName || tx.description || 'Transaction'}</div>
                         <div className="text-sm text-muted-foreground">{tx.reference}</div>
                       </div>
                       <div className="text-right">
-                        <div className="font-bold">KES {Number(tx.amount).toLocaleString()}</div>
-                        <div className="text-sm text-muted-foreground">{tx.status}</div>
+                        <div className="font-bold text-green-600">+KES {Number(tx.amount).toLocaleString()}</div>
+                        <div className={`text-xs px-2 py-0.5 rounded-full inline-block ${
+                          tx.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                        }`}>{tx.status}</div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center text-muted-foreground py-8">No transactions yet</div>
+                <div className="text-center text-muted-foreground py-8">
+                  <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p>No transactions yet</p>
+                </div>
               )}
             </div>
           </div>

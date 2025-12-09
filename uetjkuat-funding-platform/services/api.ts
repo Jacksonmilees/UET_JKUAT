@@ -279,6 +279,16 @@ export const mpesaApi = {
       `/v1/payments/mpesa/status/${checkoutRequestId}`
     );
   },
+
+  getBalance: async (): Promise<ApiResponse<{ balance: number; lastUpdated?: string }>> => {
+    return apiRequest('/v1/admin/dashboard/paybill-balance');
+  },
+
+  queryBalance: async (): Promise<ApiResponse<any>> => {
+    return apiRequest('/mpesa/balance/query', {
+      method: 'POST',
+    });
+  },
 };
 
 // Accounts API (Extended)
@@ -639,13 +649,27 @@ export const mpesaBalanceApi = {
 
 // Uploads API
 export const uploadsApi = {
-  uploadImage: async (file: File): Promise<ApiResponse<{ url: string; path: string }>> => {
-    const form = new FormData();
-    form.append('file', file);
-    return apiRequest('/v1/uploads', {
-      method: 'POST',
-      body: form,
-    });
+  uploadImage: async (formData: FormData): Promise<ApiResponse<{ url: string; path: string }>> => {
+    const token = localStorage.getItem('auth_token');
+    const headers: HeadersInit = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    if (API_KEY) {
+      headers['X-API-Key'] = API_KEY;
+    }
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/v1/uploads`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+      const data = await response.json();
+      return { success: response.ok, data: data.data || data, error: data.error || data.message };
+    } catch (error) {
+      return { success: false, error: 'Upload failed' };
+    }
   },
 };
 // Announcements API

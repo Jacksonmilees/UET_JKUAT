@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { TrendingUp, Calendar, CheckCircle2, FileText, Mail, Download, X } from 'lucide-react';
+import { TrendingUp, Calendar, CheckCircle2, FileText, Mail, Download, X, Sparkles, Loader2, RefreshCw } from 'lucide-react';
 import api from '../../services/api';
+import { useAI } from '../../contexts/AIContext';
+import { CardSkeleton } from '../ui/Skeleton';
 
 interface ReportData {
   total_income: number;
@@ -24,6 +26,9 @@ const ReportsManagement: React.FC = () => {
   });
   const [emailModal, setEmailModal] = useState(false);
   const [emailAddress, setEmailAddress] = useState('');
+  const [aiInsight, setAiInsight] = useState<string | null>(null);
+  const [generatingAI, setGeneratingAI] = useState(false);
+  const { generateContent } = useAI();
 
   const generateReport = async () => {
     try {
@@ -79,6 +84,43 @@ const ReportsManagement: React.FC = () => {
       console.error('Error sending email:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const generateAIInsight = async () => {
+    if (!reportData) return;
+    
+    setGeneratingAI(true);
+    try {
+      const prompt = `Analyze this financial report for a University Christian Union funding platform and provide insights, recommendations, and a summary:
+      
+      Total Income: KES ${reportData.total_income.toLocaleString()}
+      Total Expenses: KES ${reportData.total_expenses.toLocaleString()}
+      Net Balance: KES ${reportData.net_balance.toLocaleString()}
+      
+      Breakdown:
+      - Donations received: KES ${reportData.summary.donations.toLocaleString()}
+      - Withdrawals made: KES ${reportData.summary.withdrawals.toLocaleString()}
+      - Internal transfers: KES ${reportData.summary.transfers.toLocaleString()}
+      
+      Number of transactions: ${reportData.transactions?.length || 0}
+      Date range: ${filters.from_date || 'All time'} to ${filters.to_date || 'Present'}
+      
+      Please provide:
+      1. Executive Summary (2-3 sentences)
+      2. Key Financial Health Indicators
+      3. Trends and Observations
+      4. Recommendations for improvement
+      5. Risk areas to watch`;
+
+      const result = await generateContent(prompt);
+      if (result) {
+        setAiInsight(result);
+      }
+    } catch (error) {
+      console.error('Error generating AI insight:', error);
+    } finally {
+      setGeneratingAI(false);
     }
   };
 
@@ -201,6 +243,14 @@ const ReportsManagement: React.FC = () => {
             <h3 className="text-lg font-bold text-foreground mb-4">Export Options</h3>
             <div className="flex flex-wrap gap-4">
               <button
+                onClick={generateAIInsight}
+                disabled={generatingAI}
+                className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transition-all shadow-sm disabled:opacity-50"
+              >
+                {generatingAI ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                {generatingAI ? 'Generating...' : 'AI Analysis'}
+              </button>
+              <button
                 onClick={downloadPDF}
                 className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors shadow-sm"
               >
@@ -229,6 +279,29 @@ const ReportsManagement: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {/* AI Insight */}
+          {aiInsight && (
+            <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl p-6 border border-purple-500/20">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-purple-500" />
+                  AI Financial Analysis
+                </h3>
+                <button
+                  onClick={() => setAiInsight(null)}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <div className="whitespace-pre-wrap text-foreground/90 leading-relaxed">
+                  {aiInsight}
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
 

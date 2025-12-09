@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { CreditCard, ArrowUpRight, ArrowDownLeft, CheckCircle2, Clock, AlertCircle, Search, Filter, X } from 'lucide-react';
+import { CreditCard, ArrowUpRight, ArrowDownLeft, CheckCircle2, Clock, AlertCircle, Search, Filter, X, RefreshCw } from 'lucide-react';
 import api from '../../services/api';
+import { TableSkeleton, CardSkeleton } from '../ui/Skeleton';
 
 interface Transaction {
   id: string;
@@ -90,15 +91,42 @@ const TransactionManagement: React.FC = () => {
     .filter(t => (t.type === 'debit' || t.type === 'withdrawal') && t.status === 'completed')
     .reduce((sum, t) => sum + t.amount, 0);
 
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <CreditCard className="w-6 h-6 text-primary" />
+            Transaction Management
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">Loading transactions...</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map(i => <CardSkeleton key={i} />)}
+        </div>
+        <TableSkeleton rows={8} columns={6} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <CreditCard className="w-6 h-6 text-primary" />
-          Transaction Management
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">View and manage all financial transactions</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <CreditCard className="w-6 h-6 text-primary" />
+            Transaction Management
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">View and manage all financial transactions</p>
+        </div>
+        <button
+          onClick={fetchTransactions}
+          className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 rounded-lg transition-colors"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Refresh
+        </button>
       </div>
 
       {/* Stats Cards */}

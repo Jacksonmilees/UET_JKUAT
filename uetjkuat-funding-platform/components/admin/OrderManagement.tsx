@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, CheckCircle2, Clock, AlertCircle, Package, Truck, X } from 'lucide-react';
+import { ShoppingCart, CheckCircle2, Clock, AlertCircle, Package, Truck, X, RefreshCw } from 'lucide-react';
 import api from '../../services/api';
+import { TableSkeleton, CardSkeleton } from '../ui/Skeleton';
 
 interface Order {
   id: number;
@@ -97,15 +98,42 @@ const OrderManagement: React.FC = () => {
   const processingOrders = orders.filter(o => o.status === 'processing').length;
   const shippedOrders = orders.filter(o => o.status === 'shipped').length;
 
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <ShoppingCart className="w-6 h-6 text-primary" />
+            Order Management
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">Loading orders...</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map(i => <CardSkeleton key={i} />)}
+        </div>
+        <TableSkeleton rows={6} columns={5} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <ShoppingCart className="w-6 h-6 text-primary" />
-          Order Management
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">Process and track customer orders</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <ShoppingCart className="w-6 h-6 text-primary" />
+            Order Management
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">Process and track customer orders</p>
+        </div>
+        <button
+          onClick={fetchOrders}
+          className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 rounded-lg transition-colors"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Refresh
+        </button>
       </div>
 
       {/* Stats */}

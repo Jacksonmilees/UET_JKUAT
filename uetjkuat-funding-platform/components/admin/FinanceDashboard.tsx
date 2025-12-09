@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import api from '../../services/api';
-import { Download, RefreshCw, Calendar, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+import { Download, RefreshCw, Calendar, TrendingUp, TrendingDown, DollarSign, Banknote, Loader2 } from 'lucide-react';
+import { GridSkeleton, TableSkeleton } from '../ui/Skeleton';
 
 const HAS_API_KEY = !!import.meta.env.VITE_API_KEY;
 
@@ -100,11 +101,30 @@ const FinanceDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
+  const [paybillBalance, setPaybillBalance] = useState<number>(0);
+  const [loadingBalance, setLoadingBalance] = useState(false);
+
+  const loadPaybillBalance = async () => {
+    setLoadingBalance(true);
+    try {
+      const response = await api.mpesa.getBalance();
+      if (response.success && response.data) {
+        setPaybillBalance(response.data.balance || 0);
+      }
+    } catch (error) {
+      console.error('Error loading paybill balance:', error);
+    } finally {
+      setLoadingBalance(false);
+    }
+  };
 
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
+      // Load paybill balance
+      loadPaybillBalance();
+      
       // All endpoints are public - no API key needed
       const [txRes, wdRes, projRes] = await Promise.all([
         api.transactions.getAll({
@@ -237,6 +257,29 @@ const FinanceDashboard: React.FC = () => {
           {error}
         </div>
       )}
+
+      {/* Paybill Balance Card */}
+      <div className="bg-gradient-to-br from-green-500/10 to-green-600/5 p-6 rounded-xl border border-green-500/20">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-500/20 rounded-lg">
+              <Banknote className="w-5 h-5 text-green-600" />
+            </div>
+            <div>
+              <span className="text-sm font-medium text-green-700 dark:text-green-400">M-Pesa Paybill Balance</span>
+              <p className="text-xs text-muted-foreground">Live balance from Safaricom</p>
+            </div>
+          </div>
+          <button
+            onClick={loadPaybillBalance}
+            disabled={loadingBalance}
+            className="p-2 hover:bg-green-500/10 rounded-lg transition-colors"
+          >
+            {loadingBalance ? <Loader2 className="w-4 h-4 animate-spin text-green-600" /> : <RefreshCw className="w-4 h-4 text-green-600" />}
+          </button>
+        </div>
+        <div className="text-3xl font-bold text-green-600">{KES(paybillBalance)}</div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Stat label="Total Inflow" value={KES(totals.credit)} type="positive" />
