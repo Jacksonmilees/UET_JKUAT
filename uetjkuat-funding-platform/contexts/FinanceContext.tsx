@@ -248,6 +248,25 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
         }
     }, []);
 
+    // Define refreshMandatoryStatus BEFORE it's used in useEffect
+    const refreshMandatoryStatus = useCallback(async () => {
+        try {
+            const response = await api.onboarding.status();
+            if (response.success && response.data) {
+                const data = response.data;
+                setServerMandatoryStatus({
+                    requiredAmount: data.amount ?? MANDATORY_CONTRIBUTION_AMOUNT,
+                    contributedAmount: data.paid ? (data.amount ?? MANDATORY_CONTRIBUTION_AMOUNT) : 0,
+                    isCleared: !!data.paid,
+                    lastContributionDate: data.lastPaymentDate,
+                });
+            }
+        } catch (error) {
+            console.error('Error refreshing mandatory status:', error);
+            setServerMandatoryStatus(null);
+        }
+    }, []);
+
     // Sync mandatory status from auth payload so UI reflects latest server knowledge immediately.
     useEffect(() => {
         if (user?.mandatoryPaid !== undefined) {
@@ -521,24 +540,6 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
         },
         [donations, serverMandatoryStatus]
     );
-
-    const refreshMandatoryStatus = useCallback(async () => {
-        try {
-            const response = await api.onboarding.status();
-            if (response.success && response.data) {
-                const data = response.data;
-                setServerMandatoryStatus({
-                    requiredAmount: data.amount ?? MANDATORY_CONTRIBUTION_AMOUNT,
-                    contributedAmount: data.paid ? (data.amount ?? MANDATORY_CONTRIBUTION_AMOUNT) : 0,
-                    isCleared: !!data.paid,
-                    lastContributionDate: data.lastPaymentDate,
-                });
-            }
-        } catch (error) {
-            console.error('Error refreshing mandatory status:', error);
-            setServerMandatoryStatus(null);
-        }
-    }, []);
 
     const refreshTransactions = useCallback(async () => {
         await loadTransactions();
