@@ -157,9 +157,20 @@ async function apiRequest<T>(
     }
 
     if (!response.ok) {
+      // Handle Laravel validation errors (422)
+      let errorMessage = data?.message || data?.error || `HTTP ${response.status}`;
+      
+      // Laravel validation errors come in data.errors object
+      if (data?.errors && typeof data.errors === 'object') {
+        const firstErrorKey = Object.keys(data.errors)[0];
+        if (firstErrorKey && Array.isArray(data.errors[firstErrorKey])) {
+          errorMessage = data.errors[firstErrorKey][0];
+        }
+      }
+      
       return {
         success: false,
-        error: data?.message || data?.error || `HTTP ${response.status}`,
+        error: errorMessage,
       };
     }
 

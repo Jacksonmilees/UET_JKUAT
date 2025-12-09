@@ -6,6 +6,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import { Route } from '../types';
 import api, { accountsApi } from '../services/api';
 import { API_BASE_URL } from '../constants';
+import DashboardBottomNav from '../components/common/DashboardBottomNav';
 import {
   TrendingUp,
   Users,
@@ -52,13 +53,18 @@ const RechargeModal: React.FC<{
   onClose: () => void;
   onSuccess: () => void;
   userPhone?: string;
+  userName?: string;
+  memberId?: string;
   showToast: (message: string, type: 'success' | 'error' | 'info') => void;
-}> = ({ isOpen, onClose, onSuccess, userPhone, showToast }) => {
+}> = ({ isOpen, onClose, onSuccess, userPhone, userName, memberId, showToast }) => {
   const [amount, setAmount] = useState('');
   const [phoneNumber, setPhoneNumber] = useState(userPhone || '');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+
+  // Generate account number from member_id and username
+  const accountNumber = memberId ? `${memberId}-${userName || 'USER'}` : (userName || 'RECHARGE');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,6 +76,7 @@ const RechargeModal: React.FC<{
         phoneNumber,
         amount: parseFloat(amount),
         type: 'account_recharge',
+        accountNumber: accountNumber,
       });
       if (response.success) {
         setSuccess(true);
@@ -81,8 +88,8 @@ const RechargeModal: React.FC<{
           setAmount('');
         }, 2000);
       } else {
-        setError(response.message || 'Failed to initiate payment');
-        showToast(response.message || 'Failed to initiate payment', 'error');
+        setError(response.message || response.error || 'Failed to initiate payment');
+        showToast(response.message || response.error || 'Failed to initiate payment', 'error');
       }
     } catch (err: any) {
       setError(err.message || 'Failed to initiate payment');
@@ -365,7 +372,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
   const isLoading = financeLoading || accountLoading;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in pb-20 lg:pb-0">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
         <div className="flex items-center gap-4">
@@ -398,8 +405,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
         </div>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex border-b border-border overflow-x-auto">
+      {/* Tab Navigation - Hidden on mobile (use bottom nav instead) */}
+      <div className="hidden md:flex border-b border-border overflow-x-auto">
         <button
           onClick={() => setActiveTab('overview')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
@@ -1141,12 +1148,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
         onClose={() => setShowRechargeModal(false)}
         onSuccess={fetchAccountData}
         userPhone={user.phoneNumber}
+        userName={user.name}
+        memberId={user.member_id}
         showToast={(message, type) => {
           if (type === 'success') showSuccess(message);
           else if (type === 'error') showError(message);
           else showInfo(message);
         }}
       />
+
+      {/* Mobile Bottom Navigation */}
+      <DashboardBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );
 };
