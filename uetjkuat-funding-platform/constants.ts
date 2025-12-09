@@ -34,6 +34,7 @@ const getPastDate = (days: number) => {
 export const MANDATORY_CONTRIBUTION_AMOUNT = 100;
 
 // API Configuration (single source of truth for frontend)
+// Last updated: 2025-12-09 - OTP endpoints working
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://uetjkuat-54286e10a43b.herokuapp.com/api';
 
 const mockContributors: Contributor[] = [
