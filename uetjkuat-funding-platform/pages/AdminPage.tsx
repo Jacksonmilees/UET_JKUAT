@@ -68,7 +68,10 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [paybillBalance, setPaybillBalance] = useState<number>(0);
+  const [balanceLastUpdated, setBalanceLastUpdated] = useState<string | null>(null);
+  const [balanceSource, setBalanceSource] = useState<string>('');
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshingBalance, setRefreshingBalance] = useState(false);
 
   // Modal states
   const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
@@ -76,14 +79,21 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
   const [itemToDelete, setItemToDelete] = useState<DeletableItem | null>(null);
 
   // Fetch Paybill balance
-  const fetchPaybillBalance = async () => {
+  const fetchPaybillBalance = async (forceRefresh: boolean = false) => {
     try {
-      const response = await api.mpesa.getBalance();
+      if (forceRefresh) {
+        setRefreshingBalance(true);
+      }
+      const response = await api.mpesa.getBalance(forceRefresh);
       if (response.success && response.data) {
         setPaybillBalance(response.data.balance || 0);
+        setBalanceLastUpdated(response.data.last_updated || null);
+        setBalanceSource(response.data.source || '');
       }
     } catch (error) {
       console.error('Error fetching paybill balance:', error);
+    } finally {
+      setRefreshingBalance(false);
     }
   };
 
@@ -207,15 +217,35 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
 
             {/* Primary Stats Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-gradient-to-br from-green-500/10 to-green-600/5 p-6 rounded-xl border border-green-500/20">
+              <div className="bg-gradient-to-br from-green-500/10 to-green-600/5 p-6 rounded-xl border border-green-500/20 relative">
+                <button
+                  onClick={() => fetchPaybillBalance(true)}
+                  disabled={refreshingBalance}
+                  className="absolute top-3 right-3 p-1.5 hover:bg-green-500/20 rounded-lg transition-colors disabled:opacity-50"
+                  title="Refresh from M-Pesa"
+                >
+                  <RefreshCw className={`w-4 h-4 text-green-600 ${refreshingBalance ? 'animate-spin' : ''}`} />
+                </button>
                 <div className="flex items-center gap-3 mb-3">
                   <div className="p-2 bg-green-500/20 rounded-lg">
                     <Banknote className="w-5 h-5 text-green-600" />
                   </div>
                   <span className="text-sm font-medium text-green-700 dark:text-green-400">Paybill Balance</span>
                 </div>
-                <div className="text-3xl font-bold text-green-600">KES {overviewStats.paybillBalance.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground mt-1">Available in M-Pesa</p>
+                <div className="text-3xl font-bold text-green-600">
+                  {refreshingBalance ? (
+                    <span className="animate-pulse">Loading...</span>
+                  ) : (
+                    `KES ${overviewStats.paybillBalance.toLocaleString()}`
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {balanceLastUpdated ? (
+                    <>Live from M-Pesa • {new Date(balanceLastUpdated).toLocaleTimeString()}</>
+                  ) : (
+                    'Available in M-Pesa'
+                  )}
+                </p>
               </div>
 
               <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 p-6 rounded-xl border border-blue-500/20">

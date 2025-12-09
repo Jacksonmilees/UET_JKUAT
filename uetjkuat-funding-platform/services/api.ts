@@ -280,8 +280,14 @@ export const mpesaApi = {
     );
   },
 
-  getBalance: async (): Promise<ApiResponse<{ balance: number; lastUpdated?: string }>> => {
-    return apiRequest('/v1/admin/dashboard/paybill-balance');
+  getBalance: async (refresh?: boolean): Promise<ApiResponse<{ 
+    balance: number; 
+    all_balances?: Array<{ account_type: string; currency: string; amount: number }>;
+    last_updated?: string;
+    source?: string;
+  }>> => {
+    const url = refresh ? '/v1/admin/dashboard/paybill-balance?refresh=true' : '/v1/admin/dashboard/paybill-balance';
+    return apiRequest(url);
   },
 
   queryBalance: async (): Promise<ApiResponse<any>> => {

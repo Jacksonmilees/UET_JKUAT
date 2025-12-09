@@ -7,10 +7,12 @@ use App\Models\Transaction;
 use App\Models\Account;
 use App\Models\Withdrawal;
 use App\Models\User;
+use App\Services\MpesaBalanceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
 
 class AdminDashboardController extends Controller
 {
@@ -18,13 +20,15 @@ class AdminDashboardController extends Controller
     private $consumerSecret;
     private $shortcode;
     private $env;
+    private $balanceService;
 
-    public function __construct()
+    public function __construct(MpesaBalanceService $balanceService)
     {
         $this->consumerKey = config('services.mpesa.consumer_key');
         $this->consumerSecret = config('services.mpesa.consumer_secret');
         $this->shortcode = config('services.mpesa.shortcode');
         $this->env = config('services.mpesa.env');
+        $this->balanceService = $balanceService;
     }
 
     /**
@@ -47,53 +51,95 @@ class AdminDashboardController extends Controller
 
     /**
      * Get real PayBill balance from M-Pesa
+     * First checks cache, then queries live if needed
      */
-    public function getPayBillBalance()
+    public function getPayBillBalance(Request $request)
     {
         try {
-            $accessToken = $this->getAccessToken();
+            // Check if we should force a fresh query
+            $forceRefresh = $request->boolean('refresh', false);
             
-            if (!$accessToken) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Failed to get M-Pesa access token'
-                ], 500);
-            }
-
-            $url = $this->env === 'sandbox'
-                ? 'https://sandbox.safaricom.co.ke/mpesa/accountbalance/v1/query'
-                : 'https://api.safaricom.co.ke/mpesa/accountbalance/v1/query';
-
-            // Result and timeout URLs
-            $resultUrl = config('app.url') . '/api/mpesa/balance/result';
-            $timeoutUrl = config('app.url') . '/api/mpesa/balance/timeout';
-
-            $response = Http::withToken($accessToken)->post($url, [
-                'Initiator' => config('services.mpesa.initiator_name', 'apiuser'),
-                'SecurityCredential' => $this->generateSecurityCredential(),
-                'CommandID' => 'AccountBalance',
-                'PartyA' => $this->shortcode,
-                'IdentifierType' => '4', // 4 for PayBill
-                'Remarks' => 'Account Balance Query',
-                'QueueTimeOutURL' => $timeoutUrl,
-                'ResultURL' => $resultUrl
-            ]);
-
-            if ($response->successful()) {
-                $data = $response->json();
+            // First check if we have a cached balance
+            $cachedBalance = Cache::get('mpesa_balance');
+            
+            if ($cachedBalance && !$forceRefresh) {
+                // Return the cached balance
+                $balances = $cachedBalance['balances'] ?? [];
+                $transactionData = $cachedBalance['transaction_data'] ?? null;
+                
+                // Find the working account balance (usually the first one or "Working Account")
+                $workingBalance = 0;
+                $allBalances = [];
+                
+                foreach ($balances as $balance) {
+                    $allBalances[] = $balance;
+                    // Look for Working Account or use first available
+                    if (stripos($balance['account_type'] ?? '', 'Working') !== false) {
+                        $workingBalance = $balance['amount'] ?? 0;
+                    } elseif ($workingBalance === 0) {
+                        $workingBalance = $balance['amount'] ?? 0;
+                    }
+                }
                 
                 return response()->json([
                     'status' => 'success',
-                    'message' => 'Balance query initiated. Check result callback.',
-                    'data' => $data
+                    'balance' => $workingBalance,
+                    'all_balances' => $allBalances,
+                    'last_updated' => $transactionData['timestamp'] ?? null,
+                    'source' => 'cache'
                 ]);
             }
-
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to query M-Pesa balance',
-                'details' => $response->body()
-            ], 500);
+            
+            // No cached balance or refresh requested - query M-Pesa
+            try {
+                $response = $this->balanceService->queryBalance();
+                
+                // Poll for results (with timeout)
+                $balance = $this->pollForBalance($response['ConversationID'] ?? null);
+                
+                if ($balance) {
+                    return response()->json([
+                        'status' => 'success',
+                        'balance' => $balance['working_balance'],
+                        'all_balances' => $balance['all_balances'],
+                        'last_updated' => now()->toIso8601String(),
+                        'source' => 'live'
+                    ]);
+                }
+                
+                // If polling times out, return what we have or 0
+                return response()->json([
+                    'status' => 'pending',
+                    'message' => 'Balance query initiated. Please refresh in a few seconds.',
+                    'balance' => 0,
+                    'source' => 'pending'
+                ]);
+                
+            } catch (\Exception $e) {
+                Log::warning('Live balance query failed, returning cached or zero', [
+                    'error' => $e->getMessage()
+                ]);
+                
+                // Return cached balance if available, otherwise 0
+                if ($cachedBalance) {
+                    $balances = $cachedBalance['balances'] ?? [];
+                    $workingBalance = !empty($balances) ? ($balances[0]['amount'] ?? 0) : 0;
+                    
+                    return response()->json([
+                        'status' => 'success',
+                        'balance' => $workingBalance,
+                        'all_balances' => $balances,
+                        'last_updated' => $cachedBalance['transaction_data']['timestamp'] ?? null,
+                        'source' => 'cache_fallback'
+                    ]);
+                }
+                
+                return response()->json([
+                    'status' => 'error',
+                    'balance' => 0,
+                    'message' => 'Unable to fetch balance: ' . $e->getMessage()
+                ]);
+            }
 
         } catch (\Exception $e) {
             Log::error('PayBill balance query failed', [
@@ -102,9 +148,47 @@ class AdminDashboardController extends Controller
 
             return response()->json([
                 'status' => 'error',
+                'balance' => 0,
                 'message' => 'Error querying PayBill balance: ' . $e->getMessage()
             ], 500);
         }
+    }
+    
+    /**
+     * Poll for balance result with timeout
+     */
+    private function pollForBalance($conversationId, $attempts = 0)
+    {
+        $maxAttempts = 10; // 20 seconds max
+        
+        $cachedBalance = Cache::get('mpesa_balance');
+        
+        if ($cachedBalance) {
+            $balances = $cachedBalance['balances'] ?? [];
+            $workingBalance = 0;
+            
+            foreach ($balances as $balance) {
+                if (stripos($balance['account_type'] ?? '', 'Working') !== false) {
+                    $workingBalance = $balance['amount'] ?? 0;
+                    break;
+                } elseif ($workingBalance === 0) {
+                    $workingBalance = $balance['amount'] ?? 0;
+                }
+            }
+            
+            return [
+                'working_balance' => $workingBalance,
+                'all_balances' => $balances
+            ];
+        }
+        
+        if ($attempts >= $maxAttempts) {
+            return null;
+        }
+        
+        sleep(2);
+        
+        return $this->pollForBalance($conversationId, $attempts + 1);
     }
 
     /**
