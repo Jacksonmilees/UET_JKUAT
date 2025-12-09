@@ -135,6 +135,17 @@ class AuthController extends Controller
             ], 401);
         }
 
+        // Check if user has pending payment (skip for admin/super_admin)
+        if ($user->status === 'pending_payment' && !in_array($user->role, ['admin', 'super_admin'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please complete your registration payment first.',
+                'error' => 'PAYMENT_PENDING',
+                'user_id' => $user->id,
+                'phone' => $user->phone_number,
+            ], 403);
+        }
+
         // Issue/refresh a simple token via remember_token
         $token = Str::random(60);
         $user->remember_token = $token;

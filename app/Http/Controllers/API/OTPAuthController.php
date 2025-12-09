@@ -171,6 +171,17 @@ class OTPAuthController extends Controller
                 $data = $response->json();
                 
                 if ($data['success']) {
+                    // Check if user has pending payment (skip for admin/super_admin)
+                    if ($user->status === 'pending_payment' && !in_array($user->role, ['admin', 'super_admin'])) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Please complete your registration payment first.',
+                            'error' => 'PAYMENT_PENDING',
+                            'user_id' => $user->id,
+                            'phone' => $user->phone_number,
+                        ], 403);
+                    }
+                    
                     // OTP verified successfully - log user in
                     // Create session token (you can use Laravel Sanctum or custom token)
                     $token = bin2hex(random_bytes(32));
