@@ -332,10 +332,10 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
             <div
               className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
                 currentStep > step.id
-                  ? 'bg-emerald-500 text-white'
+                  ? 'bg-primary text-primary-foreground'
                   : currentStep === step.id
-                  ? 'bg-emerald-600 text-white ring-4 ring-emerald-100'
-                  : 'bg-gray-200 text-gray-500'
+                  ? 'bg-primary text-primary-foreground ring-4 ring-primary/20'
+                  : 'bg-secondary text-muted-foreground'
               }`}
             >
               {currentStep > step.id ? (
@@ -345,16 +345,16 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
               )}
             </div>
             <div className="mt-2 text-center">
-              <p className={`text-sm font-medium ${currentStep >= step.id ? 'text-gray-900' : 'text-gray-400'}`}>
+              <p className={`text-sm font-medium ${currentStep >= step.id ? 'text-foreground' : 'text-muted-foreground'}`}>
                 {step.title}
               </p>
-              <p className="text-xs text-gray-400 hidden sm:block">{step.description}</p>
+              <p className="text-xs text-muted-foreground hidden sm:block">{step.description}</p>
             </div>
           </div>
           {index < steps.length - 1 && (
             <div
               className={`w-16 sm:w-24 h-1 mx-2 rounded transition-all duration-300 ${
-                currentStep > step.id ? 'bg-emerald-500' : 'bg-gray-200'
+                currentStep > step.id ? 'bg-primary' : 'bg-secondary'
               }`}
             />
           )}
@@ -375,9 +375,9 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
     togglePassword?: () => void
   ) => (
     <div className="space-y-1.5">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <label className="block text-sm font-medium text-foreground">{label}</label>
       <div className="relative">
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
           {icon}
         </div>
         <input
@@ -385,23 +385,23 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
           value={(formData as any)[field]}
           onChange={(e) => updateField(field, e.target.value)}
           placeholder={placeholder}
-          className={`w-full pl-10 ${isPassword ? 'pr-10' : 'pr-4'} py-3 border rounded-xl bg-gray-50 focus:bg-white transition-colors focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
-            errors[field] ? 'border-red-300 bg-red-50' : 'border-gray-200'
+          className={`w-full pl-10 ${isPassword ? 'pr-10' : 'pr-4'} py-3 border rounded-xl bg-secondary/50 focus:bg-background text-foreground placeholder:text-muted-foreground transition-colors focus:ring-2 focus:ring-primary focus:border-transparent ${
+            errors[field] ? 'border-destructive bg-destructive/10' : 'border-border'
           }`}
         />
         {isPassword && togglePassword && (
           <button
             type="button"
             onClick={togglePassword}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
             {showPasswordState ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
           </button>
         )}
       </div>
       {errors[field] && (
-        <p className="text-sm text-red-500 flex items-center gap-1">
-          <span className="inline-block w-1 h-1 bg-red-500 rounded-full"></span>
+        <p className="text-sm text-destructive flex items-center gap-1">
+          <span className="inline-block w-1 h-1 bg-destructive rounded-full"></span>
           {errors[field]}
         </p>
       )}
@@ -417,16 +417,16 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
     placeholder: string = 'Select...'
   ) => (
     <div className="space-y-1.5">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <label className="block text-sm font-medium text-foreground">{label}</label>
       <div className="relative">
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
           {icon}
         </div>
         <select
           value={(formData as any)[field]}
           onChange={(e) => updateField(field, e.target.value)}
-          className={`w-full pl-10 pr-4 py-3 border rounded-xl bg-gray-50 focus:bg-white transition-colors focus:ring-2 focus:ring-emerald-500 focus:border-transparent appearance-none cursor-pointer ${
-            errors[field] ? 'border-red-300 bg-red-50' : 'border-gray-200'
+          className={`w-full pl-10 pr-4 py-3 border rounded-xl bg-secondary/50 focus:bg-background text-foreground transition-colors focus:ring-2 focus:ring-primary focus:border-transparent appearance-none cursor-pointer ${
+            errors[field] ? 'border-destructive bg-destructive/10' : 'border-border'
           }`}
         >
           <option value="">{placeholder}</option>
@@ -434,11 +434,11 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
             <option key={option} value={option}>{option}</option>
           ))}
         </select>
-        <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 rotate-90 pointer-events-none" />
+        <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground rotate-90 pointer-events-none" />
       </div>
       {errors[field] && (
-        <p className="text-sm text-red-500 flex items-center gap-1">
-          <span className="inline-block w-1 h-1 bg-red-500 rounded-full"></span>
+        <p className="text-sm text-destructive flex items-center gap-1">
+          <span className="inline-block w-1 h-1 bg-destructive rounded-full"></span>
           {errors[field]}
         </p>
       )}
@@ -448,18 +448,18 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
   // Render OTP verification
   if (showOtpVerification) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-emerald-50 px-4 py-12">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-secondary/30 px-4 py-12">
         <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl shadow-xl p-8">
+          <div className="bg-card rounded-2xl shadow-xl p-8 border border-border">
             {/* Header */}
             <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Phone className="w-8 h-8 text-emerald-600" />
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Phone className="w-8 h-8 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">Verify Your Phone</h2>
-              <p className="text-gray-500 mt-2">
+              <h2 className="text-2xl font-bold text-foreground">Verify Your Phone</h2>
+              <p className="text-muted-foreground mt-2">
                 Enter the 6-digit code sent to <br />
-                <span className="font-medium text-gray-700">{formData.phone}</span>
+                <span className="font-medium text-foreground">{formData.phone}</span>
               </p>
             </div>
 
@@ -476,7 +476,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
                   onChange={(e) => handleOtpChange(index, e.target.value)}
                   onKeyDown={(e) => handleOtpKeyDown(index, e)}
                   onPaste={index === 0 ? handleOtpPaste : undefined}
-                  className="w-12 h-14 text-center text-xl font-bold border-2 rounded-xl bg-gray-50 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all"
+                  className="w-12 h-14 text-center text-xl font-bold border-2 rounded-xl bg-secondary/50 text-foreground focus:bg-background focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                 />
               ))}
             </div>
@@ -485,7 +485,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
             <button
               onClick={handleVerifyOtp}
               disabled={otpLoading || otp.join('').length !== 6}
-              className="w-full py-3.5 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3.5 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
             >
               {otpLoading ? (
                 <>
@@ -500,13 +500,13 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
             {/* Resend */}
             <div className="text-center mt-6">
               {resendTimer > 0 ? (
-                <p className="text-gray-500">
-                  Resend code in <span className="font-semibold text-emerald-600">{resendTimer}s</span>
+                <p className="text-muted-foreground">
+                  Resend code in <span className="font-semibold text-primary">{resendTimer}s</span>
                 </p>
               ) : (
                 <button
                   onClick={handleResendOtp}
-                  className="text-emerald-600 hover:text-emerald-700 font-medium"
+                  className="text-primary hover:text-primary/80 font-medium"
                 >
                   Resend verification code
                 </button>
@@ -516,7 +516,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
             {/* Back button */}
             <button
               onClick={() => setShowOtpVerification(false)}
-              className="w-full mt-4 py-2.5 text-gray-600 hover:text-gray-800 font-medium flex items-center justify-center gap-2"
+              className="w-full mt-4 py-2.5 text-muted-foreground hover:text-foreground font-medium flex items-center justify-center gap-2"
             >
               <ChevronLeft className="w-4 h-4" />
               Back to registration
@@ -529,7 +529,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
 
   // Main registration form
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-emerald-50 px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-secondary/30 px-4 py-8">
       {/* Mandatory Payment Modal */}
       {showMandatoryPayment && user && (
         <MandatoryPaymentModal
@@ -557,11 +557,11 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div className="bg-card rounded-2xl shadow-xl overflow-hidden border border-border">
           {/* Header */}
-          <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-6 py-5 text-center">
-            <h1 className="text-xl font-bold text-white">Create Your Account</h1>
-            <p className="text-emerald-100 text-sm mt-1">Join the UET JKUAT community</p>
+          <div className="bg-gradient-to-r from-foreground to-foreground/90 px-6 py-5 text-center">
+            <h1 className="text-xl font-bold text-background">Create Your Account</h1>
+            <p className="text-background/70 text-sm mt-1">Join the UET JKUAT community</p>
           </div>
 
           {/* Step Indicator */}
@@ -582,7 +582,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
 
                 <button
                   onClick={handleNextStep}
-                  className="w-full py-3.5 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 mt-6"
+                  className="w-full py-3.5 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 mt-6"
                 >
                   Continue to Academic Info
                   <ChevronRight className="w-5 h-5" />
@@ -603,7 +603,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
                 <div className="flex gap-3 mt-6">
                   <button
                     onClick={handlePrevStep}
-                    className="flex-1 py-3.5 border-2 border-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                    className="flex-1 py-3.5 border-2 border-border text-foreground rounded-xl font-semibold hover:bg-secondary transition-colors flex items-center justify-center gap-2"
                   >
                     <ChevronLeft className="w-5 h-5" />
                     Back
@@ -611,7 +611,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
                   <button
                     onClick={handleSubmit}
                     disabled={isSubmitting}
-                    className="flex-1 py-3.5 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                    className="flex-1 py-3.5 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
                       <>
@@ -628,17 +628,17 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
 
             {/* Auth Error */}
             {authError && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm text-center">
+              <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-sm text-center">
                 {authError}
               </div>
             )}
 
             {/* Login Link */}
-            <p className="text-center mt-6 text-gray-600">
+            <p className="text-center mt-6 text-muted-foreground">
               Already have an account?{' '}
               <button 
                 onClick={() => setRoute({ page: 'login' })} 
-                className="text-emerald-600 hover:text-emerald-700 font-semibold"
+                className="text-primary hover:text-primary/80 font-semibold"
               >
                 Sign In
               </button>
@@ -647,7 +647,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-gray-400 text-sm mt-6">
+        <p className="text-center text-muted-foreground text-sm mt-6">
           By creating an account, you agree to our Terms of Service
         </p>
       </div>
