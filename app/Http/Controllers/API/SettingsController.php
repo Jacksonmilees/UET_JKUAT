@@ -25,10 +25,26 @@ class SettingsController extends Controller
         } catch (\Exception $e) {
             Log::error('Error fetching settings: ' . $e->getMessage());
             
+            // Return default settings if database fails
             return response()->json([
-                'success' => false,
-                'error' => 'Failed to fetch settings',
-            ], 500);
+                'success' => true,
+                'data' => [
+                    'chair_name' => '',
+                    'chair_title' => 'Chairperson',
+                    'chair_image' => null,
+                    'organization_name' => 'UET JKUAT',
+                    'organization_tagline' => 'Empowering Students Through Technology',
+                    'hero_images' => [],
+                    'visible_modules' => [
+                        'news' => true,
+                        'announcements' => true,
+                        'merchandise' => true,
+                        'projects' => true,
+                        'finance' => true,
+                        'tickets' => true,
+                    ],
+                ],
+            ]);
         }
     }
 

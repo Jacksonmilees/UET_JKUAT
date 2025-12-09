@@ -80,8 +80,10 @@ Route::match(['GET', 'POST'], '/mpesa/balance/query', [MpesaBalanceController::c
 Route::post('/mpesa/balance/result', [MpesaBalanceController::class, 'handleResult'])->name('mpesa.balance.result');
 Route::post('/mpesa/balance/timeout', [MpesaBalanceController::class, 'handleTimeout'])->name('mpesa.balance.timeout');
 
-// Settings public route (outside v1 prefix for frontend compatibility)
+// Settings routes (outside v1 prefix for frontend compatibility)
 Route::get('/settings/public', [\App\Http\Controllers\API\SettingsController::class, 'publicSettings']);
+Route::get('/settings', [\App\Http\Controllers\API\SettingsController::class, 'index']);
+Route::put('/settings', [\App\Http\Controllers\API\SettingsController::class, 'update']);
 
 // Public routes (no API key required)
 Route::prefix('v1')->group(function () {

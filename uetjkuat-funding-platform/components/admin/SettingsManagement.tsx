@@ -74,7 +74,7 @@ const SettingsManagement: React.FC = () => {
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      const response = await api.get<SystemSettings>('/settings');
+      const response = await api.get<SystemSettings>('/v1/settings');
       if (response.data.success && response.data.data) {
         const data = response.data.data;
         setSettings(prev => ({
@@ -234,7 +234,7 @@ const SettingsManagement: React.FC = () => {
   const handleSaveSettings = async () => {
     try {
       setSaving(true);
-      const response = await api.put('/settings', settings);
+      const response = await api.put('/v1/settings', settings);
       if (response.data.success) {
         showSuccess('Settings saved successfully');
       } else {

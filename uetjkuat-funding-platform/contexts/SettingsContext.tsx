@@ -67,7 +67,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
       setLoading(true);
       setError(null);
       
-      const response = await api.get<SystemSettings>('/settings/public');
+      const response = await api.get<SystemSettings>('/v1/settings/public');
       
       if (response.data.success && response.data.data) {
         setSettings({

@@ -4,12 +4,15 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Member;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class MemberController extends Controller
 {
     /**
      * Get all members
+     * Falls back to Users table if member_db is not available
      */
     public function index(Request $request)
     {
@@ -28,15 +31,49 @@ class MemberController extends Controller
                 'data' => $members
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to fetch members: ' . $e->getMessage()
-            ], 500);
+            // Log the error
+            Log::warning('Member database not available, falling back to Users: ' . $e->getMessage());
+            
+            // Fallback to Users table
+            try {
+                $query = User::query();
+                
+                if ($request->has('status')) {
+                    $query->where('status', $request->status);
+                }
+                
+                $users = $query->orderBy('created_at', 'desc')->get()->map(function ($user) {
+                    return [
+                        'MMID' => $user->member_id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'whatsapp' => $user->phone_number,
+                        'status' => $user->status,
+                        'current_year_of_study' => $user->year_of_study,
+                        'course_of_study' => $user->course,
+                        'campus' => $user->college,
+                        'created_at' => $user->created_at,
+                    ];
+                });
+                
+                return response()->json([
+                    'success' => true,
+                    'data' => $users,
+                    'source' => 'users'
+                ]);
+            } catch (\Exception $fallbackError) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Failed to fetch members',
+                    'data' => []
+                ], 200); // Return 200 with empty data instead of 500
+            }
         }
     }
 
     /**
      * Get member by MMID
+     * Falls back to Users table if member_db is not available
      */
     public function getByMMID($mmid)
     {
@@ -44,6 +81,26 @@ class MemberController extends Controller
             $member = Member::where('mmid', $mmid)->first();
             
             if (!$member) {
+                // Try Users table
+                $user = User::where('member_id', $mmid)->first();
+                if ($user) {
+                    return response()->json([
+                        'success' => true,
+                        'data' => [
+                            'MMID' => $user->member_id,
+                            'name' => $user->name,
+                            'email' => $user->email,
+                            'whatsapp' => $user->phone_number,
+                            'status' => $user->status,
+                            'current_year_of_study' => $user->year_of_study,
+                            'course_of_study' => $user->course,
+                            'campus' => $user->college,
+                            'created_at' => $user->created_at,
+                        ],
+                        'source' => 'users'
+                    ]);
+                }
+                
                 return response()->json([
                     'success' => false,
                     'error' => 'Member not found'
@@ -55,15 +112,45 @@ class MemberController extends Controller
                 'data' => $member
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to fetch member: ' . $e->getMessage()
-            ], 500);
+            // Fallback to Users table
+            Log::warning('Member database not available for getByMMID, falling back to Users: ' . $e->getMessage());
+            
+            try {
+                $user = User::where('member_id', $mmid)->first();
+                if ($user) {
+                    return response()->json([
+                        'success' => true,
+                        'data' => [
+                            'MMID' => $user->member_id,
+                            'name' => $user->name,
+                            'email' => $user->email,
+                            'whatsapp' => $user->phone_number,
+                            'status' => $user->status,
+                            'current_year_of_study' => $user->year_of_study,
+                            'course_of_study' => $user->course,
+                            'campus' => $user->college,
+                            'created_at' => $user->created_at,
+                        ],
+                        'source' => 'users'
+                    ]);
+                }
+                
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Member not found'
+                ], 404);
+            } catch (\Exception $fallbackError) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Member not found'
+                ], 404);
+            }
         }
     }
 
     /**
      * Search members
+     * Falls back to Users table if member_db is not available
      */
     public function search(Request $request)
     {
@@ -81,10 +168,44 @@ class MemberController extends Controller
                 'data' => $members
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to search members: ' . $e->getMessage()
-            ], 500);
+            // Fallback to Users table
+            Log::warning('Member database not available for search, falling back to Users: ' . $e->getMessage());
+            
+            try {
+                $searchQuery = $request->input('query', '');
+                
+                $users = User::where('name', 'like', "%{$searchQuery}%")
+                    ->orWhere('member_id', 'like', "%{$searchQuery}%")
+                    ->orWhere('phone_number', 'like', "%{$searchQuery}%")
+                    ->orWhere('email', 'like', "%{$searchQuery}%")
+                    ->limit(50)
+                    ->get()
+                    ->map(function ($user) {
+                        return [
+                            'MMID' => $user->member_id,
+                            'name' => $user->name,
+                            'email' => $user->email,
+                            'whatsapp' => $user->phone_number,
+                            'status' => $user->status,
+                            'current_year_of_study' => $user->year_of_study,
+                            'course_of_study' => $user->course,
+                            'campus' => $user->college,
+                            'created_at' => $user->created_at,
+                        ];
+                    });
+                
+                return response()->json([
+                    'success' => true,
+                    'data' => $users,
+                    'source' => 'users'
+                ]);
+            } catch (\Exception $fallbackError) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Failed to search members',
+                    'data' => []
+                ], 200);
+            }
         }
     }
 
