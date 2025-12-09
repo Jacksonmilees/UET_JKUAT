@@ -360,10 +360,10 @@ const Nuru: React.FC<NuruProps> = ({ userName, yearOfStudy, course }) => {
       </div>
 
       {/* Main Content */}
-      <main className="relative z-10 flex flex-col items-center justify-center w-full max-w-4xl px-6 text-center h-full">
+      <main className="relative z-10 flex flex-col items-center justify-between w-full max-w-4xl px-6 text-center h-full py-16">
         
         {/* Title State - Fades out smoothly on connect */}
-        <div className={`absolute top-[15%] transition-all duration-1000 ease-in-out transform ${connectionState === 'connected' ? 'opacity-0 -translate-y-10 scale-95 pointer-events-none' : 'opacity-100 translate-y-0 scale-100'}`}>
+        <div className={`transition-all duration-1000 ease-in-out transform ${connectionState === 'connected' ? 'opacity-0 -translate-y-10 scale-95 pointer-events-none' : 'opacity-100 translate-y-0 scale-100'}`}>
             <h1 className="text-5xl md:text-7xl font-serif tracking-tight text-white mb-4 glow-text drop-shadow-2xl">
               NURU
             </h1>
@@ -381,7 +381,7 @@ const Nuru: React.FC<NuruProps> = ({ userName, yearOfStudy, course }) => {
 
         {/* Error Message */}
         {connectionState === 'error' && (
-            <div className="absolute top-[30%] p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-200 text-sm backdrop-blur-md flex items-center gap-2 animate-in fade-in slide-in-from-bottom-4 z-50">
+            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-200 text-sm backdrop-blur-md flex items-center gap-2 z-50">
                 <AlertTriangle size={16} />
                 <span>{errorMsg || "Connection interrupted."}</span>
                 <button onClick={() => connectToGemini()} className="ml-2 p-1 hover:bg-white/10 rounded-full">
@@ -391,7 +391,7 @@ const Nuru: React.FC<NuruProps> = ({ userName, yearOfStudy, course }) => {
         )}
 
         {/* Interaction Button / Portal - Dissolves on connect */}
-        <div className={`relative transition-all duration-1000 ease-[cubic-bezier(0.22, 1, 0.36, 1)] ${
+        <div className={`flex-1 flex items-center justify-center transition-all duration-1000 ease-[cubic-bezier(0.22, 1, 0.36, 1)] ${
             connectionState === 'connected' 
                 ? 'opacity-0 scale-[3] blur-3xl pointer-events-none' 
                 : 'opacity-100 scale-100 blur-0'
@@ -428,7 +428,7 @@ const Nuru: React.FC<NuruProps> = ({ userName, yearOfStudy, course }) => {
         </div>
 
         {/* Active Controls - Slides up when connected */}
-        <div className={`absolute bottom-8 flex items-center gap-6 transition-all duration-1000 cubic-bezier(0.4, 0, 0.2, 1) ${
+        <div className={`flex items-center gap-6 transition-all duration-1000 cubic-bezier(0.4, 0, 0.2, 1) ${
             connectionState === 'connected' 
                 ? 'opacity-100 translate-y-0 delay-500' 
                 : 'opacity-0 translate-y-20 pointer-events-none'
