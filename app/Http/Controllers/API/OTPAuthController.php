@@ -56,12 +56,38 @@ class OTPAuthController extends Controller
         $isPhone = preg_match('/^[0-9+]+$/', $identifier);
         
         try {
-            // Call WhatsApp OTP service
-            $response = Http::timeout(10)->post("{$this->otpServiceUrl}/send-otp", [
-                'phone' => $isPhone ? $identifier : $user->phone_number,
-                'email' => !$isPhone ? $identifier : $user->email,
-                'customMessage' => "Hello {$user->name},\n\nYour UET JKUAT login verification code is: {otp}\n\nValid for 5 minutes.\n\n_UET JKUAT Ministry Platform_"
-            ]);
+            // Call WhatsApp OTP service with retry logic
+            $maxRetries = 3;
+            $response = null;
+            $lastException = null;
+            
+            for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+                try {
+                    \Log::info("OTP Request attempt {$attempt} to {$this->otpServiceUrl}/send-otp");
+                    
+                    $response = Http::timeout(30)
+                        ->retry(2, 1000)
+                        ->post("{$this->otpServiceUrl}/send-otp", [
+                            'phone' => $isPhone ? $identifier : $user->phone_number,
+                            'email' => !$isPhone ? $identifier : $user->email,
+                            'customMessage' => "Hello {$user->name},\n\nYour UET JKUAT login verification code is: {otp}\n\nValid for 5 minutes.\n\n_UET JKUAT Ministry Platform_"
+                        ]);
+                    
+                    if ($response->successful()) {
+                        break;
+                    }
+                } catch (\Exception $e) {
+                    $lastException = $e;
+                    \Log::warning("OTP attempt {$attempt} failed: " . $e->getMessage());
+                    if ($attempt < $maxRetries) {
+                        sleep(1);
+                    }
+                }
+            }
+            
+            if (!$response) {
+                throw $lastException ?? new \Exception('All OTP attempts failed');
+            }
 
             if ($response->successful()) {
                 $data = $response->json();
@@ -267,12 +293,38 @@ class OTPAuthController extends Controller
         }
 
         try {
-            // Call WhatsApp OTP service
-            $response = Http::timeout(10)->post("{$this->otpServiceUrl}/send-otp", [
-                'phone' => $phone,
-                'email' => $email,
-                'customMessage' => "Hello {$name},\n\nYour UET JKUAT registration verification code is: {otp}\n\nValid for 5 minutes.\n\n_Welcome to UET JKUAT Ministry Platform_"
-            ]);
+            // Call WhatsApp OTP service with retry logic
+            $maxRetries = 3;
+            $response = null;
+            $lastException = null;
+            
+            for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+                try {
+                    \Log::info("Registration OTP Request attempt {$attempt} to {$this->otpServiceUrl}/send-otp");
+                    
+                    $response = Http::timeout(30)
+                        ->retry(2, 1000)
+                        ->post("{$this->otpServiceUrl}/send-otp", [
+                            'phone' => $phone,
+                            'email' => $email,
+                            'customMessage' => "Hello {$name},\n\nYour UET JKUAT registration verification code is: {otp}\n\nValid for 5 minutes.\n\n_Welcome to UET JKUAT Ministry Platform_"
+                        ]);
+                    
+                    if ($response->successful()) {
+                        break;
+                    }
+                } catch (\Exception $e) {
+                    $lastException = $e;
+                    \Log::warning("Registration OTP attempt {$attempt} failed: " . $e->getMessage());
+                    if ($attempt < $maxRetries) {
+                        sleep(1);
+                    }
+                }
+            }
+            
+            if (!$response) {
+                throw $lastException ?? new \Exception('All OTP attempts failed');
+            }
 
             if ($response->successful()) {
                 $data = $response->json();
