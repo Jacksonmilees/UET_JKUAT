@@ -160,6 +160,22 @@ class MpesaCallbackController extends Controller
                         $user->save();
                     }
                 }
+                
+                // If this was a registration fee payment, mark user as active
+                if (($pendingTxn->metadata['purpose'] ?? null) === 'registration_fee' && isset($pendingTxn->metadata['user_id'])) {
+                    $user = User::find($pendingTxn->metadata['user_id']);
+                    if ($user) {
+                        $user->status = 'active';
+                        $user->registration_completed_at = now();
+                        $user->save();
+                        
+                        Log::info('User activated after registration payment', [
+                            'user_id' => $user->id,
+                            'member_id' => $user->member_id,
+                            'amount' => $amount,
+                        ]);
+                    }
+                }
 
                 DB::commit();
 

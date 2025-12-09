@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import MandatoryPaymentModal from '../components/MandatoryPaymentModal';
-import { User, Mail, Phone, Lock, GraduationCap, Building, BookOpen, Home, Heart, ChevronRight, ChevronLeft, CheckCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { User, Mail, Phone, Lock, GraduationCap, Building, BookOpen, Home, Heart, ChevronRight, ChevronLeft, CheckCircle, Eye, EyeOff, Loader2, CreditCard, Smartphone } from 'lucide-react';
 import { Route } from '../types';
 import { API_BASE_URL } from '../constants';
+import { mpesaApi } from '../services/api';
 
 interface RegisterPageProps {
   setRoute: (route: Route) => void;
@@ -37,6 +38,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
   // Multi-step form state
   const [currentStep, setCurrentStep] = useState(1);
   const [showOtpVerification, setShowOtpVerification] = useState(false);
+  const [showPaymentStep, setShowPaymentStep] = useState(false);
   const [showMandatoryPayment, setShowMandatoryPayment] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -48,6 +50,14 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [otpLoading, setOtpLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
+  
+  // Payment state
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentPhone, setPaymentPhone] = useState('');
+  const [checkoutRequestId, setCheckoutRequestId] = useState('');
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'pending' | 'checking' | 'success' | 'failed'>('idle');
+  const [registeredUser, setRegisteredUser] = useState<any>(null);
+  const [registeredToken, setRegisteredToken] = useState<string>('');
   
   // Form data
   const [formData, setFormData] = useState({
@@ -247,7 +257,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
     }
   };
 
-  // Verify OTP and complete registration
+  // Verify OTP and show payment step
   const handleVerifyOtp = async () => {
     const otpCode = otp.join('');
     
@@ -261,7 +271,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
     try {
       const normalizedPhone = formData.phone.replace(/\s/g, '').replace(/^0/, '254');
       
-      // Verify OTP and create user in one call
+      // Verify OTP and create user with pending_payment status
       const verifyResponse = await fetch(`${API_BASE_URL}/auth/register/otp/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -289,25 +299,123 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
         return;
       }
       
-      // Store auth token and user data
-      if (verifyData.data?.token) {
-        localStorage.setItem('auth_token', verifyData.data.token);
-      }
-      if (verifyData.data?.user) {
-        localStorage.setItem('user', JSON.stringify(verifyData.data.user));
-      }
+      // Store user data and token temporarily
+      setRegisteredUser(verifyData.data?.user);
+      setRegisteredToken(verifyData.data?.token || '');
+      setPaymentPhone(normalizedPhone);
       
-      showSuccess('Account created successfully! Welcome to UET JKUAT.');
+      showSuccess('Phone verified! Complete payment to activate your account.');
       
-      // Redirect to login after a short delay
-      setTimeout(() => {
-        setRoute({ page: 'login' });
-      }, 1500);
+      // Show payment step
+      setShowOtpVerification(false);
+      setShowPaymentStep(true);
     } catch (error: any) {
-      showError('Registration failed. Please try again.');
+      showError('Verification failed. Please try again.');
     } finally {
       setOtpLoading(false);
     }
+  };
+  
+  // Registration fee amount
+  const REGISTRATION_FEE = 100;
+  
+  // Handle M-Pesa payment
+  const handleInitiatePayment = async () => {
+    if (!paymentPhone) {
+      showError('Phone number is required');
+      return;
+    }
+    
+    setPaymentLoading(true);
+    setPaymentStatus('pending');
+    
+    try {
+      const response = await mpesaApi.initiateSTKPush({
+        phone_number: paymentPhone,
+        amount: REGISTRATION_FEE,
+        account_reference: `REG-${registeredUser?.member_id || 'NEW'}`,
+        transaction_desc: 'UET JKUAT Registration Fee',
+      });
+      
+      if (response.success && response.data?.CheckoutRequestID) {
+        setCheckoutRequestId(response.data.CheckoutRequestID);
+        showSuccess('Check your phone for M-Pesa prompt. Enter PIN to complete.');
+        
+        // Start polling for payment status
+        pollPaymentStatus(response.data.CheckoutRequestID);
+      } else {
+        showError(response.message || 'Failed to initiate payment');
+        setPaymentStatus('failed');
+      }
+    } catch (error: any) {
+      showError(error.message || 'Payment failed. Please try again.');
+      setPaymentStatus('failed');
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+  
+  // Poll for payment status
+  const pollPaymentStatus = async (checkoutId: string) => {
+    setPaymentStatus('checking');
+    
+    let attempts = 0;
+    const maxAttempts = 30; // 30 seconds max
+    
+    const checkStatus = async () => {
+      attempts++;
+      
+      try {
+        const response = await mpesaApi.checkStatus(checkoutId);
+        
+        if (response.success && response.data) {
+          const status = response.data.ResultCode;
+          
+          if (status === 0 || status === '0') {
+            // Payment successful
+            setPaymentStatus('success');
+            
+            // Store auth token and complete registration
+            if (registeredToken) {
+              localStorage.setItem('auth_token', registeredToken);
+            }
+            if (registeredUser) {
+              localStorage.setItem('user', JSON.stringify(registeredUser));
+            }
+            
+            showSuccess('Payment successful! Welcome to UET JKUAT.');
+            
+            // Redirect to login after short delay
+            setTimeout(() => {
+              setRoute({ page: 'login' });
+            }, 2000);
+            return;
+          } else if (status === 1032 || status === '1032') {
+            // User cancelled
+            setPaymentStatus('failed');
+            showError('Payment was cancelled. Please try again.');
+            return;
+          }
+        }
+        
+        // Continue polling if not done
+        if (attempts < maxAttempts) {
+          setTimeout(checkStatus, 1000);
+        } else {
+          setPaymentStatus('idle');
+          showError('Payment verification timed out. If you paid, please contact support.');
+        }
+      } catch (error) {
+        if (attempts < maxAttempts) {
+          setTimeout(checkStatus, 1000);
+        } else {
+          setPaymentStatus('idle');
+        }
+      }
+    };
+    
+    // Start checking after 5 seconds (give user time to enter PIN)
+    setTimeout(checkStatus, 5000);
   };
 
   // Resend OTP
@@ -539,6 +647,117 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
               <ChevronLeft className="w-4 h-4" />
               Back to registration
             </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Render Payment step
+  if (showPaymentStep) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-secondary/30 px-4 py-12">
+        <div className="w-full max-w-md">
+          <div className="bg-card rounded-2xl shadow-xl p-8 border border-border">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                {paymentStatus === 'success' ? (
+                  <CheckCircle className="w-8 h-8 text-green-500" />
+                ) : (
+                  <CreditCard className="w-8 h-8 text-foreground" />
+                )}
+              </div>
+              <h2 className="text-2xl font-bold text-foreground">
+                {paymentStatus === 'success' ? 'Payment Successful!' : 'Complete Registration'}
+              </h2>
+              <p className="text-muted-foreground mt-2">
+                {paymentStatus === 'success' 
+                  ? 'Your account is now active. Redirecting...'
+                  : 'Pay the registration fee to activate your account'
+                }
+              </p>
+            </div>
+
+            {paymentStatus !== 'success' && (
+              <>
+                {/* Payment Amount */}
+                <div className="bg-secondary/50 rounded-xl p-6 mb-6 text-center">
+                  <p className="text-sm text-muted-foreground mb-1">Registration Fee</p>
+                  <p className="text-4xl font-bold text-foreground">KES {REGISTRATION_FEE}</p>
+                  <p className="text-sm text-muted-foreground mt-2">One-time payment</p>
+                </div>
+
+                {/* Phone Number */}
+                <div className="space-y-1.5 mb-6">
+                  <label className="block text-sm font-medium text-foreground">M-Pesa Phone Number</label>
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                      <Smartphone className="w-5 h-5" />
+                    </div>
+                    <input
+                      type="tel"
+                      value={paymentPhone}
+                      onChange={(e) => setPaymentPhone(e.target.value.replace(/[^0-9]/g, ''))}
+                      placeholder="254700000000"
+                      className="w-full pl-10 pr-4 py-3 border border-border rounded-xl bg-secondary/50 focus:bg-background text-foreground transition-colors focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Pay Button */}
+                <button
+                  onClick={handleInitiatePayment}
+                  disabled={paymentLoading || paymentStatus === 'checking' || !paymentPhone}
+                  className="w-full py-3.5 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                >
+                  {paymentLoading || paymentStatus === 'checking' ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      {paymentStatus === 'checking' ? 'Confirming Payment...' : 'Initiating...'}
+                    </>
+                  ) : paymentStatus === 'pending' ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Waiting for payment...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="w-5 h-5" />
+                      Pay with M-Pesa
+                    </>
+                  )}
+                </button>
+
+                {/* Status message */}
+                {paymentStatus === 'pending' && (
+                  <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
+                    <p className="text-sm text-yellow-600 dark:text-yellow-400 text-center">
+                      📱 Check your phone for M-Pesa prompt and enter your PIN to complete payment
+                    </p>
+                  </div>
+                )}
+
+                {paymentStatus === 'failed' && (
+                  <div className="mt-4 p-4 bg-destructive/10 border border-destructive/30 rounded-xl">
+                    <p className="text-sm text-destructive text-center">
+                      Payment failed. Please try again.
+                    </p>
+                  </div>
+                )}
+
+                {/* Info */}
+                <p className="text-xs text-muted-foreground text-center mt-6">
+                  You'll receive an M-Pesa prompt on your phone. Enter your PIN to complete payment.
+                </p>
+              </>
+            )}
+
+            {paymentStatus === 'success' && (
+              <div className="flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            )}
           </div>
         </div>
       </div>

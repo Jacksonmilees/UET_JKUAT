@@ -234,6 +234,9 @@ Route::prefix('auth')->group(function () {
     Route::post('register/otp/request', [OTPAuthController::class, 'requestRegistrationOTP']);
     Route::post('register/otp/verify', [OTPAuthController::class, 'verifyRegistrationOTP']);
     
+    // Registration payment route (initiates STK push and creates pending transaction)
+    Route::post('register/payment', [OTPAuthController::class, 'initiateRegistrationPayment']);
+    
     // Password reset route (public - uses OTP verification)
     Route::post('reset-password', [OTPAuthController::class, 'resetPassword']);
     

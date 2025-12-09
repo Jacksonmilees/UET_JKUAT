@@ -393,7 +393,7 @@ class OTPAuthController extends Controller
                 $verifyData = $verifyResponse->json();
                 
                 if ($verifyData['success'] ?? false) {
-                    // OTP is valid - create the user
+                    // OTP is valid - create the user with pending_payment status
                     $memberId = \App\Services\MemberIdService::generate();
                     $token = \Illuminate\Support\Str::random(60);
                     
@@ -413,9 +413,9 @@ class OTPAuthController extends Controller
                         'ministry_interest' => $request->ministryInterest,
                         'residence' => $request->residence,
                         'role' => $role,
-                        'status' => 'active',
+                        'status' => 'pending_payment', // User needs to pay registration fee
                         'phone_verified_at' => now(),
-                        'registration_completed_at' => now(),
+                        'registration_completed_at' => null, // Not complete until paid
                         'remember_token' => $token,
                     ]);
                     
@@ -537,6 +537,147 @@ class OTPAuthController extends Controller
                 'success' => false,
                 'message' => 'Password reset failed. Please try again.',
                 'error' => 'SERVICE_ERROR'
+            ], 500);
+        }
+    }
+
+    /**
+     * Initiate registration payment via M-Pesa STK push
+     */
+    public function initiateRegistrationPayment(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'phone_number' => 'required|string',
+            'user_id' => 'required|integer',
+            'amount' => 'required|numeric|min:1',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 400);
+        }
+
+        // Find the user
+        $user = User::find($request->user_id);
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found',
+                'error' => 'USER_NOT_FOUND'
+            ], 404);
+        }
+
+        // Normalize phone number
+        $phoneNumber = preg_replace('/[^0-9]/', '', $request->phone_number);
+        if (strlen($phoneNumber) === 9) {
+            $phoneNumber = '254' . $phoneNumber;
+        } elseif (str_starts_with($phoneNumber, '0')) {
+            $phoneNumber = '254' . substr($phoneNumber, 1);
+        }
+
+        try {
+            // Get or create main account for the transaction
+            $account = \App\Models\Account::first();
+            if (!$account) {
+                // Create a default account if none exists
+                $accountType = \DB::table('account_types')->where('code', 'GEN')->first();
+                if (!$accountType) {
+                    $accountTypeId = \DB::table('account_types')->insertGetId([
+                        'name' => 'General',
+                        'code' => 'GEN',
+                        'description' => 'General Account',
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                } else {
+                    $accountTypeId = $accountType->id;
+                }
+
+                $accountSubtype = \DB::table('account_subtypes')->where('code', 'MAIN')->first();
+                if (!$accountSubtype) {
+                    $accountSubtypeId = \DB::table('account_subtypes')->insertGetId([
+                        'account_type_id' => $accountTypeId,
+                        'name' => 'Main',
+                        'code' => 'MAIN',
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                } else {
+                    $accountSubtypeId = $accountSubtype->id;
+                }
+
+                $account = \App\Models\Account::create([
+                    'name' => 'Main Account',
+                    'account_type_id' => $accountTypeId,
+                    'account_subtype_id' => $accountSubtypeId,
+                    'balance' => 0,
+                ]);
+            }
+
+            // Initiate M-Pesa STK Push
+            $mpesaController = app(\App\Http\Controllers\MpesaController::class);
+            
+            $stkRequest = new Request([
+                'phone_number' => $phoneNumber,
+                'amount' => $request->amount,
+                'account_number' => 'REG-' . $user->member_id,
+            ]);
+
+            $stkResponse = $mpesaController->initiateSTKPush($stkRequest);
+            $stkData = json_decode($stkResponse->getContent(), true);
+
+            if (!$stkData['success']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $stkData['message'] ?? 'Failed to initiate payment',
+                    'error' => 'STK_PUSH_FAILED'
+                ], 400);
+            }
+
+            // Create a pending transaction to track this payment
+            $transaction = \App\Models\Transaction::create([
+                'account_id' => $account->id,
+                'type' => 'credit',
+                'amount' => $request->amount,
+                'status' => 'pending',
+                'reference' => 'PENDING-REG-' . $user->member_id,
+                'phone_number' => $phoneNumber,
+                'description' => 'Registration fee payment',
+                'metadata' => [
+                    'checkout_request_id' => $stkData['data']['CheckoutRequestID'] ?? null,
+                    'merchant_request_id' => $stkData['data']['MerchantRequestID'] ?? null,
+                    'purpose' => 'registration_fee',
+                    'user_id' => $user->id,
+                    'member_id' => $user->member_id,
+                ]
+            ]);
+
+            \Log::info('Registration payment initiated', [
+                'user_id' => $user->id,
+                'checkout_request_id' => $stkData['data']['CheckoutRequestID'] ?? null,
+                'transaction_id' => $transaction->id,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment initiated. Check your phone for M-Pesa prompt.',
+                'data' => [
+                    'CheckoutRequestID' => $stkData['data']['CheckoutRequestID'] ?? null,
+                    'MerchantRequestID' => $stkData['data']['MerchantRequestID'] ?? null,
+                    'transaction_id' => $transaction->id,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Registration payment error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment initiation failed. Please try again.',
+                'error' => 'PAYMENT_ERROR'
             ], 500);
         }
     }
