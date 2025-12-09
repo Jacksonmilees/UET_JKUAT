@@ -264,14 +264,32 @@ export const donationsApi = {
   },
 };
 
+// Helper function to format phone number to 254XXXXXXXXX format
+const formatPhoneNumber = (phone: string): string => {
+  let formatted = phone.replace(/\s+/g, '').replace(/-/g, '');
+  if (formatted.startsWith('0')) {
+    formatted = '254' + formatted.substring(1);
+  } else if (formatted.startsWith('+254')) {
+    formatted = formatted.substring(1);
+  } else if (!formatted.startsWith('254')) {
+    formatted = '254' + formatted;
+  }
+  return formatted;
+};
+
 // MPesa API
 export const mpesaApi = {
   initiateSTKPush: async (
     request: MpesaInitiateRequest
   ): Promise<ApiResponse<MpesaInitiateResponse>> => {
+    // Format phone number before sending
+    const formattedRequest = {
+      ...request,
+      phone_number: formatPhoneNumber(request.phone_number),
+    };
     return apiRequest<MpesaInitiateResponse>('/v1/payments/mpesa', {
       method: 'POST',
-      body: JSON.stringify(request),
+      body: JSON.stringify(formattedRequest),
     });
   },
 
@@ -285,7 +303,7 @@ export const mpesaApi = {
     return apiRequest<MpesaInitiateResponse>('/v1/payments/mpesa', {
       method: 'POST',
       body: JSON.stringify({
-        phone_number: data.phoneNumber,
+        phone_number: formatPhoneNumber(data.phoneNumber),
         amount: data.amount,
         account_number: data.accountNumber || 'RECHARGE',
         type: data.type || 'account_recharge',
