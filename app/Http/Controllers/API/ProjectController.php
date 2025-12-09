@@ -4,12 +4,14 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Account;
+use App\Services\MpesaService;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
 use App\Traits\ApiResponses;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Http\Request;
 
 class ProjectController extends Controller
 {
@@ -171,5 +173,101 @@ class ProjectController extends Controller
     {
         $project->delete();
         return $this->successResponse(null, 'Project deleted successfully');
+    }
+
+    /**
+     * Public donation - no authentication required
+     * Allows anyone to donate to a project via M-Pesa
+     */
+    public function publicDonate(Request $request, int $id)
+    {
+        $project = Project::find($id);
+        
+        if (!$project) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Project not found',
+            ], 404);
+        }
+
+        if ($project->status !== 'active') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This project is no longer accepting donations',
+            ], 400);
+        }
+
+        $validated = $request->validate([
+            'phone' => 'required|string',
+            'amount' => 'required|numeric|min:1',
+            'donor_name' => 'required|string|max:100',
+            'message' => 'nullable|string|max:500',
+        ]);
+
+        // Normalize phone number
+        $phone = preg_replace('/[^0-9]/', '', $validated['phone']);
+        if (strlen($phone) === 9) {
+            $phone = '254' . $phone;
+        } elseif (strlen($phone) === 10 && str_starts_with($phone, '0')) {
+            $phone = '254' . substr($phone, 1);
+        }
+
+        // Validate it's a Kenyan Safaricom number
+        if (!preg_match('/^2547\d{8}$/', $phone)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please enter a valid Safaricom phone number',
+            ], 422);
+        }
+
+        try {
+            $mpesaService = app(MpesaService::class);
+            
+            $response = $mpesaService->stkPush(
+                $phone,
+                $validated['amount'],
+                "Donation to {$project->name} from {$validated['donor_name']}",
+                'PublicDonationCallback',
+                [
+                    'project_id' => $project->id,
+                    'donor_name' => $validated['donor_name'],
+                    'donor_phone' => $phone,
+                    'message' => $validated['message'] ?? null,
+                    'is_public_donation' => true,
+                ]
+            );
+
+            if (isset($response['CheckoutRequestID'])) {
+                Log::info("Public donation STK Push sent", [
+                    'project_id' => $project->id,
+                    'donor_name' => $validated['donor_name'],
+                    'amount' => $validated['amount'],
+                    'checkout_request_id' => $response['CheckoutRequestID'],
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Payment initiated. Please check your phone for M-Pesa prompt.',
+                    'data' => [
+                        'checkout_request_id' => $response['CheckoutRequestID'],
+                    ],
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to initiate payment. Please try again.',
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error("Public donation failed", [
+                'error' => $e->getMessage(),
+                'project_id' => $project->id,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment service error. Please try again later.',
+            ], 500);
+        }
     }
 }

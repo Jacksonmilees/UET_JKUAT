@@ -720,6 +720,29 @@ export default {
   getToken,
   setToken,
   removeToken,
+  // Generic HTTP methods for flexible API calls
+  get: async <T = any>(endpoint: string): Promise<{ data: ApiResponse<T> }> => {
+    const response = await apiRequest<T>(endpoint);
+    return { data: response };
+  },
+  post: async <T = any>(endpoint: string, body?: any): Promise<{ data: ApiResponse<T> }> => {
+    const response = await apiRequest<T>(endpoint, {
+      method: 'POST',
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return { data: response };
+  },
+  put: async <T = any>(endpoint: string, body?: any): Promise<{ data: ApiResponse<T> }> => {
+    const response = await apiRequest<T>(endpoint, {
+      method: 'PUT',
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return { data: response };
+  },
+  delete: async <T = any>(endpoint: string): Promise<{ data: ApiResponse<T> }> => {
+    const response = await apiRequest<T>(endpoint, { method: 'DELETE' });
+    return { data: response };
+  },
 };
 
 

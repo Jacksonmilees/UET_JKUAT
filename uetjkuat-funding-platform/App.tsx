@@ -19,6 +19,8 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import MerchPage from './pages/MerchPage';
 import CartPage from './pages/CartPage';
 import AdminPage from './pages/AdminPage';
+import PublicDonatePage from './pages/PublicDonatePage';
+import PublicRechargePage from './pages/PublicRechargePage';
 import { Route, RoutePage } from './types';
 import { registerServiceWorker } from './utils/pwa';
 
@@ -35,6 +37,11 @@ const AppContent: React.FC = () => {
             case 'projectDetail':
                 const id = parseInt(param, 10);
                 return { page: 'projectDetail', params: { id: isNaN(id) ? null : id } };
+            case 'donate':
+                const projectId = parseInt(param, 10);
+                return { page: 'donate', params: { id: isNaN(projectId) ? null : projectId } };
+            case 'recharge':
+                return { page: 'recharge', params: { token: param || null } };
             case 'dashboard':
                 return { page: 'dashboard' };
             case 'news':
@@ -74,6 +81,10 @@ const AppContent: React.FC = () => {
         let hash = `#/${newRoute.page}`;
         if (newRoute.page === 'projectDetail' && newRoute.params?.id) {
             hash += `/${newRoute.params.id}`;
+        } else if (newRoute.page === 'donate' && newRoute.params?.id) {
+            hash += `/${newRoute.params.id}`;
+        } else if (newRoute.page === 'recharge' && newRoute.params?.token) {
+            hash += `/${newRoute.params.token}`;
         }
         window.location.hash = hash;
     }, []);
@@ -108,6 +119,16 @@ const AppContent: React.FC = () => {
                 return <CartPage setRoute={setRoute} />;
             case 'admin':
                 return <AdminPage setRoute={setRoute} />;
+            case 'donate':
+                if (route.params?.id) {
+                    return <PublicDonatePage projectId={route.params.id} onBack={() => setRoute({ page: 'home' })} />;
+                }
+                return <HomePage setRoute={setRoute} />;
+            case 'recharge':
+                if (route.params?.token) {
+                    return <PublicRechargePage token={route.params.token} onBack={() => setRoute({ page: 'home' })} />;
+                }
+                return <HomePage setRoute={setRoute} />;
             default:
                 return <HomePage setRoute={setRoute} />;
         }

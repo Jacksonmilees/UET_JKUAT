@@ -15,8 +15,11 @@ import {
   Wallet,
   Calendar,
   ShieldCheck,
-  Target
+  Target,
+  Loader2,
+  Link2
 } from 'lucide-react';
+import RechargeTokens from '../components/RechargeTokens';
 
 interface DashboardPageProps {
   setRoute: (route: Route) => void;
@@ -33,9 +36,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
     accounts,
     withdrawals,
     tickets,
+    isLoading,
   } = useFinance();
 
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('month');
+  const [activeTab, setActiveTab] = useState<'overview' | 'recharge'>('overview');
 
   const userTransactions = useMemo(
     () => getUserTransactions(user?.id),
@@ -93,46 +98,86 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
           <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
           <p className="text-muted-foreground">Welcome back, {user.name?.split(' ')[0]}</p>
         </div>
-        {user.role === 'admin' && (
-          <button
-            onClick={() => setRoute({ page: 'admin' })}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
-          >
-            <ShieldCheck className="w-4 h-4" />
-            Admin Panel
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {user.role === 'admin' && (
+            <button
+              onClick={() => setRoute({ page: 'admin' })}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              Admin Panel
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Contributed"
-          value={`KES ${userStats.totalContributed.toLocaleString()}`}
-          icon={TrendingUp}
-          trend="+12% from last month"
-          trendUp={true}
-        />
-        <StatCard
-          title="Projects Supported"
-          value={userStats.projectsSupported.toString()}
-          icon={Target}
-          trend="+3 new projects"
-          trendUp={true}
-        />
-        <StatCard
-          title="Active Tickets"
-          value={myTickets.filter(t => t.status === 'active').length.toString()}
-          icon={CreditCard}
-          trend="Next draw in 2 days"
-        />
-        <StatCard
-          title="Transactions"
-          value={userTransactions.length.toString()}
-          icon={Clock}
-          trend="Updated just now"
-        />
+      {/* Tab Navigation */}
+      <div className="flex border-b border-border">
+        <button
+          onClick={() => setActiveTab('overview')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'overview'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Overview
+        </button>
+        <button
+          onClick={() => setActiveTab('recharge')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+            activeTab === 'recharge'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Link2 className="w-4 h-4" />
+          Recharge Links
+        </button>
       </div>
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading your data...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Tab Content */}
+      {!isLoading && activeTab === 'overview' && (
+        <>
+          {/* Stats Grid */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              title="Total Contributed"
+              value={`KES ${userStats.totalContributed.toLocaleString()}`}
+              icon={TrendingUp}
+              trend="+12% from last month"
+              trendUp={true}
+            />
+            <StatCard
+              title="Projects Supported"
+              value={userStats.projectsSupported.toString()}
+              icon={Target}
+              trend="+3 new projects"
+              trendUp={true}
+            />
+            <StatCard
+              title="Active Tickets"
+              value={myTickets.filter(t => t.status === 'active').length.toString()}
+              icon={CreditCard}
+              trend="Next draw in 2 days"
+            />
+            <StatCard
+              title="Transactions"
+              value={userTransactions.length.toString()}
+              icon={Clock}
+              trend="Updated just now"
+            />
+          </div>
 
       {/* Main Content Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
@@ -284,6 +329,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
           </div>
         </div>
       </div>
+        </>
+      )}
+
+      {/* Recharge Links Tab */}
+      {!isLoading && activeTab === 'recharge' && (
+        <RechargeTokens />
+      )}
     </div>
   );
 };

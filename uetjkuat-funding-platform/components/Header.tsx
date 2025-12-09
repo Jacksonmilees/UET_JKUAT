@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { LayoutDashboard, LogOut, Menu, ShoppingCart, X } from 'lucide-react';
 import MobileMenu from './common/MobileMenu';
+import NotificationBell from './NotificationBell';
 import { Route, RoutePage } from '../types';
 
 interface HeaderProps {
@@ -97,6 +98,18 @@ const Header: React.FC<HeaderProps> = ({ setRoute, currentRoute }) => {
                 </span>
               )}
             </button>
+
+            {user && (
+              <NotificationBell
+                onNavigate={(url) => {
+                  if (url === '/notifications') {
+                    setRoute({ page: 'dashboard' });
+                  } else if (url === '/dashboard') {
+                    setRoute({ page: 'dashboard' });
+                  }
+                }}
+              />
+            )}
 
             {user ? (
               <>

@@ -17,6 +17,7 @@ import MemberDirectory from '../components/admin/MemberDirectory';
 import MerchandiseManagement from '../components/admin/MerchandiseManagement';
 import OrderManagement from '../components/admin/OrderManagement';
 import AnnouncementManagement from '../components/admin/AnnouncementManagement';
+import SemesterManagement from '../components/admin/SemesterManagement';
 import EditProjectModal from '../components/admin/EditProjectModal';
 import EditNewsModal from '../components/admin/EditNewsModal';
 import ConfirmationModal from '../components/common/ConfirmationModal';
@@ -35,7 +36,8 @@ import {
   CheckCircle,
   LogOut,
   Menu,
-  X
+  X,
+  Calendar
 } from 'lucide-react';
 
 interface AdminPageProps {
@@ -44,7 +46,7 @@ interface AdminPageProps {
 
 type AdminTab = 'overview' | 'users' | 'projects' | 'news' | 'finance' | 'members' |
   'withdrawals' | 'accounts' | 'transactions' | 'tickets' | 'reports' | 'directory' |
-  'merchandise' | 'orders' | 'announcements';
+  'merchandise' | 'orders' | 'announcements' | 'semesters';
 type DeletableItem = { type: 'user' | 'project' | 'news', id: number, name: string };
 
 const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
@@ -218,6 +220,8 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
         return <OrderManagement />;
       case 'announcements':
         return <AnnouncementManagement />;
+      case 'semesters':
+        return <SemesterManagement />;
       default:
         return null;
     }
@@ -232,6 +236,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
     { id: 'withdrawals', name: 'Withdrawals', icon: <ArrowUpRight className="w-5 h-5" /> },
     { id: 'tickets', name: 'Tickets', icon: <Ticket className="w-5 h-5" /> },
     { id: 'directory', name: 'Members', icon: <Users className="w-5 h-5" /> },
+    { id: 'semesters', name: 'Semesters', icon: <Calendar className="w-5 h-5" /> },
     { id: 'reports', name: 'Reports', icon: <TrendingUp className="w-5 h-5" /> },
     { id: 'news', name: 'News', icon: <Newspaper className="w-5 h-5" /> },
     { id: 'finance', name: 'Finance', icon: <Wallet className="w-5 h-5" /> },

@@ -23,6 +23,8 @@ const MandatoryPaymentModal: React.FC<MandatoryPaymentModalProps> = ({
 }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [mpesaSession, setMpesaSession] = useState<MpesaSession | null>(null);
   const { user } = useAuth();
   const { checkMpesaStatus, refreshMandatoryStatus } = useFinance();
@@ -35,37 +37,37 @@ const MandatoryPaymentModal: React.FC<MandatoryPaymentModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '');
-    if (value.length <= 12) {
-      setPhoneNumber(value);
-      setError('');
-    }
+  const normalizePhone = (raw: string) => {
+    const digits = raw.replace(/\D/g, '');
+    if (digits.startsWith('0')) return `254${digits.slice(1)}`;
+    if (!digits.startsWith('254')) return `254${digits}`;
+    return digits;
   };
 
-  const formatPhoneNumber = (phone: string) => {
-    if (phone.startsWith('0')) {
-      return '254' + phone.substring(1);
-    }
-    if (!phone.startsWith('254')) {
-      return '254' + phone;
-    }
-    return phone;
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, '').slice(0, 12);
+    setPhoneNumber(digits);
+    setError('');
+    setInfo('');
   };
 
   const handleInitiatePayment = async () => {
-    if (!phoneNumber || !/^(0|254)[0-9]{9}$/.test(phoneNumber)) {
-      setError('Please enter a valid Safaricom phone number (e.g., 254712345678 or 0712345678)');
+    const formattedPhone = normalizePhone(phoneNumber);
+    if (!/^(2547\d{8})$/.test(formattedPhone)) {
+      setError('Enter a valid Safaricom phone (e.g., 254712345678 or 0712345678).');
       return;
     }
 
+    setSubmitting(true);
     setError('');
-    const formattedPhone = formatPhoneNumber(phoneNumber);
+    setInfo('Sending STK push. Check your phone and enter your M-Pesa PIN to approve.');
 
     try {
       const response = await api.onboarding.initiate(formattedPhone);
       if (!response.success || !response.data) {
         setError(response.error || response.message || 'Failed to initiate payment.');
+        setSubmitting(false);
+        setInfo('');
         return;
       }
 
@@ -81,8 +83,12 @@ const MandatoryPaymentModal: React.FC<MandatoryPaymentModalProps> = ({
         merchantRequestId: response.data.merchantRequestId,
       };
       setMpesaSession(session);
+      setInfo('');
     } catch (err: any) {
       setError(err.message || 'Failed to initiate payment. Please try again.');
+      setInfo('');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -94,6 +100,7 @@ const MandatoryPaymentModal: React.FC<MandatoryPaymentModalProps> = ({
 
   const handlePaymentCancel = () => {
     setMpesaSession(null);
+    setInfo('');
     if (!isRegistration) {
       onClose();
     }
@@ -106,7 +113,8 @@ const MandatoryPaymentModal: React.FC<MandatoryPaymentModalProps> = ({
           <button
             onClick={onClose}
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-            disabled={!!mpesaSession}
+            disabled={!!mpesaSession || submitting}
+            aria-label="Close"
           >
             <IconClose className="w-6 h-6" />
           </button>
@@ -117,8 +125,8 @@ const MandatoryPaymentModal: React.FC<MandatoryPaymentModalProps> = ({
             </h2>
             <p className="text-gray-600">
               {isRegistration
-                ? `To complete your registration, please make the mandatory term contribution of KES ${MANDATORY_CONTRIBUTION_AMOUNT}.`
-                : `You need to complete your mandatory term contribution of KES ${MANDATORY_CONTRIBUTION_AMOUNT} to access the platform.`}
+                ? `Pay the mandatory contribution of KES ${MANDATORY_CONTRIBUTION_AMOUNT} to finish signing up.`
+                : `Pay the mandatory contribution of KES ${MANDATORY_CONTRIBUTION_AMOUNT} to unlock the dashboard.`}
             </p>
           </div>
 
@@ -136,22 +144,23 @@ const MandatoryPaymentModal: React.FC<MandatoryPaymentModalProps> = ({
                 id="phone"
                 value={phoneNumber}
                 onChange={handlePhoneChange}
-                disabled={!!mpesaSession}
+                disabled={!!mpesaSession || submitting}
                 className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 pr-4 sm:text-sm border-gray-300 rounded-md py-3 disabled:bg-gray-100"
                 placeholder="254712345678 or 0712345678"
                 required
               />
             </div>
             {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+            {info && !error && <p className="text-blue-600 text-xs mt-1">{info}</p>}
             <p className="text-xs text-gray-500 mt-2">
-              Enter the phone number registered with M-Pesa. You'll receive an STK prompt to approve the payment.
+              You'll get an STK prompt on this number. Confirm amount and enter your M-Pesa PIN.
             </p>
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <p className="text-sm text-blue-800 font-semibold mb-1">Amount: KES {MANDATORY_CONTRIBUTION_AMOUNT}</p>
             <p className="text-xs text-blue-700">
-              This is a one-time mandatory contribution required for all UET JKUAT members each semester.
+              One-time mandatory contribution for the term. If you don't see an STK, tap "Pay" again.
             </p>
           </div>
 
@@ -160,7 +169,7 @@ const MandatoryPaymentModal: React.FC<MandatoryPaymentModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                disabled={!!mpesaSession}
+                disabled={!!mpesaSession || submitting}
                 className="px-6 py-2 rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50"
               >
                 Cancel
@@ -169,10 +178,10 @@ const MandatoryPaymentModal: React.FC<MandatoryPaymentModalProps> = ({
             <button
               type="button"
               onClick={handleInitiatePayment}
-              disabled={!!mpesaSession || !phoneNumber}
+              disabled={!!mpesaSession || submitting || !phoneNumber}
               className="px-6 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:bg-blue-300"
             >
-              {mpesaSession ? 'Processing...' : `Pay KES ${MANDATORY_CONTRIBUTION_AMOUNT}`}
+              {mpesaSession || submitting ? 'Processing...' : `Pay KES ${MANDATORY_CONTRIBUTION_AMOUNT}`}
             </button>
           </div>
         </div>

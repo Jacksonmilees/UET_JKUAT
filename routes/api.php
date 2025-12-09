@@ -24,6 +24,10 @@ use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\OTPAuthController;
 use App\Http\Controllers\API\UploadController;
 use App\Http\Controllers\API\OnboardingController;
+use App\Http\Controllers\API\SemesterController;
+use App\Http\Controllers\API\NotificationController;
+use App\Http\Controllers\API\AccountRechargeController;
+use App\Http\Middleware\CheckRolePermission;
 use Illuminate\Http\Request;
 
 // Debug route to confirm middleware registration
@@ -274,6 +278,36 @@ Route::middleware(ApiKeyMiddleware::class)
         Route::post('/members', [\App\Http\Controllers\API\MemberController::class, 'store']);
         Route::put('/members/{id}', [\App\Http\Controllers\API\MemberController::class, 'update']);
         Route::get('/members/{id}/stats', [\App\Http\Controllers\API\MemberController::class, 'getStats']);
+        
+        // ============================================================
+        // SEMESTER MANAGEMENT (Admin/Treasurer)
+        // ============================================================
+        Route::get('/semesters', [SemesterController::class, 'index']);
+        Route::post('/semesters', [SemesterController::class, 'store']);
+        Route::get('/semesters/{id}', [SemesterController::class, 'show']);
+        Route::put('/semesters/{id}', [SemesterController::class, 'update']);
+        Route::post('/semesters/{id}/activate', [SemesterController::class, 'activate']);
+        Route::get('/semesters/{id}/stats', [SemesterController::class, 'stats']);
+        Route::post('/semesters/{id}/send-reminders', [SemesterController::class, 'sendReminders']);
+        
+        // ============================================================
+        // NOTIFICATIONS
+        // ============================================================
+        Route::get('/notifications', [NotificationController::class, 'index']);
+        Route::get('/notifications/recent', [NotificationController::class, 'recent']);
+        Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+        Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+        Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+        Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
+        Route::post('/notifications/broadcast', [NotificationController::class, 'broadcast']);
+        
+        // ============================================================
+        // ACCOUNT RECHARGE TOKENS
+        // ============================================================
+        Route::post('/recharge-tokens', [AccountRechargeController::class, 'createToken']);
+        Route::get('/recharge-tokens', [AccountRechargeController::class, 'myTokens']);
+        Route::post('/recharge-tokens/{id}/cancel', [AccountRechargeController::class, 'cancelToken']);
+        Route::get('/recharge-tokens/{id}/contributions', [AccountRechargeController::class, 'getContributions']);
     });
 
 Route::prefix('v1')->group(function () {
@@ -288,6 +322,16 @@ Route::prefix('v1')->group(function () {
     // News routes
     Route::get('/news', [\App\Http\Controllers\API\NewsController::class, 'index']);
     Route::get('/news/{id}', [\App\Http\Controllers\API\NewsController::class, 'show']);
+    
+    // Public Recharge Link (no auth required)
+    Route::get('/recharge/{token}', [AccountRechargeController::class, 'getPublicTokenInfo']);
+    Route::post('/recharge/{token}/pay', [AccountRechargeController::class, 'initiatePayment']);
+    
+    // Public Donation to Project (no auth required)
+    Route::post('/projects/{id}/public-donate', [ProjectController::class, 'publicDonate']);
+    
+    // Current Semester (public)
+    Route::get('/semesters/current', [SemesterController::class, 'current']);
 });
 
 Route::get('/health', function () {
