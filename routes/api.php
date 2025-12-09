@@ -143,6 +143,9 @@ Route::prefix('v1')->group(function () {
     // M-Pesa import endpoints (import real transactions)
     Route::post('/mpesa/import-real-transactions', [\App\Http\Controllers\API\MpesaImportController::class, 'importRealTransactions']);
     Route::get('/mpesa/import-stats', [\App\Http\Controllers\API\MpesaImportController::class, 'getImportStats']);
+    Route::post('/mpesa/add-transaction', [\App\Http\Controllers\API\MpesaImportController::class, 'addManualTransaction']);
+    Route::get('/mpesa/all-transactions', [\App\Http\Controllers\API\MpesaImportController::class, 'getAllMpesaTransactions']);
+    Route::post('/mpesa/sync-from-org-portal', [\App\Http\Controllers\API\MpesaImportController::class, 'syncFromOrgPortal']);
     
     // Admin Dashboard endpoints
     Route::get('/admin/dashboard/stats', [\App\Http\Controllers\API\AdminDashboardController::class, 'getDashboardStats']);

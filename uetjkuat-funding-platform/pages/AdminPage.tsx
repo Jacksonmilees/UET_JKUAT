@@ -20,6 +20,7 @@ import OrderManagement from '../components/admin/OrderManagement';
 import AnnouncementManagement from '../components/admin/AnnouncementManagement';
 import SemesterManagement from '../components/admin/SemesterManagement';
 import SettingsManagement from '../components/admin/SettingsManagement';
+import MpesaTransactionsManagement from '../components/admin/MpesaTransactionsManagement';
 import EditProjectModal from '../components/admin/EditProjectModal';
 import EditNewsModal from '../components/admin/EditNewsModal';
 import ConfirmationModal from '../components/common/ConfirmationModal';
@@ -58,7 +59,7 @@ interface AdminPageProps {
 
 type AdminTab = 'overview' | 'users' | 'projects' | 'news' | 'finance' | 'members' |
   'withdrawals' | 'accounts' | 'transactions' | 'tickets' | 'reports' | 'directory' |
-  'merchandise' | 'orders' | 'announcements' | 'semesters' | 'settings';
+  'merchandise' | 'orders' | 'announcements' | 'semesters' | 'settings' | 'mpesa';
 type DeletableItem = { type: 'user' | 'project' | 'news', id: number, name: string };
 
 const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
@@ -417,6 +418,8 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
         return <SemesterManagement />;
       case 'settings':
         return <SettingsManagement />;
+      case 'mpesa':
+        return <MpesaTransactionsManagement onRefresh={() => fetchPaybillBalance(true)} />;
       default:
         return null;
     }
@@ -435,6 +438,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
     { id: 'finance', name: 'Finance', icon: <Wallet className="w-5 h-5" />, category: 'Finance' },
     { id: 'accounts', name: 'Accounts', icon: <CreditCard className="w-5 h-5" />, category: 'Finance' },
     { id: 'transactions', name: 'Transactions', icon: <CreditCard className="w-5 h-5" />, category: 'Finance' },
+    { id: 'mpesa', name: 'M-Pesa', icon: <Banknote className="w-5 h-5" />, category: 'Finance' },
     { id: 'withdrawals', name: 'Withdrawals', icon: <ArrowUpRight className="w-5 h-5" />, category: 'Finance' },
     // Shop
     { id: 'merchandise', name: 'Merchandise', icon: <ShoppingBag className="w-5 h-5" />, category: 'Shop' },

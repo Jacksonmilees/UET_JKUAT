@@ -295,6 +295,62 @@ export const mpesaApi = {
       method: 'POST',
     });
   },
+
+  // Get all M-Pesa transactions
+  getAllTransactions: async (params?: {
+    page?: number;
+    per_page?: number;
+    status?: string;
+    from_date?: string;
+    to_date?: string;
+    phone?: string;
+    min_amount?: number;
+    max_amount?: number;
+  }): Promise<ApiResponse<{
+    data: any[];
+    totals: { count: number; total_amount: number; completed_amount: number };
+    pagination: { current_page: number; last_page: number; per_page: number; total: number };
+  }>> => {
+    const query = params ? '?' + new URLSearchParams(params as any).toString() : '';
+    return apiRequest(`/v1/mpesa/all-transactions${query}`);
+  },
+
+  // Add manual transaction
+  addTransaction: async (data: {
+    trans_id: string;
+    amount: number;
+    phone_number: string;
+    payer_name?: string;
+    trans_time?: string;
+    bill_ref?: string;
+  }): Promise<ApiResponse<any>> => {
+    return apiRequest('/v1/mpesa/add-transaction', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Bulk import from Org Portal
+  syncFromOrgPortal: async (transactions: Array<{
+    trans_id: string;
+    amount: number;
+    phone_number: string;
+    payer_name?: string;
+    trans_time?: string;
+    bill_ref?: string;
+    type?: string;
+  }>): Promise<ApiResponse<{
+    imported: number;
+    skipped: number;
+    failed: number;
+    total_amount: number;
+    new_balance: number;
+  }>> => {
+    return apiRequest('/v1/mpesa/sync-from-org-portal', {
+      method: 'POST',
+      body: JSON.stringify({ transactions }),
+    });
+  },
 };
 
 // Accounts API (Extended)
