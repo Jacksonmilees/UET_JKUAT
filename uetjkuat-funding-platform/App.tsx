@@ -24,6 +24,9 @@ import CartPage from './pages/CartPage';
 import AdminPage from './pages/AdminPage';
 import PublicDonatePage from './pages/PublicDonatePage';
 import PublicRechargePage from './pages/PublicRechargePage';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
+import ProjectsPage from './pages/ProjectsPage';
 import { Route, RoutePage } from './types';
 import { registerServiceWorker } from './utils/pwa';
 
@@ -63,6 +66,12 @@ const AppContent: React.FC = () => {
                 return { page: 'cart' };
             case 'admin':
                 return { page: 'admin' };
+            case 'about':
+                return { page: 'about' };
+            case 'contact':
+                return { page: 'contact' };
+            case 'projects':
+                return { page: 'projects' };
             default:
                 return { page: 'home' };
         }
@@ -129,6 +138,12 @@ const AppContent: React.FC = () => {
                 return <CartPage setRoute={setRoute} />;
             case 'admin':
                 return <AdminPage setRoute={setRoute} />;
+            case 'about':
+                return <AboutPage />;
+            case 'contact':
+                return <ContactPage />;
+            case 'projects':
+                return <ProjectsPage setRoute={setRoute} />;
             case 'donate':
                 if (route.params?.id) {
                     return <PublicDonatePage projectId={route.params.id} onBack={() => setRoute({ page: 'home' })} />;

@@ -30,11 +30,12 @@ const Header: React.FC<HeaderProps> = ({ setRoute, currentRoute }) => {
   // Define all nav links with their module associations
   const allNavLinks: { name: string; page: RoutePage; hash?: string; adminOnly?: boolean; module?: ModuleKey }[] = [
     { name: 'Home', page: 'home' },
-    { name: 'Projects', page: 'home', hash: '#projects', module: 'projects' },
+    { name: 'Projects', page: 'projects', module: 'projects' },
     { name: 'Shop', page: 'merch', module: 'merchandise' },
     { name: 'News', page: 'news', module: 'news' },
     { name: 'Announcements', page: 'announcements', module: 'announcements' },
-    { name: 'About', page: 'home', hash: '#about' },
+    { name: 'About', page: 'about' },
+    { name: 'Contact', page: 'contact' },
   ];
 
   // Filter nav links based on module visibility (only for non-admin users)

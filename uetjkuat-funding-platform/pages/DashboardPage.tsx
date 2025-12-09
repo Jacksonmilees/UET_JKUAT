@@ -369,7 +369,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center text-white font-bold text-xl shadow-lg">
+          <div className="w-14 h-14 rounded-2xl bg-foreground flex items-center justify-center text-background font-bold text-xl shadow-lg">
             {user.name?.charAt(0).toUpperCase()}
           </div>
           <div>
@@ -470,26 +470,26 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
       {!isLoading && activeTab === 'overview' && (
         <>
           {/* Account Balance Card */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-primary via-primary/90 to-orange-500 rounded-2xl p-6 md:p-8 text-white shadow-xl">
+          <div className="relative overflow-hidden bg-foreground rounded-2xl p-6 md:p-8 text-background shadow-xl">
             {/* Decorative Elements */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-background/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-background/5 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl" />
             
             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div>
-                <p className="text-sm font-medium text-white/80 mb-1">Account Balance</p>
+                <p className="text-sm font-medium text-background/80 mb-1">Account Balance</p>
                 <p className="text-4xl md:text-5xl font-bold mb-4">
                   KES {(accountData?.balance || 0).toLocaleString()}
                 </p>
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-lg">
-                    <span className="text-sm text-white/80">Account:</span>
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-background/20 backdrop-blur-sm rounded-lg">
+                    <span className="text-sm text-background/80">Account:</span>
                     <code className="font-mono font-medium">
                       {displayAccountNumber}
                     </code>
                     <button
                       onClick={() => copyToClipboard(displayAccountNumber)}
-                      className="p-1 hover:bg-white/20 rounded transition-colors"
+                      className="p-1 hover:bg-background/20 rounded transition-colors"
                     >
                       <Copy className="w-3.5 h-3.5" />
                     </button>
@@ -498,7 +498,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
               </div>
               <button
                 onClick={() => setShowRechargeModal(true)}
-                className="flex items-center gap-2 px-6 py-4 bg-white text-primary rounded-xl hover:bg-white/90 transition-all font-semibold shadow-lg hover:shadow-xl hover:scale-105 transform"
+                className="flex items-center gap-2 px-6 py-4 bg-background text-foreground rounded-xl hover:bg-background/90 transition-all font-semibold shadow-lg hover:shadow-xl hover:scale-105 transform"
               >
                 <Plus className="w-5 h-5" />
                 Recharge Account
@@ -695,18 +695,18 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
       {!isLoading && activeTab === 'account' && (
         <div className="space-y-6">
           {/* Account Card */}
-          <div className="bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 rounded-2xl p-8 border border-primary/20">
+          <div className="bg-secondary rounded-2xl p-8 border border-border">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               <div className="space-y-4">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground mb-1">Your Account Number</p>
                   <div className="flex items-center gap-3">
-                    <code className="text-2xl font-mono font-bold text-foreground bg-background/50 px-4 py-2 rounded-lg">
+                    <code className="text-2xl font-mono font-bold text-foreground bg-background px-4 py-2 rounded-lg">
                       {displayAccountNumber}
                     </code>
                     <button
                       onClick={() => copyToClipboard(displayAccountNumber)}
-                      className="p-2 bg-background/50 rounded-lg hover:bg-background transition-colors"
+                      className="p-2 bg-background rounded-lg hover:bg-background/80 transition-colors"
                       title="Copy account number"
                     >
                       <Copy className="w-5 h-5 text-muted-foreground" />
@@ -917,7 +917,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
       {/* Profile Tab */}
       {!isLoading && activeTab === 'profile' && (
         <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-          <div className="bg-gradient-to-r from-primary/10 to-orange-500/10 p-6 border-b border-border">
+          <div className="bg-secondary p-6 border-b border-border">
             <h3 className="text-xl font-bold text-foreground">Edit Profile</h3>
             <p className="text-muted-foreground text-sm mt-1">Update your personal information</p>
           </div>
@@ -926,7 +926,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
             {/* Avatar Section */}
             <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6 pb-6 border-b border-border">
               <div className="relative">
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center text-white text-3xl font-bold overflow-hidden">
+                <div className="w-24 h-24 rounded-full bg-foreground flex items-center justify-center text-background text-3xl font-bold overflow-hidden">
                   {avatarPreview ? (
                     <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
@@ -1159,28 +1159,15 @@ const StatCard: React.FC<{
   trendUp?: boolean;
   color?: 'primary' | 'green' | 'blue' | 'purple';
 }> = ({ title, value, icon: Icon, trend, trendUp, color = 'primary' }) => {
-  const colorClasses = {
-    primary: 'from-primary/20 to-primary/5 border-primary/20',
-    green: 'from-green-500/20 to-green-500/5 border-green-500/20',
-    blue: 'from-blue-500/20 to-blue-500/5 border-blue-500/20',
-    purple: 'from-purple-500/20 to-purple-500/5 border-purple-500/20',
-  };
   const iconColors = {
-    primary: 'bg-primary/10 text-primary',
-    green: 'bg-green-500/10 text-green-500',
-    blue: 'bg-blue-500/10 text-blue-500',
-    purple: 'bg-purple-500/10 text-purple-500',
+    primary: 'bg-foreground/10 text-foreground',
+    green: 'bg-foreground/10 text-foreground',
+    blue: 'bg-foreground/10 text-foreground',
+    purple: 'bg-foreground/10 text-foreground',
   };
   
   return (
-    <div className={`relative overflow-hidden bg-gradient-to-br ${colorClasses[color]} p-5 rounded-2xl border shadow-sm hover:shadow-lg transition-all duration-300 group`}>
-      {/* Animated Background Glow */}
-      <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full blur-2xl opacity-30 group-hover:opacity-50 transition-opacity ${
-        color === 'primary' ? 'bg-primary' : 
-        color === 'green' ? 'bg-green-500' :
-        color === 'blue' ? 'bg-blue-500' : 'bg-purple-500'
-      }`} />
-      
+    <div className="relative overflow-hidden bg-card p-5 rounded-2xl border border-border shadow-sm hover:shadow-lg transition-all duration-300 group">
       <div className="relative z-10">
         <div className="flex items-center justify-between mb-3">
           <div className={`w-10 h-10 rounded-xl ${iconColors[color]} flex items-center justify-center`}>

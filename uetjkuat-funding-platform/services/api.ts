@@ -275,6 +275,24 @@ export const mpesaApi = {
     });
   },
 
+  // Alias for initiateSTKPush - used by DashboardPage recharge
+  initiate: async (data: { 
+    phoneNumber: string; 
+    amount: number; 
+    type?: string;
+    accountNumber?: string;
+  }): Promise<ApiResponse<MpesaInitiateResponse>> => {
+    return apiRequest<MpesaInitiateResponse>('/v1/payments/mpesa', {
+      method: 'POST',
+      body: JSON.stringify({
+        phone_number: data.phoneNumber,
+        amount: data.amount,
+        account_number: data.accountNumber || 'RECHARGE',
+        type: data.type || 'account_recharge',
+      }),
+    });
+  },
+
   checkStatus: async (
     checkoutRequestId: string
   ): Promise<ApiResponse<MpesaStatusResponse>> => {
