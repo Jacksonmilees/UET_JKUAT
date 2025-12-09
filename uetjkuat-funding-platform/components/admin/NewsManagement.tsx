@@ -3,7 +3,7 @@ import { useNews } from '../../contexts/NewsContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { NotificationContext } from '../../contexts/NotificationContext';
 import { useAI } from '../../contexts/AIContext';
-import { Edit2, Sparkles, Trash2, Newspaper, Image as ImageIcon, User, Tag } from 'lucide-react';
+import { Edit2, Sparkles, Trash2, Newspaper, Image as ImageIcon, User, Tag, Upload, Loader2 } from 'lucide-react';
 import { Type } from '@google/genai';
 import { NewsArticle } from '../../types';
 
@@ -18,6 +18,7 @@ const NewsManagement: React.FC<NewsManagementProps> = ({ onArticleEdit, onArticl
     const { addNotification } = React.useContext(NotificationContext);
     const { isGenerating, generateContent } = useAI();
     const [aiTopic, setAITopic] = useState('');
+    const [isUploading, setIsUploading] = useState(false);
 
     const [formData, setFormData] = useState({
         title: '',
@@ -30,6 +31,33 @@ const NewsManagement: React.FC<NewsManagementProps> = ({ onArticleEdit, onArticl
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    // Convert file to base64
+    const fileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = (error) => reject(error);
+        });
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        try {
+            const base64 = await fileToBase64(file);
+            setFormData(prev => ({ ...prev, imageUrl: base64 }));
+            addNotification('Image uploaded successfully!');
+        } catch (error) {
+            console.error('Upload error:', error);
+            addNotification('Failed to upload image');
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -147,15 +175,31 @@ const NewsManagement: React.FC<NewsManagementProps> = ({ onArticleEdit, onArticl
                     <div>
                         <label className="text-sm font-medium text-foreground mb-1.5 flex items-center gap-2">
                             <ImageIcon className="w-4 h-4 text-muted-foreground" />
-                            Image URL
+                            Image
                         </label>
-                        <input
-                            type="text"
-                            name="imageUrl"
-                            value={formData.imageUrl}
-                            onChange={handleChange}
-                            className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm"
-                        />
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                name="imageUrl"
+                                value={formData.imageUrl.startsWith('data:') ? 'Image uploaded' : formData.imageUrl}
+                                onChange={handleChange}
+                                disabled={formData.imageUrl.startsWith('data:')}
+                                className="flex-1 block w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm disabled:bg-secondary"
+                                placeholder="Image URL or upload"
+                            />
+                            <label className="inline-flex items-center justify-center py-2 px-4 border border-border shadow-sm text-sm font-medium rounded-lg text-foreground bg-secondary hover:bg-secondary/80 cursor-pointer transition-all">
+                                {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleImageUpload}
+                                    className="hidden"
+                                />
+                            </label>
+                        </div>
+                        {formData.imageUrl && (
+                            <img src={formData.imageUrl} alt="Preview" className="mt-2 w-32 h-20 object-cover rounded-lg" />
+                        )}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>

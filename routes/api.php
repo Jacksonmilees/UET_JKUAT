@@ -194,6 +194,10 @@ Route::prefix('v1')->group(function () {
     Route::get('/merchandise', [\App\Http\Controllers\API\MerchandiseController::class, 'index']);
     Route::get('/merchandise/{id}', [\App\Http\Controllers\API\MerchandiseController::class, 'show']);
     
+    // Categories (public read)
+    Route::get('/categories', [\App\Http\Controllers\API\CategoryController::class, 'index']);
+    Route::get('/categories/{id}', [\App\Http\Controllers\API\CategoryController::class, 'show']);
+    
     // Uploads (public access for GET, authenticated POST)
     Route::get('/uploads', [\App\Http\Controllers\API\UploadController::class, 'index']);
     Route::get('/uploads/{id}', [\App\Http\Controllers\API\UploadController::class, 'show']);
@@ -339,6 +343,13 @@ Route::middleware(ApiKeyMiddleware::class)
         Route::get('/orders/{id}', [\App\Http\Controllers\API\OrderController::class, 'show']);
         Route::put('/orders/{id}/status', [\App\Http\Controllers\API\OrderController::class, 'updateStatus']);
         Route::put('/orders/{id}/payment', [\App\Http\Controllers\API\OrderController::class, 'updatePaymentStatus']);
+        
+        // Categories
+        Route::get('/categories', [\App\Http\Controllers\API\CategoryController::class, 'index']);
+        Route::get('/categories/{id}', [\App\Http\Controllers\API\CategoryController::class, 'show']);
+        Route::post('/categories', [\App\Http\Controllers\API\CategoryController::class, 'store']);
+        Route::put('/categories/{id}', [\App\Http\Controllers\API\CategoryController::class, 'update']);
+        Route::delete('/categories/{id}', [\App\Http\Controllers\API\CategoryController::class, 'destroy']);
         
         // Merchandise
         Route::get('/merchandise', [\App\Http\Controllers\API\MerchandiseController::class, 'index']);

@@ -9,11 +9,13 @@ class Project extends Model
     use HasFactory;
 
     protected $fillable = [
+        'name',
         'title',
         'description',
         'target_amount',
         'current_amount',
         'account_number',
+        'account_reference',
         'status',
         'end_date',
         'image_url'
@@ -24,6 +26,25 @@ class Project extends Model
         'current_amount' => 'decimal:2',
         'end_date' => 'datetime'
     ];
+
+    /**
+     * Get name attribute (fallback to title if name is not set)
+     */
+    public function getNameAttribute($value)
+    {
+        return $value ?: $this->title;
+    }
+
+    /**
+     * Set name attribute (also set title)
+     */
+    public function setNameAttribute($value)
+    {
+        $this->attributes['name'] = $value;
+        if (empty($this->attributes['title'])) {
+            $this->attributes['title'] = $value;
+        }
+    }
 
     public function donations()
     {

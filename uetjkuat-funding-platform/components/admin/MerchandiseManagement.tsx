@@ -100,21 +100,25 @@ const MerchandiseManagement: React.FC = () => {
     }
   };
 
-  // Upload main image
+  // Convert file to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  // Upload main image (using base64)
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     try {
       setUploadingImage(true);
-      const formDataUpload = new FormData();
-      formDataUpload.append('file', file);
-      formDataUpload.append('type', 'merchandise');
-      
-      const response = await api.uploads.uploadImage(formDataUpload);
-      if (response.success && response.data) {
-        setFormData({ ...formData, image_url: response.data.url });
-      }
+      const base64 = await fileToBase64(file);
+      setFormData({ ...formData, image_url: base64 });
     } catch (error) {
       console.error('Error uploading image:', error);
       alert('Failed to upload image');
@@ -123,7 +127,7 @@ const MerchandiseManagement: React.FC = () => {
     }
   };
 
-  // Upload additional images (multi-image support)
+  // Upload additional images (multi-image support using base64)
   const handleMultiImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -134,14 +138,8 @@ const MerchandiseManagement: React.FC = () => {
       
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const formDataUpload = new FormData();
-        formDataUpload.append('file', file);
-        formDataUpload.append('type', 'merchandise');
-        
-        const response = await api.uploads.uploadImage(formDataUpload);
-        if (response.success && response.data?.url) {
-          uploadedUrls.push(response.data.url);
-        }
+        const base64 = await fileToBase64(file);
+        uploadedUrls.push(base64);
       }
       
       if (uploadedUrls.length > 0) {

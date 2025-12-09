@@ -43,23 +43,25 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onProjectEdit, on
         setFormData(prev => ({ ...prev, [name]: name === 'fundingGoal' || name === 'durationDays' ? Number(value) : value }));
     };
 
+    // Convert file to base64
+    const fileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = (error) => reject(error);
+        });
+    };
+
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
         setIsUploading(true);
         try {
-            const formDataUpload = new FormData();
-            formDataUpload.append('file', file);
-            formDataUpload.append('type', 'project');
-
-            const response = await api.uploads.uploadImage(formDataUpload);
-            if (response.success && response.data?.url) {
-                setFormData(prev => ({ ...prev, featuredImage: response.data.url }));
-                addNotification('Image uploaded successfully!');
-            } else {
-                addNotification('Failed to upload image');
-            }
+            const base64 = await fileToBase64(file);
+            setFormData(prev => ({ ...prev, featuredImage: base64 }));
+            addNotification('Image uploaded successfully!');
         } catch (error) {
             console.error('Upload error:', error);
             addNotification('Failed to upload image');

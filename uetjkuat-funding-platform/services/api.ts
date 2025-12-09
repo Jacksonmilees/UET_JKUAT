@@ -795,6 +795,15 @@ const announcementsApi = {
   toggleActive: async (id: string) => apiRequest(`/v1/announcements/${id}/toggle`, { method: 'PUT' }),
 };
 
+// Categories API
+const categoriesApi = {
+  getAll: async (params?: Record<string, string>) => apiRequest('/v1/categories' + (params ? '?' + new URLSearchParams(params).toString() : '')),
+  getById: async (id: string) => apiRequest(`/v1/categories/${id}`),
+  create: async (data: any) => apiRequest('/v1/categories', { method: 'POST', body: JSON.stringify(data) }),
+  update: async (id: string, data: any) => apiRequest(`/v1/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: async (id: string) => apiRequest(`/v1/categories/${id}`, { method: 'DELETE' }),
+};
+
 // Onboarding (mandatory contribution)
 const onboardingApi = {
   initiate: async (phone_number: string): Promise<ApiResponse<any>> =>
@@ -884,6 +893,7 @@ export default {
   mpesaBalance: mpesaBalanceApi,
   uploads: uploadsApi,
   announcements: announcementsApi,
+  categories: categoriesApi,
   orders: ordersApi,
   merchandise: merchandiseApi,
   onboarding: onboardingApi,

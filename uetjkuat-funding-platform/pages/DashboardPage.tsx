@@ -263,7 +263,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
     setProfileLoading(true);
     
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       
       // First, upload avatar if changed
       if (avatarFile) {
