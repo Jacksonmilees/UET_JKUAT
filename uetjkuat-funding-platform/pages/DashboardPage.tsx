@@ -99,7 +99,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
           <p className="text-muted-foreground">Welcome back, {user.name?.split(' ')[0]}</p>
         </div>
         <div className="flex items-center gap-3">
-          {user.role === 'admin' && (
+          {(user.role === 'admin' || user.role === 'super_admin') && (
             <button
               onClick={() => setRoute({ page: 'admin' })}
               className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors shadow-sm"

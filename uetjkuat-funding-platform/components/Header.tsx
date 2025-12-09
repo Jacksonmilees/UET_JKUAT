@@ -47,7 +47,7 @@ const Header: React.FC<HeaderProps> = ({ setRoute, currentRoute }) => {
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center space-x-8">
             {navLinks.map(link => {
-              if (link.adminOnly && user?.role !== 'admin') {
+              if (link.adminOnly && user?.role !== 'admin' && user?.role !== 'super_admin') {
                 return null;
               }
               const isActive = currentRoute === link.page && !link.hash;

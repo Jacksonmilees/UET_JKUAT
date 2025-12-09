@@ -66,7 +66,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, setRoute, navL
 
                 <nav className="flex flex-col space-y-2 flex-grow">
                     {navLinks.map(link => {
-                        if (link.adminOnly && user?.role !== 'admin') {
+                        if (link.adminOnly && user?.role !== 'admin' && user?.role !== 'super_admin') {
                             return null;
                         }
                         const isActive = currentRoute === link.page && !link.hash;

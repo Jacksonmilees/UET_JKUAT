@@ -45,7 +45,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentRoute, setRo
       label: 'Admin',
       icon: Settings,
       route: { page: 'admin' as RoutePage },
-      show: user?.role === 'admin',
+      show: user?.role === 'admin' || user?.role === 'super_admin',
     },
   ];
 

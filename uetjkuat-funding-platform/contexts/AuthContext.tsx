@@ -61,7 +61,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           name: userData.name,
           email: userData.email,
           avatar: userData.avatar || `https://i.pravatar.cc/150?u=${userData.email}`,
-          role: userData.role === 'super_admin' ? 'admin' : userData.role,
+          role: userData.role, // Keep original role (user, admin, super_admin)
           status: userData.status,
           phoneNumber: userData.phone_number,
           mandatoryPaid: userData.mandatory_paid,
@@ -88,7 +88,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           name: userData.name,
           email: userData.email,
           avatar: userData.avatar || `https://i.pravatar.cc/150?u=${userData.email}`,
-          role: userData.role === 'super_admin' ? 'admin' : userData.role,
+          role: userData.role, // Keep original role (user, admin, super_admin)
           status: userData.status,
           phoneNumber: userData.phone_number,
           mandatoryPaid: userData.mandatory_paid,
@@ -124,7 +124,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           name: userData.name,
           email: userData.email,
           avatar: userData.avatar || `https://i.pravatar.cc/150?u=${userData.email}`,
-          role: userData.role === 'super_admin' ? 'admin' : userData.role,
+          role: userData.role, // Keep original role
           status: userData.status,
           phoneNumber: credentials.phoneNumber,
           yearOfStudy: credentials.yearOfStudy,
@@ -210,7 +210,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           name: u.name,
           email: u.email,
           avatar: u.avatar || `https://i.pravatar.cc/150?u=${u.email}`,
-          role: u.role === 'super_admin' ? 'admin' : u.role,
+          role: u.role, // Keep original role
           status: u.status,
           phoneNumber: u.phone_number,
           mandatoryPaid: u.mandatory_paid,
@@ -224,9 +224,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Load users if admin
+  // Load users if admin or super_admin
   useEffect(() => {
-    if (user?.role === 'admin') {
+    if (user?.role === 'admin' || user?.role === 'super_admin') {
       loadUsers();
     }
   }, [user?.role]);
