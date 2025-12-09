@@ -392,7 +392,7 @@ class OTPAuthController extends Controller
             if ($verifyResponse->successful()) {
                 $verifyData = $verifyResponse->json();
                 
-                if ($verifyData['valid'] ?? false) {
+                if ($verifyData['success'] ?? false) {
                     // OTP is valid - create the user
                     $memberId = \App\Services\MemberIdService::generate();
                     $token = \Illuminate\Support\Str::random(60);
@@ -502,7 +502,7 @@ class OTPAuthController extends Controller
             if ($verifyResponse->successful()) {
                 $verifyData = $verifyResponse->json();
                 
-                if ($verifyData['valid'] ?? false) {
+                if ($verifyData['success'] ?? false) {
                     // OTP is valid - update password
                     $user->password = Hash::make($request->newPassword);
                     $user->save();
