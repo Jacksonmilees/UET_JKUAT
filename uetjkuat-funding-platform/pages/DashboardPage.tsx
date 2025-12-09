@@ -1,10 +1,11 @@
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useFinance } from '../contexts/FinanceContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { Route } from '../types';
 import api, { accountsApi } from '../services/api';
+import { API_BASE_URL } from '../constants';
 import {
   TrendingUp,
   Users,
@@ -28,7 +29,16 @@ import {
   Phone,
   Banknote,
   Receipt,
-  Package
+  Package,
+  User,
+  Mail,
+  GraduationCap,
+  Building,
+  BookOpen,
+  Home,
+  Heart,
+  Camera,
+  Save
 } from 'lucide-react';
 import RechargeTokens from '../components/RechargeTokens';
 
@@ -174,11 +184,28 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
     isLoading: financeLoading,
   } = useFinance();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'account' | 'purchases' | 'recharge'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'account' | 'purchases' | 'recharge' | 'profile'>('overview');
   const [accountData, setAccountData] = useState<any>(null);
   const [accountLoading, setAccountLoading] = useState(true);
   const [showRechargeModal, setShowRechargeModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Profile editing state
+  const [profileData, setProfileData] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    phoneNumber: user?.phoneNumber || '',
+    year_of_study: user?.year_of_study || '',
+    course: user?.course || '',
+    college: user?.college || '',
+    admission_number: user?.admission_number || '',
+    ministry_interest: user?.ministry_interest || '',
+    residence: user?.residence || '',
+  });
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatar || null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const fetchAccountData = useCallback(async () => {
     if (!user) return;
@@ -204,6 +231,81 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
     await fetchAccountData();
     setIsRefreshing(false);
     showSuccess('Account data refreshed');
+  };
+
+  // Handle avatar file selection
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        showError('Image must be less than 5MB');
+        return;
+      }
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle profile update
+  const handleProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileLoading(true);
+    
+    try {
+      const token = localStorage.getItem('token');
+      
+      // First, upload avatar if changed
+      if (avatarFile) {
+        const avatarFormData = new FormData();
+        avatarFormData.append('avatar', avatarFile);
+        
+        const avatarResponse = await fetch(`${API_BASE_URL}/auth/update-avatar`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: avatarFormData,
+        });
+        
+        const avatarData = await avatarResponse.json();
+        if (!avatarData.success) {
+          showError(avatarData.message || 'Failed to upload avatar');
+        }
+      }
+      
+      // Then update profile data
+      const response = await fetch(`${API_BASE_URL}/auth/update-profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(profileData),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        showSuccess('Profile updated successfully!');
+        // Refresh user data
+        window.location.reload();
+      } else {
+        showError(data.message || 'Failed to update profile');
+      }
+    } catch (error) {
+      showError('Failed to update profile');
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  // Update profile field
+  const updateProfileField = (field: string, value: string) => {
+    setProfileData(prev => ({ ...prev, [field]: value }));
   };
 
   const userTransactions = useMemo(
@@ -340,6 +442,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
         >
           <Link2 className="w-4 h-4" />
           Recharge Links
+        </button>
+        <button
+          onClick={() => setActiveTab('profile')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'profile'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <User className="w-4 h-4" />
+          My Profile
         </button>
       </div>
 
@@ -799,6 +912,227 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
       {/* Recharge Links Tab */}
       {!isLoading && activeTab === 'recharge' && (
         <RechargeTokens />
+      )}
+
+      {/* Profile Tab */}
+      {!isLoading && activeTab === 'profile' && (
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="bg-gradient-to-r from-primary/10 to-orange-500/10 p-6 border-b border-border">
+            <h3 className="text-xl font-bold text-foreground">Edit Profile</h3>
+            <p className="text-muted-foreground text-sm mt-1">Update your personal information</p>
+          </div>
+          
+          <form onSubmit={handleProfileUpdate} className="p-6 space-y-6">
+            {/* Avatar Section */}
+            <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6 pb-6 border-b border-border">
+              <div className="relative">
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center text-white text-3xl font-bold overflow-hidden">
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    user?.name?.charAt(0).toUpperCase()
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  className="absolute bottom-0 right-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg hover:bg-primary/90 transition-colors"
+                >
+                  <Camera className="w-4 h-4" />
+                </button>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                />
+              </div>
+              <div className="text-center sm:text-left">
+                <h4 className="text-lg font-semibold text-foreground">{user?.name}</h4>
+                <p className="text-muted-foreground text-sm">{user?.email}</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Click the camera icon to change your profile picture
+                </p>
+              </div>
+            </div>
+
+            {/* Personal Info Section */}
+            <div>
+              <h4 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                <User className="w-4 h-4 text-primary" />
+                Personal Information
+              </h4>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">Full Name</label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      value={profileData.name}
+                      onChange={(e) => updateProfileField('name', e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
+                      placeholder="Your full name"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type="email"
+                      value={profileData.email}
+                      onChange={(e) => updateProfileField('email', e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
+                      placeholder="your@email.com"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">Phone Number</label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type="tel"
+                      value={profileData.phoneNumber}
+                      onChange={(e) => updateProfileField('phoneNumber', e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
+                      placeholder="0712345678"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">Residence</label>
+                  <div className="relative">
+                    <Home className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      value={profileData.residence}
+                      onChange={(e) => updateProfileField('residence', e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
+                      placeholder="Gate C, Juja"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Academic Info Section */}
+            <div>
+              <h4 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                <GraduationCap className="w-4 h-4 text-primary" />
+                Academic Information
+              </h4>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">Year of Study</label>
+                  <div className="relative">
+                    <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <select
+                      value={profileData.year_of_study}
+                      onChange={(e) => updateProfileField('year_of_study', e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground appearance-none cursor-pointer"
+                    >
+                      <option value="">Select year</option>
+                      {['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year', '6th Year', 'Alumni'].map(year => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">Course</label>
+                  <div className="relative">
+                    <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      value={profileData.course}
+                      onChange={(e) => updateProfileField('course', e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
+                      placeholder="BSc. Computer Science"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">College</label>
+                  <div className="relative">
+                    <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <select
+                      value={profileData.college}
+                      onChange={(e) => updateProfileField('college', e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground appearance-none cursor-pointer"
+                    >
+                      <option value="">Select college</option>
+                      {['COHES', 'COED', 'COHRED', 'COPAS', 'COETEC', 'SODEL'].map(college => (
+                        <option key={college} value={college}>{college}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">Admission Number</label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      value={profileData.admission_number}
+                      onChange={(e) => updateProfileField('admission_number', e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
+                      placeholder="SCT/211-12345/2020"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Ministry Info Section */}
+            <div>
+              <h4 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                <Heart className="w-4 h-4 text-primary" />
+                Ministry Information
+              </h4>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">Ministry Interest</label>
+                <div className="relative">
+                  <Heart className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <select
+                    value={profileData.ministry_interest}
+                    onChange={(e) => updateProfileField('ministry_interest', e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground appearance-none cursor-pointer"
+                  >
+                    <option value="">Select ministry</option>
+                    {['Praise & Worship', 'Ushering', 'Media', 'Intercessory', 'Creative Arts', 'Hospitality', 'Evangelism', 'Not Sure Yet'].map(ministry => (
+                      <option key={ministry} value={ministry}>{ministry}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Save Button */}
+            <div className="flex justify-end pt-4 border-t border-border">
+              <button
+                type="submit"
+                disabled={profileLoading}
+                className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors font-medium disabled:opacity-50"
+              >
+                {profileLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Save Changes
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
       )}
 
       {/* Recharge Modal */}

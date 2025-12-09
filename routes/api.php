@@ -230,6 +230,10 @@ Route::prefix('auth')->group(function () {
     Route::post('otp/verify', [OTPAuthController::class, 'verifyOTPAndLogin']);
     Route::get('otp/status', [OTPAuthController::class, 'checkOTPServiceStatus']);
     
+    // Profile update routes (authenticated)
+    Route::put('update-profile', [AuthController::class, 'updateProfile']);
+    Route::post('update-avatar', [AuthController::class, 'updateAvatar']);
+    
     Route::get('mandatory-contribution', function () {
         // Registration fee already paid - no mandatory contribution required
         return response()->json([

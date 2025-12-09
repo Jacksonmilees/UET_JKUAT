@@ -192,6 +192,125 @@ class AuthController extends Controller
             'mandatory_last_payment_date' => $paid ? ($latest->processed_at?->toDateTimeString() ?? $latest->updated_at?->toDateTimeString()) : null,
         ];
     }
+
+    /**
+     * Update user profile
+     */
+    public function updateProfile(Request $request)
+    {
+        $authHeader = $request->header('Authorization');
+        if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+        $token = substr($authHeader, 7);
+
+        $user = User::where('remember_token', $token)->first();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:users,email,' . $user->id,
+            'phoneNumber' => 'sometimes|string|max:20',
+            'year_of_study' => 'sometimes|string|max:50',
+            'course' => 'sometimes|string|max:255',
+            'college' => 'sometimes|string|max:255',
+            'admission_number' => 'sometimes|string|max:50',
+            'ministry_interest' => 'sometimes|string|max:255',
+            'residence' => 'sometimes|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            // Update only provided fields
+            $updateData = [];
+            
+            if ($request->has('name')) $updateData['name'] = $request->get('name');
+            if ($request->has('email')) $updateData['email'] = $request->get('email');
+            if ($request->has('phoneNumber')) $updateData['phone_number'] = $request->get('phoneNumber');
+            if ($request->has('year_of_study')) $updateData['year_of_study'] = $request->get('year_of_study');
+            if ($request->has('course')) $updateData['course'] = $request->get('course');
+            if ($request->has('college')) $updateData['college'] = $request->get('college');
+            if ($request->has('admission_number')) $updateData['admission_number'] = $request->get('admission_number');
+            if ($request->has('ministry_interest')) $updateData['ministry_interest'] = $request->get('ministry_interest');
+            if ($request->has('residence')) $updateData['residence'] = $request->get('residence');
+
+            $user->update($updateData);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Profile updated successfully',
+                'data' => $user->getProfileData(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Profile update failed', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update profile',
+            ], 500);
+        }
+    }
+
+    /**
+     * Update user avatar
+     */
+    public function updateAvatar(Request $request)
+    {
+        $authHeader = $request->header('Authorization');
+        if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+        $token = substr($authHeader, 7);
+
+        $user = User::where('remember_token', $token)->first();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB max
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $file = $request->file('avatar');
+            $filename = 'avatar_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            
+            // Store in public storage
+            $path = $file->storeAs('avatars', $filename, 'public');
+            
+            // Update user avatar URL
+            $avatarUrl = '/storage/' . $path;
+            $user->update(['avatar' => $avatarUrl]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Avatar updated successfully',
+                'data' => [
+                    'avatar' => $avatarUrl,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Avatar upload failed', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload avatar',
+            ], 500);
+        }
+    }
 }
-
-
