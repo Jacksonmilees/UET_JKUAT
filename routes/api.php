@@ -254,6 +254,10 @@ Route::middleware(ApiKeyMiddleware::class)
         Route::get('/users/{id}/stats', [\App\Http\Controllers\API\UserController::class, 'getStats']);
         Route::put('/users/{id}/password', [\App\Http\Controllers\API\UserController::class, 'updatePassword']);
         Route::put('/users/{id}/toggle-status', [\App\Http\Controllers\API\UserController::class, 'toggleStatus']);
+        Route::put('/users/{id}/toggle-role', [\App\Http\Controllers\API\UserController::class, 'toggleRole']);
+        Route::post('/users/{id}/reset-password', [\App\Http\Controllers\API\UserController::class, 'resetPassword']);
+        Route::put('/users/{id}/permissions', [\App\Http\Controllers\API\UserController::class, 'updatePermissions']);
+        Route::post('/users/create-admin', [\App\Http\Controllers\API\UserController::class, 'createAdmin']);
         
         // Orders
         Route::get('/orders', [\App\Http\Controllers\API\OrderController::class, 'getAllOrders']); // Admin

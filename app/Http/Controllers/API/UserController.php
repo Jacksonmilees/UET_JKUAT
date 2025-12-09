@@ -267,7 +267,7 @@ class UserController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $user,
+                'data' => $user->getProfileData(),
                 'message' => 'User status updated successfully'
             ]);
         } catch (\Exception $e) {
@@ -276,5 +276,180 @@ class UserController extends Controller
                 'error' => 'Failed to update user status'
             ], 500);
         }
+    }
+
+    /**
+     * Toggle user role (user <-> admin)
+     */
+    public function toggleRole(Request $request, $id)
+    {
+        try {
+            $user = User::findOrFail($id);
+            
+            // Prevent changing super_admin role
+            if ($user->role === 'super_admin') {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Cannot modify super admin role'
+                ], 403);
+            }
+            
+            // Toggle between user and admin
+            $newRole = $user->role === 'admin' ? 'user' : 'admin';
+            $user->update([
+                'role' => $newRole,
+                'role_assigned_at' => now(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $user->getProfileData(),
+                'message' => "User role updated to {$newRole}"
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error toggling user role: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to update user role'
+            ], 500);
+        }
+    }
+
+    /**
+     * Reset password for a user (admin only) - generates a strong password
+     */
+    public function resetPassword($id)
+    {
+        try {
+            $user = User::findOrFail($id);
+            
+            // Generate a strong random password
+            $newPassword = $this->generateStrongPassword();
+            
+            $user->update([
+                'password' => Hash::make($newPassword)
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'user_name' => $user->name,
+                    'user_email' => $user->email,
+                    'new_password' => $newPassword, // Admin will copy this and send to user
+                ],
+                'message' => 'Password reset successfully. Please copy and send the new password to the user.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error resetting password: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to reset password'
+            ], 500);
+        }
+    }
+
+    /**
+     * Update user permissions (super_admin only)
+     */
+    public function updatePermissions(Request $request, $id)
+    {
+        try {
+            $user = User::findOrFail($id);
+            
+            $validated = $request->validate([
+                'permissions' => 'required|array',
+                'permissions.*' => 'string',
+            ]);
+            
+            $user->update([
+                'permissions' => json_encode($validated['permissions']),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $user->getProfileData(),
+                'message' => 'User permissions updated successfully'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error updating permissions: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to update permissions'
+            ], 500);
+        }
+    }
+
+    /**
+     * Create admin user (super_admin only)
+     */
+    public function createAdmin(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users,email',
+                'phone_number' => 'nullable|string|max:20',
+                'permissions' => 'nullable|array',
+            ]);
+            
+            // Generate a strong password
+            $password = $this->generateStrongPassword();
+            $memberId = MemberIdService::generate();
+            
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($password),
+                'phone_number' => $validated['phone_number'] ?? null,
+                'member_id' => $memberId,
+                'role' => 'admin',
+                'status' => 'active',
+                'permissions' => isset($validated['permissions']) ? json_encode($validated['permissions']) : null,
+                'role_assigned_at' => now(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'user' => $user->getProfileData(),
+                    'credentials' => [
+                        'email' => $user->email,
+                        'password' => $password, // Admin will copy this
+                    ],
+                ],
+                'message' => 'Admin user created successfully. Please copy the credentials and send to the user.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error creating admin: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to create admin user: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate a strong random password
+     */
+    private function generateStrongPassword($length = 12): string
+    {
+        $uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+        $lowercase = 'abcdefghjkmnpqrstuvwxyz';
+        $numbers = '23456789';
+        $special = '@#$%&*!';
+        
+        $password = '';
+        $password .= $uppercase[random_int(0, strlen($uppercase) - 1)];
+        $password .= $lowercase[random_int(0, strlen($lowercase) - 1)];
+        $password .= $numbers[random_int(0, strlen($numbers) - 1)];
+        $password .= $special[random_int(0, strlen($special) - 1)];
+        
+        $allChars = $uppercase . $lowercase . $numbers . $special;
+        for ($i = 4; $i < $length; $i++) {
+            $password .= $allChars[random_int(0, strlen($allChars) - 1)];
+        }
+        
+        // Shuffle the password
+        return str_shuffle($password);
     }
 }

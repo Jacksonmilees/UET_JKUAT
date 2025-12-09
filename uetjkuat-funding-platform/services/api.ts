@@ -478,13 +478,33 @@ export const usersApi = {
 
   toggleStatus: async (id: number): Promise<ApiResponse<any>> => {
     return apiRequest(`/v1/users/${id}/toggle-status`, {
-      method: 'POST',
+      method: 'PUT',
     });
   },
 
   toggleRole: async (id: number): Promise<ApiResponse<any>> => {
     return apiRequest(`/v1/users/${id}/toggle-role`, {
+      method: 'PUT',
+    });
+  },
+
+  resetPassword: async (id: number): Promise<ApiResponse<{ user_name: string; user_email: string; new_password: string }>> => {
+    return apiRequest(`/v1/users/${id}/reset-password`, {
       method: 'POST',
+    });
+  },
+
+  updatePermissions: async (id: number, permissions: string[]): Promise<ApiResponse<any>> => {
+    return apiRequest(`/v1/users/${id}/permissions`, {
+      method: 'PUT',
+      body: JSON.stringify({ permissions }),
+    });
+  },
+
+  createAdmin: async (data: { name: string; email: string; phone_number?: string; permissions?: string[] }): Promise<ApiResponse<{ user: any; credentials: { email: string; password: string } }>> => {
+    return apiRequest('/v1/users/create-admin', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   },
 };

@@ -9,7 +9,9 @@ import {
     User,
     Menu,
     X,
-    Bell
+    Bell,
+    Newspaper,
+    Home
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Route } from '../../types';
@@ -24,12 +26,18 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, setRoute, currentRoute }) => {
     const { user, logout } = useAuth();
 
-    // Base menu items for all users
-    const menuItems = [
+    // Menu items that stay within dashboard
+    const dashboardItems = [
         { icon: LayoutDashboard, label: 'Overview', page: 'dashboard' },
-        { icon: FolderHeart, label: 'Projects', page: 'home' },
         { icon: CreditCard, label: 'My Donations', page: 'dashboard' },
+    ];
+    
+    // Menu items that navigate to other pages
+    const navigationItems = [
+        { icon: Home, label: 'Home', page: 'home' },
+        { icon: FolderHeart, label: 'Projects', page: 'home' },
         { icon: ShoppingBag, label: 'Shop', page: 'merch' },
+        { icon: Newspaper, label: 'News', page: 'news' },
     ];
     
     // Add admin panel link for admins
@@ -61,7 +69,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, setRoute, currentR
                 <div className="flex flex-col h-full">
                     {/* Logo Area */}
                     <div className="h-16 flex items-center px-6 border-b border-border">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNavigation('home')}>
                             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                                 <span className="text-primary-foreground font-bold text-lg">U</span>
                             </div>
@@ -75,45 +83,77 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, setRoute, currentR
                         </button>
                     </div>
 
-                    {/* Navigation */}
-                    <nav className="flex-1 py-6 px-3 space-y-1">
-                        {menuItems.map((item) => (
-                            <button
-                                key={item.label}
-                                onClick={() => handleNavigation(item.page)}
-                                className={`
-                  w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                  ${currentRoute === item.page
-                                        ? 'bg-primary/10 text-primary'
-                                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                                    }
-                `}
-                            >
-                                <item.icon className="w-5 h-5" />
-                                {item.label}
-                            </button>
-                        ))}
+                    {/* Navigation - with flex-1 and overflow for scrolling */}
+                    <nav className="flex-1 py-4 px-3 space-y-4 overflow-y-auto">
+                        {/* Dashboard Section */}
+                        <div>
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">Dashboard</p>
+                            <div className="space-y-1">
+                                {dashboardItems.map((item) => (
+                                    <button
+                                        key={item.label}
+                                        onClick={() => handleNavigation(item.page)}
+                                        className={`
+                                            w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                            ${currentRoute === item.page
+                                                ? 'bg-primary/10 text-primary'
+                                                : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                                            }
+                                        `}
+                                    >
+                                        <item.icon className="w-5 h-5" />
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        {/* Navigation Section */}
+                        <div>
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">Navigate</p>
+                            <div className="space-y-1">
+                                {navigationItems.map((item) => (
+                                    <button
+                                        key={item.label}
+                                        onClick={() => handleNavigation(item.page)}
+                                        className={`
+                                            w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                            ${currentRoute === item.page
+                                                ? 'bg-primary/10 text-primary'
+                                                : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                                            }
+                                        `}
+                                    >
+                                        <item.icon className="w-5 h-5" />
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                         
                         {/* Admin Panel Link - Only for admins */}
                         {isAdmin && (
-                            <button
-                                onClick={() => handleNavigation('admin')}
-                                className={`
-                  w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors mt-4 border-t border-border pt-4
-                  ${currentRoute === 'admin'
-                                        ? 'bg-primary/10 text-primary'
-                                        : 'text-primary hover:bg-primary/10'
-                                    }
-                `}
-                            >
-                                <Settings className="w-5 h-5" />
-                                Admin Panel
-                            </button>
+                            <div>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">Admin</p>
+                                <button
+                                    onClick={() => handleNavigation('admin')}
+                                    className={`
+                                        w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                        ${currentRoute === 'admin'
+                                            ? 'bg-primary/10 text-primary'
+                                            : 'text-primary hover:bg-primary/10'
+                                        }
+                                    `}
+                                >
+                                    <Settings className="w-5 h-5" />
+                                    Admin Panel
+                                </button>
+                            </div>
                         )}
                     </nav>
 
-                    {/* User Profile (Bottom) */}
-                    <div className="p-4 border-t border-border">
+                    {/* User Profile - Fixed at bottom with mt-auto */}
+                    <div className="mt-auto p-4 border-t border-border bg-card">
                         <div className="flex items-center gap-3 mb-4 px-2">
                             <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground font-semibold">
                                 {user?.name?.charAt(0) || 'U'}

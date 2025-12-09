@@ -8,6 +8,7 @@ class DatabaseSeeder extends Seeder
     public function run()
     {
         $this->call([
+            SuperAdminSeeder::class, // Create super admin first
             ProjectSeeder::class,
             DonationSeeder::class,
         ]);
