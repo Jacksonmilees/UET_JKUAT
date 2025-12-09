@@ -67,23 +67,19 @@ class AdminDashboardController extends Controller
                 $balances = $cachedBalance['balances'] ?? [];
                 $transactionData = $cachedBalance['transaction_data'] ?? null;
                 
-                // Find the working account balance (usually the first one or "Working Account")
-                $workingBalance = 0;
+                // Calculate total balance across all accounts
+                $totalBalance = 0;
                 $allBalances = [];
                 
                 foreach ($balances as $balance) {
                     $allBalances[] = $balance;
-                    // Look for Working Account or use first available
-                    if (stripos($balance['account_type'] ?? '', 'Working') !== false) {
-                        $workingBalance = $balance['amount'] ?? 0;
-                    } elseif ($workingBalance === 0) {
-                        $workingBalance = $balance['amount'] ?? 0;
-                    }
+                    // Sum up all available balances
+                    $totalBalance += floatval($balance['amount'] ?? 0);
                 }
                 
                 return response()->json([
                     'status' => 'success',
-                    'balance' => $workingBalance,
+                    'balance' => $totalBalance,
                     'all_balances' => $allBalances,
                     'last_updated' => $transactionData['timestamp'] ?? null,
                     'source' => 'cache'
@@ -165,19 +161,15 @@ class AdminDashboardController extends Controller
         
         if ($cachedBalance) {
             $balances = $cachedBalance['balances'] ?? [];
-            $workingBalance = 0;
+            $totalBalance = 0;
             
             foreach ($balances as $balance) {
-                if (stripos($balance['account_type'] ?? '', 'Working') !== false) {
-                    $workingBalance = $balance['amount'] ?? 0;
-                    break;
-                } elseif ($workingBalance === 0) {
-                    $workingBalance = $balance['amount'] ?? 0;
-                }
+                // Sum up all available balances
+                $totalBalance += floatval($balance['amount'] ?? 0);
             }
             
             return [
-                'working_balance' => $workingBalance,
+                'working_balance' => $totalBalance,
                 'all_balances' => $balances
             ];
         }
