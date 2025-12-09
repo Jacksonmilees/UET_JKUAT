@@ -7,12 +7,14 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import { CartProvider } from './contexts/CartContext';
 import { NewsProvider } from './contexts/NewsContext';
 import { AIProvider } from './contexts/AIContext';
+import { SettingsProvider } from './contexts/SettingsContext';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import Layout from './components/common/Layout';
 import HomePage from './pages/HomePage';
 import ProjectDetailPage from './pages/ProjectDetailPage';
 import DashboardPage from './pages/DashboardPage';
 import NewsPage from './pages/NewsPage';
+import AnnouncementsPage from './pages/AnnouncementsPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
@@ -46,12 +48,16 @@ const AppContent: React.FC = () => {
                 return { page: 'dashboard' };
             case 'news':
                 return { page: 'news' };
+            case 'announcements':
+                return { page: 'announcements' };
             case 'login':
                 return { page: 'login' };
             case 'register':
                 return { page: 'register' };
             case 'merch':
                 return { page: 'merch' };
+            case 'shop':
+                return { page: 'shop' };
             case 'cart':
                 return { page: 'cart' };
             case 'admin':
@@ -107,6 +113,8 @@ const AppContent: React.FC = () => {
                 return <DashboardPage setRoute={setRoute} />;
             case 'news':
                 return <NewsPage />;
+            case 'announcements':
+                return <AnnouncementsPage />;
             case 'login':
                  return <LoginPage setRoute={setRoute} />;
             case 'register':
@@ -114,6 +122,7 @@ const AppContent: React.FC = () => {
             case 'forgot-password':
                 return <ForgotPasswordPage setRoute={setRoute} />;
             case 'merch':
+            case 'shop':
                 return <MerchPage setRoute={setRoute} />;
             case 'cart':
                 return <CartPage setRoute={setRoute} />;
@@ -157,7 +166,9 @@ const App: React.FC = () => {
                             <ProjectProvider>
                                 <CartProvider>
                                     <NewsProvider>
-                                       <AppContent />
+                                        <SettingsProvider>
+                                            <AppContent />
+                                        </SettingsProvider>
                                     </NewsProvider>
                                 </CartProvider>
                             </ProjectProvider>

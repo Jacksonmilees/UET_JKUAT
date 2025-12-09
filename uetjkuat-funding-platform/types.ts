@@ -144,7 +144,7 @@ export interface Donation {
   createdAt: string;
 }
 
-export type RoutePage = 'home' | 'projectDetail' | 'dashboard' | 'news' | 'login' | 'register' | 'merch' | 'cart' | 'admin' | 'forgot-password' | 'donate' | 'recharge';
+export type RoutePage = 'home' | 'projectDetail' | 'dashboard' | 'news' | 'login' | 'register' | 'merch' | 'cart' | 'admin' | 'forgot-password' | 'donate' | 'recharge' | 'announcements' | 'shop';
 
 export interface Route {
   page: RoutePage;

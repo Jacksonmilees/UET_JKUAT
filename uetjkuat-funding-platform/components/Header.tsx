@@ -1,7 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
+import { useSettings } from '../contexts/SettingsContext';
 import { LayoutDashboard, LogOut, Menu, ShoppingCart, X } from 'lucide-react';
 import MobileMenu from './common/MobileMenu';
 import NotificationBell from './NotificationBell';
@@ -12,9 +13,13 @@ interface HeaderProps {
   currentRoute: RoutePage;
 }
 
+// Define type for navigation module mapping
+type ModuleKey = 'news' | 'announcements' | 'merchandise' | 'projects' | 'finance' | 'tickets';
+
 const Header: React.FC<HeaderProps> = ({ setRoute, currentRoute }) => {
   const { user, logout } = useAuth();
   const { itemCount } = useCart();
+  const { isModuleVisible } = useSettings();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
@@ -22,13 +27,29 @@ const Header: React.FC<HeaderProps> = ({ setRoute, currentRoute }) => {
     setRoute({ page: 'home' });
   };
 
-  const navLinks: { name: string; page: RoutePage; hash?: string, adminOnly?: boolean }[] = [
+  // Define all nav links with their module associations
+  const allNavLinks: { name: string; page: RoutePage; hash?: string; adminOnly?: boolean; module?: ModuleKey }[] = [
     { name: 'Home', page: 'home' },
-    { name: 'Projects', page: 'home', hash: '#projects' },
-    { name: 'Merch', page: 'merch' },
-    { name: 'News', page: 'news' },
+    { name: 'Projects', page: 'home', hash: '#projects', module: 'projects' },
+    { name: 'Shop', page: 'merch', module: 'merchandise' },
+    { name: 'News', page: 'news', module: 'news' },
+    { name: 'Announcements', page: 'announcements', module: 'announcements' },
     { name: 'About', page: 'home', hash: '#about' },
   ];
+
+  // Filter nav links based on module visibility (only for non-admin users)
+  const navLinks = useMemo(() => {
+    // Admins always see all links
+    if (user?.role === 'admin' || user?.role === 'super_admin') {
+      return allNavLinks;
+    }
+    
+    // Filter based on module visibility settings
+    return allNavLinks.filter(link => {
+      if (!link.module) return true; // Always show links without module association
+      return isModuleVisible(link.module);
+    });
+  }, [user?.role, isModuleVisible]);
 
   return (
     <>

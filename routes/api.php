@@ -161,6 +161,13 @@ Route::prefix('v1')->group(function () {
     Route::get('/admin/reports/projects/{projectId}', [\App\Http\Controllers\API\ReportGenerationController::class, 'generateProjectReport']);
     Route::get('/admin/reports/account-statement/{accountReference}', [\App\Http\Controllers\API\ReportGenerationController::class, 'generateAccountStatement']);
     Route::get('/admin/reports/monthly-summary', [\App\Http\Controllers\API\ReportGenerationController::class, 'generateMonthlySummary']);
+    
+    // Settings endpoints (public read for visible_modules)
+    Route::get('/settings/public', [\App\Http\Controllers\API\SettingsController::class, 'publicSettings']);
+    Route::get('/settings', [\App\Http\Controllers\API\SettingsController::class, 'index']);
+    Route::put('/settings', [\App\Http\Controllers\API\SettingsController::class, 'update']);
+    Route::post('/settings/upload-image', [\App\Http\Controllers\API\SettingsController::class, 'uploadChairImage']);
+    Route::delete('/settings/chair-image', [\App\Http\Controllers\API\SettingsController::class, 'removeChairImage']);
 });
 
 // Simple Auth routes for frontend (public path /api/auth/*)
