@@ -457,4 +457,87 @@ class OTPAuthController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Reset password using OTP verification
+     */
+    public function resetPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'identifier' => 'required|string',
+            'otp' => 'required|string|size:6',
+            'newPassword' => 'required|string|min:6',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 400);
+        }
+
+        $identifier = $request->identifier;
+
+        // Find user by email or phone
+        $user = User::where('email', $identifier)
+            ->orWhere('phone_number', $identifier)
+            ->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found.',
+                'error' => 'USER_NOT_FOUND'
+            ], 404);
+        }
+
+        try {
+            // Verify OTP with the OTP service
+            $verifyResponse = Http::timeout(30)->post("{$this->otpServiceUrl}/verify-otp", [
+                'phone' => $user->phone_number,
+                'otp' => $request->otp
+            ]);
+
+            if ($verifyResponse->successful()) {
+                $verifyData = $verifyResponse->json();
+                
+                if ($verifyData['valid'] ?? false) {
+                    // OTP is valid - update password
+                    $user->password = Hash::make($request->newPassword);
+                    $user->save();
+                    
+                    \Log::info('Password reset via OTP', [
+                        'user_id' => $user->id,
+                        'email' => $user->email,
+                    ]);
+                    
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Password reset successful! You can now login with your new password.'
+                    ]);
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid or expired verification code.',
+                        'error' => 'INVALID_OTP'
+                    ], 400);
+                }
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to verify code. Please try again.',
+                    'error' => 'VERIFICATION_FAILED'
+                ], 400);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Password Reset Error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Password reset failed. Please try again.',
+                'error' => 'SERVICE_ERROR'
+            ], 500);
+        }
+    }
 }

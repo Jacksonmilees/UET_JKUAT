@@ -234,6 +234,9 @@ Route::prefix('auth')->group(function () {
     Route::post('register/otp/request', [OTPAuthController::class, 'requestRegistrationOTP']);
     Route::post('register/otp/verify', [OTPAuthController::class, 'verifyRegistrationOTP']);
     
+    // Password reset route (public - uses OTP verification)
+    Route::post('reset-password', [OTPAuthController::class, 'resetPassword']);
+    
     // Profile update routes (authenticated)
     Route::put('update-profile', [AuthController::class, 'updateProfile']);
     Route::post('update-avatar', [AuthController::class, 'updateAvatar']);
