@@ -21,8 +21,12 @@ import {
 } from '../types';
 import { MANDATORY_CONTRIBUTION_AMOUNT } from '../constants';
 import { useAuth } from './AuthContext';
-import { NotificationContext } from './NotificationContext';
 import api from '../services/api';
+
+// Simple notification helper that doesn't require context import
+const notify = (message: string) => {
+  window.dispatchEvent(new CustomEvent('app-notification', { detail: message }));
+};
 
 // Frontend will receive 401 from protected endpoints unless VITE_API_KEY is configured.
 const HAS_API_KEY = !!import.meta.env.VITE_API_KEY;
@@ -147,7 +151,6 @@ const transformTicket = (backendTicket: any): Ticket => {
 
 export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { user } = useAuth();
-    const { addNotification } = useContext(NotificationContext);
 
     const [donations, setDonations] = useState<Donation[]>([]);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -385,7 +388,7 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
                 };
 
                 setMpesaSessions(prev => [session, ...prev]);
-                addNotification(
+                notify(
                     `STK push initiated to ${phoneNumber}. Approve the payment on your phone to complete your contribution.`
                 );
 
@@ -398,7 +401,7 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
                 };
             }
         },
-        [addNotification]
+        []
     );
 
     const checkMpesaStatus = useCallback(async (checkoutRequestId: string): Promise<MpesaSession> => {
@@ -453,17 +456,17 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
                 });
 
                 if (response.success) {
-                    addNotification('Withdrawal request submitted successfully');
+                    notify('Withdrawal request submitted successfully');
                     await loadWithdrawals();
                 } else {
                     throw new Error(response.error || 'Failed to initiate withdrawal');
                 }
             } catch (error: any) {
-                addNotification(error.message || 'Failed to initiate withdrawal');
+                notify(error.message || 'Failed to initiate withdrawal');
                 throw error;
             }
         },
-        [accounts, addNotification, loadWithdrawals]
+        [accounts, loadWithdrawals]
     );
 
     const getUserDonations = useCallback(

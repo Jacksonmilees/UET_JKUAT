@@ -1,10 +1,15 @@
 
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
 import { User, RegisterCredentials } from '../types';
-import { NotificationContext } from './NotificationContext';
 import api from '../services/api';
 
 type LoginCredentials = Pick<User, 'email' | 'password'>;
+
+// Simple notification helper that doesn't require context import
+const notify = (message: string) => {
+  // Dispatch a custom event that NotificationProvider can listen to
+  window.dispatchEvent(new CustomEvent('app-notification', { detail: message }));
+};
 
 interface AuthContextType {
   user: User | null;
@@ -34,7 +39,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { addNotification } = useContext(NotificationContext);
 
   // Check for existing session on mount
   useEffect(() => {
@@ -91,7 +95,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           mandatoryAmount: userData.mandatory_amount,
           mandatoryLastPaymentDate: userData.mandatory_last_payment_date,
         });
-        addNotification(`Welcome back, ${userData.name}!`);
+        notify(`Welcome back, ${userData.name}!`);
         setIsLoading(false);
         return true;
       } else {
@@ -133,7 +137,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           mandatoryAmount: userData.mandatory_amount,
           mandatoryLastPaymentDate: userData.mandatory_last_payment_date,
         });
-        addNotification(`Welcome, ${userData.name}! Your account has been created.`);
+        notify(`Welcome, ${userData.name}! Your account has been created.`);
         setIsLoading(false);
         return true;
       } else {
@@ -152,7 +156,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     api.auth.logout();
     setUser(null);
     setUsers([]);
-    addNotification('You have been logged out.');
+    notify('You have been logged out.');
   };
 
   const toggleUserStatus = async (userId: number): Promise<void> => {
@@ -160,12 +164,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await api.users.toggleStatus(userId);
       if (response.success) {
         await loadUsers();
-        addNotification('User status updated successfully.');
+        notify('User status updated successfully.');
       } else {
-        addNotification(response.error || 'Failed to update user status.');
+        notify(response.error || 'Failed to update user status.');
       }
     } catch (err: any) {
-      addNotification(err.message || 'Failed to update user status.');
+      notify(err.message || 'Failed to update user status.');
     }
   };
   
@@ -174,12 +178,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await api.users.toggleRole(userId);
       if (response.success) {
         await loadUsers();
-        addNotification('User role updated successfully.');
+        notify('User role updated successfully.');
       } else {
-        addNotification(response.error || 'Failed to update user role.');
+        notify(response.error || 'Failed to update user role.');
       }
     } catch (err: any) {
-      addNotification(err.message || 'Failed to update user role.');
+      notify(err.message || 'Failed to update user role.');
     }
   };
 
@@ -188,12 +192,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await api.users.delete(userId);
       if (response.success) {
         await loadUsers();
-        addNotification('User has been deleted.');
+        notify('User has been deleted.');
       } else {
-        addNotification(response.error || 'Failed to delete user.');
+        notify(response.error || 'Failed to delete user.');
       }
     } catch (err: any) {
-      addNotification(err.message || 'Failed to delete user.');
+      notify(err.message || 'Failed to delete user.');
     }
   };
 

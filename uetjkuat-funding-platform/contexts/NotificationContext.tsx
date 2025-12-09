@@ -1,5 +1,5 @@
 
-import React, { createContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useState, useCallback, ReactNode, useEffect } from 'react';
 
 interface Notification {
     id: number;
@@ -33,6 +33,17 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     const clearNotification = useCallback(() => {
         setNotification(null);
     }, []);
+
+    // Listen for custom notification events from other contexts
+    useEffect(() => {
+        const handleNotification = (event: CustomEvent<string>) => {
+            addNotification(event.detail);
+        };
+        window.addEventListener('app-notification', handleNotification as EventListener);
+        return () => {
+            window.removeEventListener('app-notification', handleNotification as EventListener);
+        };
+    }, [addNotification]);
 
     return (
         <NotificationContext.Provider value={{ notification, addNotification, clearNotification }}>

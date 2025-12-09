@@ -4,7 +4,11 @@ import React, { createContext, useState, useContext, ReactNode, useMemo } from '
 import { CartItem, MerchandiseItem, Order } from '../types';
 import { MOCK_ORDERS } from '../constants';
 import { useAuth } from './AuthContext';
-import { NotificationContext } from './NotificationContext';
+
+// Simple notification helper that doesn't require context import
+const notify = (message: string) => {
+  window.dispatchEvent(new CustomEvent('app-notification', { detail: message }));
+};
 
 interface CartContextType {
   cartItems: CartItem[];
@@ -30,7 +34,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>(MOCK_ORDERS);
   const { user } = useAuth();
-  const { addNotification } = useContext(NotificationContext);
 
   const itemCount = useMemo(() => {
     return cartItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -52,7 +55,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       }
       return [...prevItems, { ...itemToAdd, quantity: 1 }];
     });
-    addNotification(`${itemToAdd.name} added to cart.`);
+    notify(`${itemToAdd.name} added to cart.`);
   };
 
   const removeFromCart = (itemId: number) => {
@@ -77,12 +80,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   const checkout = () => {
     if (!user) {
-      addNotification('You must be logged in to place an order.');
-      // In a real app, you might redirect to login here.
+      notify('You must be logged in to place an order.');
       return;
     }
     if (cartItems.length === 0) {
-      addNotification('Your cart is empty.');
+      notify('Your cart is empty.');
       return;
     }
 
@@ -97,7 +99,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
     setOrders(prevOrders => [newOrder, ...prevOrders]);
     clearCart();
-    addNotification('Your order has been placed successfully!');
+    notify('Your order has been placed successfully!');
   };
 
   const value = {
