@@ -11,10 +11,18 @@ import {
   Trash2,
   Eye,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  Plus,
+  X,
+  Layers
 } from 'lucide-react';
 import api from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
+
+interface HeroImage {
+  url: string;
+  alt: string;
+}
 
 interface SystemSettings {
   chair_name: string;
@@ -22,6 +30,7 @@ interface SystemSettings {
   chair_image: string | null;
   organization_name: string;
   organization_tagline: string;
+  hero_images: HeroImage[];
   visible_modules: {
     news: boolean;
     announcements: boolean;
@@ -40,6 +49,7 @@ const SettingsManagement: React.FC = () => {
     chair_image: null,
     organization_name: 'UET JKUAT',
     organization_tagline: 'Empowering Students Through Technology',
+    hero_images: [],
     visible_modules: {
       news: true,
       announcements: true,
@@ -52,8 +62,10 @@ const SettingsManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingHeroImage, setUploadingHeroImage] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const heroFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchSettings();
@@ -68,6 +80,7 @@ const SettingsManagement: React.FC = () => {
         setSettings(prev => ({
           ...prev,
           ...data,
+          hero_images: data.hero_images || [],
           visible_modules: data.visible_modules || prev.visible_modules
         }));
         if (data.chair_image) {
@@ -148,6 +161,74 @@ const SettingsManagement: React.FC = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  // Hero image upload handler
+  const handleHeroImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showError('Please select an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showError('Image must be less than 5MB');
+      return;
+    }
+
+    try {
+      setUploadingHeroImage(true);
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', 'hero');
+      
+      const response = await api.uploads.uploadImage(formData);
+
+      if (response.success && response.data?.url) {
+        const newHeroImage: HeroImage = {
+          url: response.data.url,
+          alt: file.name.replace(/\.[^/.]+$/, '').replace(/_/g, ' ')
+        };
+        setSettings(prev => ({
+          ...prev,
+          hero_images: [...prev.hero_images, newHeroImage]
+        }));
+        showSuccess('Hero image uploaded successfully');
+      } else {
+        throw new Error(response.error || 'Upload failed');
+      }
+    } catch (error: any) {
+      console.error('Error uploading hero image:', error);
+      showError(error.message || 'Failed to upload hero image');
+    } finally {
+      setUploadingHeroImage(false);
+      // Reset file input
+      if (heroFileInputRef.current) {
+        heroFileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // Remove hero image
+  const handleRemoveHeroImage = (index: number) => {
+    setSettings(prev => ({
+      ...prev,
+      hero_images: prev.hero_images.filter((_, i) => i !== index)
+    }));
+    showSuccess('Hero image removed');
+  };
+
+  // Update hero image alt text
+  const handleUpdateHeroImageAlt = (index: number, alt: string) => {
+    setSettings(prev => ({
+      ...prev,
+      hero_images: prev.hero_images.map((img, i) => 
+        i === index ? { ...img, alt } : img
+      )
+    }));
   };
 
   const handleSaveSettings = async () => {
@@ -347,6 +428,81 @@ const SettingsManagement: React.FC = () => {
               />
             </div>
           </div>
+        </div>
+
+        {/* Hero Images Section */}
+        <div className="bg-card rounded-xl border border-border p-6 lg:col-span-2">
+          <h3 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
+            <Layers className="w-5 h-5 text-primary" />
+            Hero Section Images
+          </h3>
+          <p className="text-muted-foreground text-sm mb-4">
+            Upload images that will display in the hero section carousel on the homepage. Add 3-6 images for best results.
+          </p>
+          
+          {/* Hero Images Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+            {settings.hero_images.map((image, index) => (
+              <div key={index} className="relative group">
+                <div className="aspect-video rounded-lg overflow-hidden border border-border bg-secondary">
+                  <img 
+                    src={image.url} 
+                    alt={image.alt} 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                {/* Remove button */}
+                <button
+                  onClick={() => handleRemoveHeroImage(index)}
+                  className="absolute -top-2 -right-2 p-1.5 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+                {/* Alt text input */}
+                <input
+                  type="text"
+                  value={image.alt}
+                  onChange={(e) => handleUpdateHeroImageAlt(index, e.target.value)}
+                  placeholder="Image description..."
+                  className="mt-2 w-full px-2 py-1 text-xs bg-background border border-border rounded focus:ring-1 focus:ring-primary"
+                />
+                {/* Image order badge */}
+                <span className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full">
+                  #{index + 1}
+                </span>
+              </div>
+            ))}
+            
+            {/* Add Image Button */}
+            <label className="cursor-pointer">
+              <div className="aspect-video rounded-lg border-2 border-dashed border-border bg-secondary/50 flex flex-col items-center justify-center hover:border-primary hover:bg-secondary transition-all">
+                {uploadingHeroImage ? (
+                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                ) : (
+                  <>
+                    <Plus className="w-8 h-8 text-muted-foreground mb-2" />
+                    <span className="text-xs text-muted-foreground">Add Image</span>
+                  </>
+                )}
+              </div>
+              <input
+                ref={heroFileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleHeroImageUpload}
+                className="hidden"
+                disabled={uploadingHeroImage}
+              />
+            </label>
+          </div>
+          
+          {settings.hero_images.length === 0 && (
+            <div className="text-center py-8 bg-secondary/30 rounded-lg border border-dashed border-border">
+              <ImageIcon className="w-12 h-12 text-muted-foreground/50 mx-auto mb-2" />
+              <p className="text-muted-foreground">No hero images uploaded yet</p>
+              <p className="text-xs text-muted-foreground mt-1">Click "Add Image" to upload your first hero image</p>
+            </div>
+          )}
         </div>
 
         {/* Module Visibility Settings */}

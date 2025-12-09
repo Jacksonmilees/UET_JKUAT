@@ -48,6 +48,7 @@ class SettingsController extends Controller
                     'chair_image' => $settings['chair_image'],
                     'organization_name' => $settings['organization_name'],
                     'organization_tagline' => $settings['organization_tagline'],
+                    'hero_images' => $settings['hero_images'] ?? [],
                     'visible_modules' => $settings['visible_modules'],
                 ],
             ]);
@@ -62,6 +63,7 @@ class SettingsController extends Controller
                     'chair_image' => null,
                     'organization_name' => 'UET JKUAT',
                     'organization_tagline' => 'Empowering Students Through Technology',
+                    'hero_images' => [],
                     'visible_modules' => [
                         'news' => true,
                         'announcements' => true,
@@ -87,6 +89,10 @@ class SettingsController extends Controller
                 'chair_image' => 'nullable|string',
                 'organization_name' => 'nullable|string|max:255',
                 'organization_tagline' => 'nullable|string|max:500',
+                'hero_images' => 'nullable|array',
+                'hero_images.*' => 'nullable|array',
+                'hero_images.*.url' => 'nullable|string',
+                'hero_images.*.alt' => 'nullable|string',
                 'visible_modules' => 'nullable|array',
                 'visible_modules.news' => 'nullable|boolean',
                 'visible_modules.announcements' => 'nullable|boolean',

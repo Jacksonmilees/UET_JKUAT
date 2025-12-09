@@ -96,6 +96,9 @@ export interface WithdrawalRequest {
   phone_number: string;
   withdrawal_reason: string;
   remarks?: string;
+  initiated_by_name: string;
+  initiator_phone: string;
+  otp: string;
 }
 
 // Token Management
@@ -467,9 +470,10 @@ export const withdrawalsApi = {
     return apiRequest(`/v1/withdrawals/${id}`);
   },
 
-  sendOTP: async (): Promise<ApiResponse<{ message: string }>> => {
+  sendOTP: async (phone_number: string): Promise<ApiResponse<{ message: string }>> => {
     return apiRequest('/v1/withdrawals/send-otp', {
       method: 'POST',
+      body: JSON.stringify({ phone_number }),
     });
   },
 };
@@ -802,6 +806,19 @@ const enhancedUsersApi = {
   toggleStatus: async (id: string) => apiRequest(`/v1/users/${id}/toggle-status`, { method: 'PUT' }),
 };
 
+// Settings API (for public settings)
+const settingsApi = {
+  getPublic: async (): Promise<ApiResponse<{
+    chair_name: string;
+    chair_title: string;
+    chair_image: string | null;
+    organization_name: string;
+    organization_tagline: string;
+    hero_images: Array<{ url: string; alt: string }>;
+    visible_modules: Record<string, boolean>;
+  }>> => apiRequest('/v1/settings/public'),
+};
+
 // Export default API object
 export default {
   auth: authApi,
@@ -823,6 +840,7 @@ export default {
   orders: ordersApi,
   merchandise: merchandiseApi,
   onboarding: onboardingApi,
+  settings: settingsApi,
   getToken,
   setToken,
   removeToken,

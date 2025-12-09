@@ -145,7 +145,7 @@ const NewsManagement: React.FC<NewsManagementProps> = ({ onArticleEdit, onArticl
                         ></textarea>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-foreground mb-1.5 flex items-center gap-2">
+                        <label className="text-sm font-medium text-foreground mb-1.5 flex items-center gap-2">
                             <ImageIcon className="w-4 h-4 text-muted-foreground" />
                             Image URL
                         </label>
@@ -159,7 +159,7 @@ const NewsManagement: React.FC<NewsManagementProps> = ({ onArticleEdit, onArticl
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-foreground mb-1.5 flex items-center gap-2">
+                            <label className="text-sm font-medium text-foreground mb-1.5 flex items-center gap-2">
                                 <User className="w-4 h-4 text-muted-foreground" />
                                 Author
                             </label>
@@ -172,7 +172,7 @@ const NewsManagement: React.FC<NewsManagementProps> = ({ onArticleEdit, onArticl
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-foreground mb-1.5 flex items-center gap-2">
+                            <label className="text-sm font-medium text-foreground mb-1.5 flex items-center gap-2">
                                 <Tag className="w-4 h-4 text-muted-foreground" />
                                 Category
                             </label>

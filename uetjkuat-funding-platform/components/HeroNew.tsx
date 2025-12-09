@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronRight, Sparkles, ArrowRight, Users, Target, Heart } from 'lucide-react';
 import { Route } from '../types';
+import api from '../services/api';
 
 interface HeroNewProps {
   setRoute?: (route: Route) => void;
@@ -13,12 +14,18 @@ interface HeroNewProps {
   onExploreClick?: () => void;
 }
 
+interface HeroImage {
+  url: string;
+  alt: string;
+}
+
 const HeroNew: React.FC<HeroNewProps> = ({ setRoute, stats, onExploreClick }) => {
   const [currentCard, setCurrentCard] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [heroImages, setHeroImages] = useState<HeroImage[]>([]);
 
-  // Hero images for the card stack
-  const heroImages = [
+  // Default fallback images
+  const defaultImages: HeroImage[] = [
     {
       url: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800&auto=format&fit=crop',
       alt: 'Community gathering'
@@ -37,16 +44,35 @@ const HeroNew: React.FC<HeroNewProps> = ({ setRoute, stats, onExploreClick }) =>
     }
   ];
 
+  // Fetch hero images from settings
+  useEffect(() => {
+    const fetchHeroImages = async () => {
+      try {
+        const response = await api.settings.getPublic();
+        if (response.success && response.data?.hero_images && response.data.hero_images.length > 0) {
+          setHeroImages(response.data.hero_images);
+        } else {
+          setHeroImages(defaultImages);
+        }
+      } catch (error) {
+        console.error('Error fetching hero images:', error);
+        setHeroImages(defaultImages);
+      }
+    };
+    fetchHeroImages();
+  }, []);
+
   // Auto-rotate cards
   useEffect(() => {
+    if (heroImages.length === 0) return;
     const interval = setInterval(() => {
       handleNextCard();
     }, 5000);
     return () => clearInterval(interval);
-  }, [currentCard]);
+  }, [currentCard, heroImages.length]);
 
   const handleNextCard = () => {
-    if (isAnimating) return;
+    if (isAnimating || heroImages.length === 0) return;
     setIsAnimating(true);
     setTimeout(() => {
       setCurrentCard((prev) => (prev + 1) % heroImages.length);

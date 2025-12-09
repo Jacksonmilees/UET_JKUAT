@@ -54,6 +54,7 @@ class Setting extends Model
             'chair_image' => $settings['chair_image'] ?? null,
             'organization_name' => $settings['organization_name'] ?? 'UET JKUAT',
             'organization_tagline' => $settings['organization_tagline'] ?? 'Empowering Students Through Technology',
+            'hero_images' => $settings['hero_images'] ?? [],
             'visible_modules' => $settings['visible_modules'] ?? [
                 'news' => true,
                 'announcements' => true,
@@ -76,6 +77,7 @@ class Setting extends Model
             'chair_image' => $data['chair_image'] ?? null,
             'organization_name' => $data['organization_name'] ?? 'UET JKUAT',
             'organization_tagline' => $data['organization_tagline'] ?? 'Empowering Students Through Technology',
+            'hero_images' => $data['hero_images'] ?? null,
             'visible_modules' => $data['visible_modules'] ?? null,
         ];
 

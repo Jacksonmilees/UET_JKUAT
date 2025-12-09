@@ -232,10 +232,17 @@ const WithdrawalModal: React.FC<{ onClose: () => void; onSuccess: () => void }> 
       return;
     }
 
+    // Validate phone format
+    const phoneRegex = /^254[17][0-9]{8}$/;
+    if (!phoneRegex.test(formData.initiator_phone)) {
+      setError('Phone number must be in format 254XXXXXXXXX');
+      return;
+    }
+
     try {
       setLoading(true);
       setError('');
-      const response = await api.withdrawals.sendOTP();
+      const response = await api.withdrawals.sendOTP(formData.initiator_phone);
 
       if (response.success) {
         setStep('otp');
@@ -243,13 +250,18 @@ const WithdrawalModal: React.FC<{ onClose: () => void; onSuccess: () => void }> 
         setError(response.error || 'Failed to send OTP');
       }
     } catch (err: any) {
-      setError('Failed to send OTP');
+      setError(err.message || 'Failed to send OTP');
     } finally {
       setLoading(false);
     }
   };
 
   const handleSubmit = async () => {
+    if (otp.length !== 6) {
+      setError('Please enter a valid 6-digit OTP');
+      return;
+    }
+
     try {
       setLoading(true);
       setError('');
@@ -260,6 +272,9 @@ const WithdrawalModal: React.FC<{ onClose: () => void; onSuccess: () => void }> 
         phone_number: formData.phone_number,
         withdrawal_reason: formData.withdrawal_reason,
         remarks: formData.remarks,
+        initiated_by_name: formData.initiated_by_name,
+        initiator_phone: formData.initiator_phone,
+        otp: otp,
       });
 
       if (response.success) {
@@ -268,7 +283,7 @@ const WithdrawalModal: React.FC<{ onClose: () => void; onSuccess: () => void }> 
         setError(response.error || 'Withdrawal failed');
       }
     } catch (err: any) {
-      setError('Withdrawal failed');
+      setError(err.message || 'Withdrawal failed');
     } finally {
       setLoading(false);
     }
