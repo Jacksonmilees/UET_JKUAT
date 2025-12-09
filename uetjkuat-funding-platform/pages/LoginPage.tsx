@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useFinance } from '../contexts/FinanceContext';
 import { Route } from '../types';
 import AuthLayout from '../components/common/AuthLayout';
 import { Lock, Mail, Info, Loader2, Smartphone, KeyRound, ShieldCheck } from 'lucide-react';
-import MandatoryPaymentModal from '../components/MandatoryPaymentModal';
 import { API_BASE_URL } from '../constants';
 import api from '../services/api';
 
@@ -14,11 +12,9 @@ interface LoginPageProps {
 
 const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
     const { login, isLoading, error, user, setUser, refreshUser } = useAuth();
-    const { getMandatoryStatus, refreshTransactions, refreshMandatoryStatus } = useFinance();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [formError, setFormError] = useState('');
-    const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [justLoggedIn, setJustLoggedIn] = useState(false);
     const hasCheckedPayment = useRef(false);
     
@@ -39,33 +35,25 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
         return `254${digits}`;
     };
 
-    // Check mandatory contribution after login
+    // Redirect after login based on user role
     useEffect(() => {
-        const checkMandatoryPayment = async () => {
+        const handlePostLogin = async () => {
             if (justLoggedIn && user && !hasCheckedPayment.current) {
                 hasCheckedPayment.current = true;
                 
                 // Admins go directly to admin dashboard
                 if (user.role === 'admin' || user.role === 'super_admin') {
                     setRoute({ page: 'admin' });
-                    setJustLoggedIn(false);
-                    return;
-                }
-                
-                await refreshTransactions();
-                await refreshMandatoryStatus();
-                const mandatoryStatus = await getMandatoryStatus(user.id);
-
-                if (!mandatoryStatus.isCleared) {
-                    setShowPaymentModal(true);
                 } else {
+                    // Regular users go to dashboard
+                    // Note: Mandatory payment is handled during registration, not login
                     setRoute({ page: 'dashboard' });
                 }
                 setJustLoggedIn(false);
             }
         };
-        checkMandatoryPayment();
-    }, [justLoggedIn, user, getMandatoryStatus, refreshTransactions, setRoute]);
+        handlePostLogin();
+    }, [justLoggedIn, user, setRoute]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -78,18 +66,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
 
         const success = await login({ email, password });
         if (success) {
-            // The login function updates the user state, we need to wait for it
-            // For now, route to dashboard and let the user context handle admin redirect
+            // The login function updates the user state
+            // The useEffect above will handle routing based on role
             setJustLoggedIn(true);
         }
-    };
-
-    const handlePaymentSuccess = async () => {
-        setShowPaymentModal(false);
-        await refreshUser();
-        await refreshTransactions();
-        await refreshMandatoryStatus();
-        setRoute({ page: 'dashboard' });
     };
 
     // OTP timer countdown
@@ -459,15 +439,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute }) => {
                     )}
                 </form>
             )}
-
-            <MandatoryPaymentModal
-                isOpen={showPaymentModal}
-                onClose={() => {
-                    setShowPaymentModal(false);
-                }}
-                onSuccess={handlePaymentSuccess}
-                isRegistration={false}
-            />
         </AuthLayout>
     );
 };
