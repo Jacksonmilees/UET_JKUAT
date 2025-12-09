@@ -7,6 +7,7 @@ import { Route } from '../types';
 import api, { accountsApi } from '../services/api';
 import { API_BASE_URL } from '../constants';
 import DashboardBottomNav from '../components/common/DashboardBottomNav';
+import Nuru from '../components/nuru/Nuru';
 import {
   TrendingUp,
   Users,
@@ -39,7 +40,8 @@ import {
   Home,
   Heart,
   Camera,
-  Save
+  Save,
+  Bot
 } from 'lucide-react';
 import RechargeTokens from '../components/RechargeTokens';
 
@@ -191,7 +193,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
     isLoading: financeLoading,
   } = useFinance();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'account' | 'purchases' | 'recharge' | 'profile'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'account' | 'purchases' | 'recharge' | 'profile' | 'nuru'>('overview');
   const [accountData, setAccountData] = useState<any>(null);
   const [accountLoading, setAccountLoading] = useState(true);
   const [showRechargeModal, setShowRechargeModal] = useState(false);
@@ -460,6 +462,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
         >
           <User className="w-4 h-4" />
           My Profile
+        </button>
+        <button
+          onClick={() => setActiveTab('nuru')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'nuru'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Bot className="w-4 h-4" />
+          Nuru AI
         </button>
       </div>
 
@@ -1139,6 +1152,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Nuru AI Tab Content */}
+      {!isLoading && activeTab === 'nuru' && (
+        <div className="rounded-2xl overflow-hidden" style={{ minHeight: '600px' }}>
+          <Nuru
+            userName={user.name}
+            yearOfStudy={user.year_of_study}
+            course={user.course}
+          />
         </div>
       )}
 

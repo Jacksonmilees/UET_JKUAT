@@ -37,6 +37,10 @@ export const MANDATORY_CONTRIBUTION_AMOUNT = 100;
 // Last updated: 2025-12-09 - OTP endpoints working
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://uetjkuat-54286e10a43b.herokuapp.com/api';
 
+// Gemini API Key for Nuru AI Assistant
+// Set VITE_GEMINI_API_KEY in your .env file to enable Nuru AI
+export const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
+
 const mockContributors: Contributor[] = [
     { name: 'Alice Johnson', avatar: 'https://i.pravatar.cc/150?u=alice' },
     { name: 'Bob Williams', avatar: 'https://i.pravatar.cc/150?u=bob' },

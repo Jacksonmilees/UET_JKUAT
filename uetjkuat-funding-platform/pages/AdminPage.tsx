@@ -21,6 +21,7 @@ import AnnouncementManagement from '../components/admin/AnnouncementManagement';
 import SemesterManagement from '../components/admin/SemesterManagement';
 import SettingsManagement from '../components/admin/SettingsManagement';
 import MpesaTransactionsManagement from '../components/admin/MpesaTransactionsManagement';
+import Nuru from '../components/nuru/Nuru';
 import EditProjectModal from '../components/admin/EditProjectModal';
 import EditNewsModal from '../components/admin/EditNewsModal';
 import ConfirmationModal from '../components/common/ConfirmationModal';
@@ -50,7 +51,8 @@ import {
   RefreshCw,
   Banknote,
   Settings,
-  Clock
+  Clock,
+  Bot
 } from 'lucide-react';
 
 interface AdminPageProps {
@@ -59,7 +61,7 @@ interface AdminPageProps {
 
 type AdminTab = 'overview' | 'users' | 'projects' | 'news' | 'finance' | 'members' |
   'withdrawals' | 'accounts' | 'transactions' | 'tickets' | 'reports' | 'directory' |
-  'merchandise' | 'orders' | 'announcements' | 'semesters' | 'settings' | 'mpesa';
+  'merchandise' | 'orders' | 'announcements' | 'semesters' | 'settings' | 'mpesa' | 'nuru';
 type DeletableItem = { type: 'user' | 'project' | 'news', id: number, name: string };
 
 const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
@@ -420,6 +422,16 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
         return <SettingsManagement />;
       case 'mpesa':
         return <MpesaTransactionsManagement onRefresh={() => fetchPaybillBalance(true)} />;
+      case 'nuru':
+        return (
+          <div className="rounded-2xl overflow-hidden" style={{ minHeight: '600px' }}>
+            <Nuru
+              userName={user?.name}
+              yearOfStudy={user?.year_of_study}
+              course={user?.course}
+            />
+          </div>
+        );
       default:
         return null;
     }
@@ -448,6 +460,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
     { id: 'semesters', name: 'Semesters', icon: <Calendar className="w-5 h-5" />, category: 'Other' },
     { id: 'reports', name: 'Reports', icon: <TrendingUp className="w-5 h-5" />, category: 'Other' },
     { id: 'settings', name: 'Settings', icon: <Settings className="w-5 h-5" />, category: 'Other' },
+    { id: 'nuru', name: 'Nuru AI', icon: <Bot className="w-5 h-5" />, category: 'Other' },
   ];
 
   return (

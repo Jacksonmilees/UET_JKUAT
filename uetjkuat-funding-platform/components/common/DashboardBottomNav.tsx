@@ -7,11 +7,12 @@ import {
   User,
   MoreHorizontal,
   X,
-  ShieldCheck
+  ShieldCheck,
+  Bot
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
-type DashboardTab = 'overview' | 'account' | 'purchases' | 'recharge' | 'profile';
+type DashboardTab = 'overview' | 'account' | 'purchases' | 'recharge' | 'profile' | 'nuru';
 
 interface DashboardBottomNavProps {
   activeTab: DashboardTab;
@@ -35,6 +36,7 @@ const DashboardBottomNav: React.FC<DashboardBottomNavProps> = ({ activeTab, onTa
   // Additional tabs in "More" menu
   const moreTabs: { icon: typeof User; label: string; tab: DashboardTab }[] = [
     { icon: User, label: 'Profile', tab: 'profile' },
+    { icon: Bot, label: 'Nuru AI', tab: 'nuru' },
   ];
 
   return (
@@ -122,7 +124,7 @@ const DashboardBottomNav: React.FC<DashboardBottomNavProps> = ({ activeTab, onTa
             onClick={() => setShowMore(true)}
             className={`
               flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors
-              ${showMore || activeTab === 'profile'
+              ${showMore || activeTab === 'profile' || activeTab === 'nuru'
                 ? 'text-primary'
                 : 'text-muted-foreground'
               }
