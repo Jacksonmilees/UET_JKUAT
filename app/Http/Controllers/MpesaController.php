@@ -61,10 +61,24 @@ class MpesaController extends Controller
 
     public function initiateSTKPush(Request $request)
     {
+        // Log incoming request for debugging
+        Log::info('M-Pesa STK Push Request', [
+            'phone_number' => $request->phone_number ?? 'not provided',
+            'amount' => $request->amount ?? 'not provided',
+            'account_number' => $request->account_number ?? 'not provided',
+        ]);
+
         $request->validate([
-            'phone_number' => 'required|regex:/^254[0-9]{9}$/',
+            'phone_number' => ['required', 'regex:/^254[0-9]{9}$/'],
             'amount' => 'required|numeric|min:1',
             'account_number' => 'required|string',
+        ], [
+            'phone_number.required' => 'Phone number is required',
+            'phone_number.regex' => 'Phone number must be in format 254XXXXXXXXX (12 digits starting with 254)',
+            'amount.required' => 'Amount is required',
+            'amount.numeric' => 'Amount must be a number',
+            'amount.min' => 'Amount must be at least 1 KES',
+            'account_number.required' => 'Account number is required',
         ]);
 
         try {

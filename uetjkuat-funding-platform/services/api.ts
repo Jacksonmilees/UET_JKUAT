@@ -277,14 +277,31 @@ export const donationsApi = {
 
 // Helper function to format phone number to 254XXXXXXXXX format
 const formatPhoneNumber = (phone: string): string => {
-  let formatted = phone.replace(/\s+/g, '').replace(/-/g, '');
-  if (formatted.startsWith('0')) {
+  // Remove all non-digit characters
+  let formatted = phone.replace(/\D/g, '');
+  
+  // Handle various formats
+  if (formatted.startsWith('0') && formatted.length === 10) {
+    // 0712345678 -> 254712345678
     formatted = '254' + formatted.substring(1);
-  } else if (formatted.startsWith('+254')) {
-    formatted = formatted.substring(1);
-  } else if (!formatted.startsWith('254')) {
+  } else if (formatted.startsWith('254') && formatted.length === 12) {
+    // Already in correct format
+  } else if (formatted.startsWith('7') && formatted.length === 9) {
+    // 712345678 -> 254712345678
+    formatted = '254' + formatted;
+  } else if (formatted.startsWith('1') && formatted.length === 9) {
+    // 112345678 -> 254112345678 (Safaricom 11x numbers)
+    formatted = '254' + formatted;
+  } else if (formatted.length === 9) {
+    // 9 digits, assume Kenyan number
     formatted = '254' + formatted;
   }
+  
+  // Ensure exactly 12 digits starting with 254
+  if (!formatted.match(/^254[0-9]{9}$/)) {
+    console.warn('Phone number may be invalid format:', formatted, 'from:', phone);
+  }
+  
   return formatted;
 };
 

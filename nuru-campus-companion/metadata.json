@@ -1,0 +1,8 @@
+
+{
+  "name": "Nuru Campus Companion",
+  "description": "A voice-enabled spiritual and practical companion for JKUAT students and UET members, providing biblical wisdom for navigating campus life.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
