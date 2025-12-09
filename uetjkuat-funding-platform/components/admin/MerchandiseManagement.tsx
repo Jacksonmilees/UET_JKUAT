@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ShoppingCart, Plus, Edit2, Trash2, Upload, X, Package, DollarSign, AlertTriangle, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
+import { ShoppingCart, Plus, Edit2, Trash2, Upload, X, Package, DollarSign, AlertTriangle, CheckCircle2, Loader2, RefreshCw, ZoomIn, Image as ImageIcon } from 'lucide-react';
 import api from '../../services/api';
 import { ProductCardSkeleton, CardSkeleton } from '../ui/Skeleton';
 
@@ -11,9 +11,58 @@ interface Merchandise {
   stock: number;
   category?: string;
   image_url?: string;
+  images?: string[]; // Multiple images support
   active: boolean;
   created_at: string;
 }
+
+// Image Zoom Modal Component
+const ImageZoomModal: React.FC<{ 
+  imageUrl: string; 
+  onClose: () => void; 
+  allImages?: string[];
+}> = ({ imageUrl, onClose, allImages = [] }) => {
+  const [currentImage, setCurrentImage] = useState(imageUrl);
+  const images = allImages.length > 0 ? allImages : [imageUrl];
+  
+  return (
+    <div 
+      className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <button 
+        onClick={onClose}
+        className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+      >
+        <X className="w-6 h-6" />
+      </button>
+      
+      <div className="max-w-4xl w-full" onClick={(e) => e.stopPropagation()}>
+        <img 
+          src={currentImage} 
+          alt="Zoomed" 
+          className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+        />
+        
+        {images.length > 1 && (
+          <div className="flex justify-center gap-2 mt-4">
+            {images.map((img, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentImage(img)}
+                className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                  currentImage === img ? 'border-white' : 'border-transparent opacity-60 hover:opacity-100'
+                }`}
+              >
+                <img src={img} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const MerchandiseManagement: React.FC = () => {
   const [merchandise, setMerchandise] = useState<Merchandise[]>([]);
@@ -21,6 +70,7 @@ const MerchandiseManagement: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<Merchandise | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -28,6 +78,7 @@ const MerchandiseManagement: React.FC = () => {
     stock: '',
     category: '',
     image_url: '',
+    images: [] as string[], // Array of additional images
     active: true,
   });
 
@@ -49,6 +100,7 @@ const MerchandiseManagement: React.FC = () => {
     }
   };
 
+  // Upload main image
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -69,6 +121,54 @@ const MerchandiseManagement: React.FC = () => {
     } finally {
       setUploadingImage(false);
     }
+  };
+
+  // Upload additional images (multi-image support)
+  const handleMultiImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    try {
+      setUploadingImage(true);
+      const uploadedUrls: string[] = [];
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const formDataUpload = new FormData();
+        formDataUpload.append('file', file);
+        formDataUpload.append('type', 'merchandise');
+        
+        const response = await api.uploads.uploadImage(formDataUpload);
+        if (response.success && response.data?.url) {
+          uploadedUrls.push(response.data.url);
+        }
+      }
+      
+      if (uploadedUrls.length > 0) {
+        setFormData(prev => {
+          const newImages = [...prev.images, ...uploadedUrls];
+          return { 
+            ...prev, 
+            images: newImages,
+            // Set the first uploaded image as main image_url if none exists
+            image_url: prev.image_url || newImages[0]
+          };
+        });
+      }
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      alert('Failed to upload some images');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // Remove additional image
+  const removeAdditionalImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -106,6 +206,7 @@ const MerchandiseManagement: React.FC = () => {
       stock: item.stock.toString(),
       category: item.category || '',
       image_url: item.image_url || '',
+      images: item.images || [],
       active: item.active,
     });
     setShowModal(true);
@@ -141,6 +242,7 @@ const MerchandiseManagement: React.FC = () => {
       stock: '',
       category: '',
       image_url: '',
+      images: [],
       active: true,
     });
   };
@@ -225,10 +327,27 @@ const MerchandiseManagement: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {merchandise.map((item) => (
             <div key={item.id} className="bg-card rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all border border-border group">
-              {/* Product Image */}
-              <div className="h-48 bg-secondary/50 relative">
+              {/* Product Image with Hover Zoom */}
+              <div className="h-48 bg-secondary/50 relative overflow-hidden cursor-pointer" onClick={() => item.image_url && setZoomedImage(item.image_url)}>
                 {item.image_url ? (
-                  <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                  <>
+                    <img 
+                      src={item.image_url} 
+                      alt={item.name} 
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" 
+                    />
+                    {/* Hover Overlay with Zoom Icon */}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center">
+                      <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    </div>
+                    {/* Image count badge */}
+                    {item.images && item.images.length > 1 && (
+                      <div className="absolute bottom-2 right-2 bg-black/60 text-white px-2 py-1 rounded-lg text-xs font-medium flex items-center gap-1">
+                        <ImageIcon className="w-3 h-3" />
+                        {item.images.length}
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="flex items-center justify-center h-full">
                     <ShoppingCart className="w-16 h-16 text-muted-foreground/30" />
@@ -315,29 +434,67 @@ const MerchandiseManagement: React.FC = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Image Upload */}
+              {/* Image Upload Section */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">Product Image</label>
-                <div className="flex items-center gap-4">
-                  {formData.image_url && (
-                    <img src={formData.image_url} alt="Preview" className="w-24 h-24 object-cover rounded-lg border border-border" />
-                  )}
-                  <label className="flex-1 cursor-pointer group">
-                    <div className="border-2 border-dashed border-input rounded-xl p-4 text-center hover:border-primary transition-all bg-secondary/30 group-hover:bg-secondary/50">
-                      <Upload className="w-6 h-6 text-muted-foreground mx-auto mb-2 group-hover:text-primary" />
-                      <p className="text-xs text-muted-foreground group-hover:text-foreground">
-                        {uploadingImage ? 'Uploading...' : 'Click to upload image'}
-                      </p>
-                    </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      disabled={uploadingImage}
-                    />
-                  </label>
-                </div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">
+                  Product Images
+                  <span className="text-muted-foreground font-normal ml-1">(First image will be the main image)</span>
+                </label>
+                
+                {/* Image Gallery */}
+                {formData.images.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {formData.images.map((img, idx) => (
+                      <div key={idx} className="relative group">
+                        <img 
+                          src={img} 
+                          alt={`Product ${idx + 1}`} 
+                          className="w-20 h-20 object-cover rounded-lg border border-border cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => setZoomedImage(img)}
+                        />
+                        {idx === 0 && (
+                          <span className="absolute -top-2 -left-2 bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full">
+                            Main
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData(prev => ({
+                              ...prev,
+                              images: prev.images.filter((_, i) => i !== idx),
+                              image_url: idx === 0 && prev.images.length > 1 ? prev.images[1] : (idx === 0 ? '' : prev.image_url)
+                            }));
+                          }}
+                          className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Upload Button */}
+                <label className="cursor-pointer group block">
+                  <div className="border-2 border-dashed border-input rounded-xl p-4 text-center hover:border-primary transition-all bg-secondary/30 group-hover:bg-secondary/50">
+                    <Upload className="w-6 h-6 text-muted-foreground mx-auto mb-2 group-hover:text-primary" />
+                    <p className="text-xs text-muted-foreground group-hover:text-foreground">
+                      {uploadingImage ? 'Uploading...' : 'Click to upload images (multiple allowed)'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formData.images.length} image{formData.images.length !== 1 ? 's' : ''} added
+                    </p>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleMultiImageUpload}
+                    className="hidden"
+                    disabled={uploadingImage}
+                  />
+                </label>
               </div>
 
               <div>
@@ -430,6 +587,15 @@ const MerchandiseManagement: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Image Zoom Modal */}
+      {zoomedImage && (
+        <ImageZoomModal 
+          imageUrl={zoomedImage} 
+          onClose={() => setZoomedImage(null)}
+          allImages={formData.images.length > 0 ? formData.images : undefined}
+        />
       )}
     </div>
   );
