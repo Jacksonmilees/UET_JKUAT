@@ -47,7 +47,8 @@ import {
   Home,
   RefreshCw,
   Banknote,
-  Settings
+  Settings,
+  Clock
 } from 'lucide-react';
 
 interface AdminPageProps {
@@ -202,125 +203,163 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
         return isLoadingStats ? (
           <OverviewSkeleton />
         ) : (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold">Dashboard Overview</h2>
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold">Dashboard Overview</h2>
+                <p className="text-muted-foreground text-sm mt-1">Monitor your platform's performance</p>
+              </div>
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 rounded-lg transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2.5 bg-secondary hover:bg-secondary/80 rounded-xl transition-all disabled:opacity-50 text-sm font-medium"
               >
                 <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                Refresh
+                Refresh Data
               </button>
             </div>
 
             {/* Primary Stats Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-gradient-to-br from-green-500/10 to-green-600/5 p-6 rounded-xl border border-green-500/20 relative">
+              <div className="relative overflow-hidden bg-gradient-to-br from-green-500 to-emerald-600 p-6 rounded-2xl text-white shadow-xl">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
                 <button
                   onClick={() => fetchPaybillBalance(true)}
                   disabled={refreshingBalance}
-                  className="absolute top-3 right-3 p-1.5 hover:bg-green-500/20 rounded-lg transition-colors disabled:opacity-50"
+                  className="absolute top-3 right-3 p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors disabled:opacity-50"
                   title="Refresh from M-Pesa"
                 >
-                  <RefreshCw className={`w-4 h-4 text-green-600 ${refreshingBalance ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-4 h-4 ${refreshingBalance ? 'animate-spin' : ''}`} />
                 </button>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-green-500/20 rounded-lg">
-                    <Banknote className="w-5 h-5 text-green-600" />
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Banknote className="w-5 h-5 opacity-80" />
+                    <span className="text-sm font-medium opacity-90">Paybill Balance</span>
                   </div>
-                  <span className="text-sm font-medium text-green-700 dark:text-green-400">Paybill Balance</span>
-                </div>
-                <div className="text-3xl font-bold text-green-600">
-                  {refreshingBalance ? (
-                    <span className="animate-pulse">Loading...</span>
-                  ) : (
-                    `KES ${overviewStats.paybillBalance.toLocaleString()}`
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {balanceLastUpdated ? (
-                    <>Live from M-Pesa • {new Date(balanceLastUpdated).toLocaleTimeString()}</>
-                  ) : (
-                    'Available in M-Pesa'
-                  )}
-                </p>
-              </div>
-
-              <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 p-6 rounded-xl border border-blue-500/20">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-blue-500/20 rounded-lg">
-                    <TrendingUp className="w-5 h-5 text-blue-600" />
+                  <div className="text-3xl font-bold">
+                    {refreshingBalance ? (
+                      <span className="animate-pulse">...</span>
+                    ) : (
+                      `KES ${overviewStats.paybillBalance.toLocaleString()}`
+                    )}
                   </div>
-                  <span className="text-sm font-medium text-blue-700 dark:text-blue-400">Total Contributed</span>
+                  <p className="text-xs opacity-75 mt-2">
+                    {balanceLastUpdated ? `Updated ${new Date(balanceLastUpdated).toLocaleTimeString()}` : 'Live M-Pesa'}
+                  </p>
                 </div>
-                <div className="text-3xl font-bold text-blue-600">KES {overviewStats.totalRevenue.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground mt-1">{overviewStats.completedTransactions} transactions</p>
               </div>
 
-              <div className="bg-card p-6 rounded-xl border border-border">
-                <div className="text-sm text-muted-foreground">Total Users</div>
-                <div className="text-3xl font-bold mt-2">{overviewStats.totalUsers}</div>
-                <p className="text-xs text-muted-foreground mt-1">{overviewStats.activeUsers} active</p>
+              <div className="relative overflow-hidden bg-gradient-to-br from-blue-500 to-indigo-600 p-6 rounded-2xl text-white shadow-xl">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="w-5 h-5 opacity-80" />
+                    <span className="text-sm font-medium opacity-90">Total Contributed</span>
+                  </div>
+                  <div className="text-3xl font-bold">KES {overviewStats.totalRevenue.toLocaleString()}</div>
+                  <p className="text-xs opacity-75 mt-2">{overviewStats.completedTransactions} transactions</p>
+                </div>
               </div>
 
-              <div className="bg-card p-6 rounded-xl border border-border">
-                <div className="text-sm text-muted-foreground">Active Projects</div>
-                <div className="text-3xl font-bold mt-2">{overviewStats.activeProjects}</div>
-                <p className="text-xs text-muted-foreground mt-1">of {overviewStats.totalProjects} total</p>
+              <div className="group bg-card p-6 rounded-2xl border border-border shadow-sm hover:shadow-lg hover:border-primary/20 transition-all">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center">
+                    <Users className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="text-3xl font-bold">{overviewStats.totalUsers}</div>
+                <p className="text-sm text-muted-foreground mt-1">Total Users <span className="text-green-500">• {overviewStats.activeUsers} active</span></p>
+              </div>
+
+              <div className="group bg-card p-6 rounded-2xl border border-border shadow-sm hover:shadow-lg hover:border-primary/20 transition-all">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center">
+                    <FilePlus className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="text-3xl font-bold">{overviewStats.activeProjects}</div>
+                <p className="text-sm text-muted-foreground mt-1">Active Projects <span className="text-muted-foreground">• {overviewStats.totalProjects} total</span></p>
               </div>
             </div>
 
             {/* Secondary Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-card p-6 rounded-xl border border-border">
-                <div className="text-sm text-muted-foreground">Account Balance</div>
-                <div className="text-2xl font-bold mt-2">KES {overviewStats.totalAccountBalance.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground mt-1">{overviewStats.totalAccounts} accounts</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-card p-4 rounded-xl border border-border hover:shadow-md transition-all">
+                <div className="flex items-center gap-2 mb-2">
+                  <Wallet className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-xs font-medium text-muted-foreground">Accounts</span>
+                </div>
+                <div className="text-xl font-bold">KES {overviewStats.totalAccountBalance.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground">{overviewStats.totalAccounts} accounts</p>
               </div>
 
-              <div className="bg-card p-6 rounded-xl border border-border">
-                <div className="text-sm text-muted-foreground">Total Withdrawn</div>
-                <div className="text-2xl font-bold mt-2 text-orange-600">KES {overviewStats.totalWithdrawn.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground mt-1">{overviewStats.pendingWithdrawals} pending</p>
+              <div className="bg-card p-4 rounded-xl border border-border hover:shadow-md transition-all">
+                <div className="flex items-center gap-2 mb-2">
+                  <ArrowUpRight className="w-4 h-4 text-orange-500" />
+                  <span className="text-xs font-medium text-muted-foreground">Withdrawn</span>
+                </div>
+                <div className="text-xl font-bold text-orange-600">KES {overviewStats.totalWithdrawn.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground">{overviewStats.pendingWithdrawals} pending</p>
               </div>
 
-              <div className="bg-card p-6 rounded-xl border border-border">
-                <div className="text-sm text-muted-foreground">This Week</div>
-                <div className="text-2xl font-bold mt-2">KES {overviewStats.recentTransactions.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground mt-1">Last 7 days</p>
+              <div className="bg-card p-4 rounded-xl border border-border hover:shadow-md transition-all">
+                <div className="flex items-center gap-2 mb-2">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-xs font-medium text-muted-foreground">This Week</span>
+                </div>
+                <div className="text-xl font-bold">KES {overviewStats.recentTransactions.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground">Last 7 days</p>
               </div>
 
-              <div className="bg-card p-6 rounded-xl border border-border">
-                <div className="text-sm text-muted-foreground">M-Pesa Payments</div>
-                <div className="text-2xl font-bold mt-2">KES {overviewStats.totalMpesaAmount.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground mt-1">{overviewStats.recentMpesa} successful</p>
+              <div className="bg-card p-4 rounded-xl border border-border hover:shadow-md transition-all">
+                <div className="flex items-center gap-2 mb-2">
+                  <CreditCard className="w-4 h-4 text-green-500" />
+                  <span className="text-xs font-medium text-muted-foreground">M-Pesa</span>
+                </div>
+                <div className="text-xl font-bold">KES {overviewStats.totalMpesaAmount.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground">{overviewStats.recentMpesa} successful</p>
               </div>
             </div>
 
             {/* Recent Transactions */}
-            <div className="bg-card p-6 rounded-xl border border-border">
-              <h3 className="text-lg font-semibold mb-4">Recent Transactions</h3>
+            <div className="bg-card p-6 rounded-2xl border border-border">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Recent Transactions</h3>
+                <button
+                  onClick={() => setActiveTab('transactions')}
+                  className="text-sm text-primary hover:underline"
+                >
+                  View All
+                </button>
+              </div>
               {transactions.length > 0 ? (
                 <div className="space-y-2">
                   {transactions.slice(0, 5).map((tx: any) => (
-                    <div key={tx.id} className="flex justify-between items-center p-3 bg-secondary/50 rounded-lg hover:bg-secondary transition-colors">
-                      <div>
-                        <div className="font-medium">{tx.payerName || tx.description || 'Transaction'}</div>
-                        <div className="text-sm text-muted-foreground">{tx.reference}</div>
+                    <div key={tx.id} className="flex justify-between items-center p-4 bg-secondary/30 rounded-xl hover:bg-secondary/50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                          tx.status === 'completed' 
+                            ? 'bg-green-500/10 text-green-500' 
+                            : 'bg-yellow-500/10 text-yellow-500'
+                        }`}>
+                          {tx.status === 'completed' ? <CheckCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                        </div>
+                        <div>
+                          <div className="font-medium">{tx.payerName || tx.description || 'Transaction'}</div>
+                          <div className="text-sm text-muted-foreground">{tx.reference}</div>
+                        </div>
                       </div>
                       <div className="text-right">
                         <div className="font-bold text-green-600">+KES {Number(tx.amount).toLocaleString()}</div>
                         <div className={`text-xs px-2 py-0.5 rounded-full inline-block ${
-                          tx.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                          tx.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
                         }`}>{tx.status}</div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center text-muted-foreground py-8">
+                <div className="text-center text-muted-foreground py-12">
                   <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-30" />
                   <p>No transactions yet</p>
                 </div>
@@ -393,23 +432,29 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
     <>
       <div className="min-h-screen bg-background flex">
         {/* Sidebar for Desktop */}
-        <aside className="hidden lg:flex flex-col w-64 border-r border-border bg-card fixed h-full z-10">
-          <div className="p-6 border-b border-border">
-            <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <span className="text-primary">⚡</span> Admin Panel
-            </h1>
+        <aside className="hidden lg:flex flex-col w-64 border-r border-border bg-card/50 backdrop-blur-xl fixed h-full z-10">
+          <div className="p-5 border-b border-border">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center text-white font-bold shadow-lg">
+                A
+              </div>
+              <div>
+                <h1 className="font-bold text-foreground">Admin Panel</h1>
+                <p className="text-xs text-muted-foreground">{user?.name}</p>
+              </div>
+            </div>
           </div>
-          <nav className="flex-1 overflow-y-auto p-4 space-y-4">
+          <nav className="flex-1 overflow-y-auto p-3 space-y-6">
             {['Main', 'Content', 'Finance', 'Shop', 'Other'].map(category => (
               <div key={category}>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">{category}</p>
-                <div className="space-y-1">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2 px-3">{category}</p>
+                <div className="space-y-0.5">
                   {tabs.filter(tab => tab.category === category).map(tab => (
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id
-                          ? 'bg-primary/10 text-primary'
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${activeTab === tab.id
+                          ? 'bg-primary text-primary-foreground shadow-md'
                           : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                         }`}
                     >
@@ -421,20 +466,20 @@ const AdminPage: React.FC<AdminPageProps> = ({ setRoute }) => {
               </div>
             ))}
           </nav>
-          <div className="p-4 border-t border-border space-y-2">
+          <div className="p-3 border-t border-border space-y-1">
             <button
               onClick={() => setRoute({ page: 'home' })}
-              className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl transition-colors"
             >
               <Home className="w-5 h-5" />
-              Home
+              Back to Home
             </button>
             <button
               onClick={() => setRoute({ page: 'dashboard' })}
-              className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl transition-colors"
             >
               <LayoutDashboard className="w-5 h-5" />
-              User Dashboard
+              My Dashboard
             </button>
           </div>
         </aside>

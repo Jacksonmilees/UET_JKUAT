@@ -1,13 +1,10 @@
 
 import React, { useState } from 'react';
-import Hero from '../components/Hero';
+import HeroNew from '../components/HeroNew';
 import ProjectList from '../components/ProjectList';
-import About from '../components/About';
 import ContributionModal from '../components/ContributionModal';
 import { Project, Route } from '../types';
 import { useProjects } from '../contexts/ProjectContext';
-import NewsPreview from '../components/common/NewsPreview';
-import ImpactSection from '../components/common/ImpactSection';
 
 interface HomePageProps {
   setRoute: (route: Route) => void;
@@ -43,8 +40,7 @@ const HomePage: React.FC<HomePageProps> = ({ setRoute }) => {
 
   return (
     <>
-      <Hero />
-      <ImpactSection stats={stats} />
+      <HeroNew setRoute={setRoute} stats={stats} />
       <ProjectList 
         projects={filteredAndSortedProjects} 
         onContributeClick={handleOpenContributeModal}
@@ -55,8 +51,6 @@ const HomePage: React.FC<HomePageProps> = ({ setRoute }) => {
         sortOption={sortOption}
         setSortOption={setSortOption}
       />
-      <NewsPreview setRoute={setRoute} />
-      <About />
       <ContributionModal
         project={selectedProject}
         isOpen={isModalOpen}

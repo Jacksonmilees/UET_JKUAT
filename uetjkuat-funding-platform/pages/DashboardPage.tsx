@@ -255,29 +255,34 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
   const isLoading = financeLoading || accountLoading;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-          <p className="text-muted-foreground">Welcome back, {user.name?.split(' ')[0]}</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center text-white font-bold text-xl shadow-lg">
+            {user.name?.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Welcome back, {user.name?.split(' ')[0]}!</h2>
+            <p className="text-muted-foreground text-sm">Here's what's happening with your account</p>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="flex items-center gap-2 px-4 py-2 bg-secondary text-foreground rounded-lg hover:bg-secondary/80 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-secondary/80 text-foreground rounded-xl hover:bg-secondary transition-all text-sm font-medium"
           >
             <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            Refresh
+            <span className="hidden sm:inline">Refresh</span>
           </button>
           {(user.role === 'admin' || user.role === 'super_admin') && (
             <button
               onClick={() => setRoute({ page: 'admin' })}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+              className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-all text-sm font-medium shadow-md hover:shadow-lg"
             >
               <ShieldCheck className="w-4 h-4" />
-              Admin Panel
+              <span className="hidden sm:inline">Admin Panel</span>
             </button>
           )}
         </div>
@@ -344,29 +349,35 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
       {!isLoading && activeTab === 'overview' && (
         <>
           {/* Account Balance Card */}
-          <div className="bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 rounded-2xl p-6 border border-primary/20">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="relative overflow-hidden bg-gradient-to-br from-primary via-primary/90 to-orange-500 rounded-2xl p-6 md:p-8 text-white shadow-xl">
+            {/* Decorative Elements */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl" />
+            
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">Account Balance</p>
-                <p className="text-4xl font-bold text-foreground mb-2">
+                <p className="text-sm font-medium text-white/80 mb-1">Account Balance</p>
+                <p className="text-4xl md:text-5xl font-bold mb-4">
                   KES {(accountData?.balance || 0).toLocaleString()}
                 </p>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-muted-foreground">Account:</span>
-                  <code className="bg-background/50 px-2 py-0.5 rounded font-mono text-foreground">
-                    {displayAccountNumber}
-                  </code>
-                  <button
-                    onClick={() => copyToClipboard(displayAccountNumber)}
-                    className="p-1 hover:bg-background/50 rounded transition-colors"
-                  >
-                    <Copy className="w-3.5 h-3.5 text-muted-foreground" />
-                  </button>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-lg">
+                    <span className="text-sm text-white/80">Account:</span>
+                    <code className="font-mono font-medium">
+                      {displayAccountNumber}
+                    </code>
+                    <button
+                      onClick={() => copyToClipboard(displayAccountNumber)}
+                      className="p-1 hover:bg-white/20 rounded transition-colors"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
               <button
                 onClick={() => setShowRechargeModal(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors font-medium shadow-lg"
+                className="flex items-center gap-2 px-6 py-4 bg-white text-primary rounded-xl hover:bg-white/90 transition-all font-semibold shadow-lg hover:shadow-xl hover:scale-105 transform"
               >
                 <Plus className="w-5 h-5" />
                 Recharge Account
@@ -380,27 +391,31 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ setRoute }) => {
               title="Total Contributed"
               value={`KES ${userStats.totalContributed.toLocaleString()}`}
               icon={TrendingUp}
-              trend="+12% from last month"
+              trend="+12%"
               trendUp={true}
+              color="green"
             />
             <StatCard
               title="Projects Supported"
               value={userStats.projectsSupported.toString()}
               icon={Target}
-              trend="+3 new projects"
+              trend="+3 new"
               trendUp={true}
+              color="blue"
             />
             <StatCard
               title="Active Tickets"
               value={myTickets.filter(t => t.status === 'active').length.toString()}
               icon={CreditCard}
-              trend="Next draw in 2 days"
+              trend="2 days left"
+              color="purple"
             />
             <StatCard
               title="Transactions"
               value={userTransactions.length.toString()}
               icon={Clock}
-              trend="Updated just now"
+              trend="Updated"
+              color="primary"
             />
           </div>
 
@@ -795,22 +810,51 @@ const StatCard: React.FC<{
   icon: React.ElementType;
   trend?: string;
   trendUp?: boolean;
-}> = ({ title, value, icon: Icon, trend, trendUp }) => (
-  <div className="bg-card p-6 rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow">
-    <div className="flex items-center justify-between mb-4">
-      <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
-      <Icon className="w-4 h-4 text-muted-foreground" />
+  color?: 'primary' | 'green' | 'blue' | 'purple';
+}> = ({ title, value, icon: Icon, trend, trendUp, color = 'primary' }) => {
+  const colorClasses = {
+    primary: 'from-primary/20 to-primary/5 border-primary/20',
+    green: 'from-green-500/20 to-green-500/5 border-green-500/20',
+    blue: 'from-blue-500/20 to-blue-500/5 border-blue-500/20',
+    purple: 'from-purple-500/20 to-purple-500/5 border-purple-500/20',
+  };
+  const iconColors = {
+    primary: 'bg-primary/10 text-primary',
+    green: 'bg-green-500/10 text-green-500',
+    blue: 'bg-blue-500/10 text-blue-500',
+    purple: 'bg-purple-500/10 text-purple-500',
+  };
+  
+  return (
+    <div className={`relative overflow-hidden bg-gradient-to-br ${colorClasses[color]} p-5 rounded-2xl border shadow-sm hover:shadow-lg transition-all duration-300 group`}>
+      {/* Animated Background Glow */}
+      <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full blur-2xl opacity-30 group-hover:opacity-50 transition-opacity ${
+        color === 'primary' ? 'bg-primary' : 
+        color === 'green' ? 'bg-green-500' :
+        color === 'blue' ? 'bg-blue-500' : 'bg-purple-500'
+      }`} />
+      
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-3">
+          <div className={`w-10 h-10 rounded-xl ${iconColors[color]} flex items-center justify-center`}>
+            <Icon className="w-5 h-5" />
+          </div>
+          {trend && (
+            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+              trendUp 
+                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+                : 'bg-secondary text-muted-foreground'
+            }`}>
+              {trendUp && <ArrowUpRight className="w-3 h-3 inline mr-0.5" />}
+              {trend}
+            </span>
+          )}
+        </div>
+        <p className="text-2xl font-bold text-foreground mb-1">{value}</p>
+        <p className="text-sm text-muted-foreground">{title}</p>
+      </div>
     </div>
-    <div className="space-y-1">
-      <p className="text-2xl font-bold">{value}</p>
-      {trend && (
-        <p className={`text-xs flex items-center gap-1 ${trendUp ? 'text-green-600' : 'text-muted-foreground'}`}>
-          {trendUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-          {trend}
-        </p>
-      )}
-    </div>
-  </div>
-);
+  );
+};
 
 export default DashboardPage;
