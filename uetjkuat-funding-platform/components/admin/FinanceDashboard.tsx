@@ -103,10 +103,22 @@ const FinanceDashboard: React.FC = () => {
   const [endDate, setEndDate] = useState<string>('');
   const [paybillBalance, setPaybillBalance] = useState<number>(0);
   const [loadingBalance, setLoadingBalance] = useState(false);
+  const [dashboardStats, setDashboardStats] = useState<any>(null);
+  const [transactionSummary, setTransactionSummary] = useState<any>(null);
 
-  const loadPaybillBalance = async () => {
+  const loadPaybillBalance = async (forceRefresh = false) => {
     setLoadingBalance(true);
     try {
+      // Try using the new admin dashboard endpoint first
+      if (api.admin?.getPaybillBalance) {
+        const response = await api.admin.getPaybillBalance(forceRefresh);
+        if (response.success && response.data) {
+          setPaybillBalance(response.data.balance || 0);
+          return;
+        }
+      }
+
+      // Fallback to the old endpoint
       const response = await api.mpesa.getBalance();
       if (response.success && response.data) {
         setPaybillBalance(response.data.balance || 0);
@@ -118,13 +130,38 @@ const FinanceDashboard: React.FC = () => {
     }
   };
 
+  const loadDashboardStats = async () => {
+    try {
+      if (api.admin?.getDashboardStats) {
+        const response = await api.admin.getDashboardStats();
+        if (response.success && response.data) {
+          setDashboardStats(response.data);
+        }
+      }
+
+      if (api.admin?.getTransactionSummary) {
+        const params: any = {};
+        if (startDate) params.start_date = startDate;
+        if (endDate) params.end_date = endDate;
+
+        const response = await api.admin.getTransactionSummary(params);
+        if (response.success && response.data) {
+          setTransactionSummary(response.data);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading dashboard stats:', error);
+    }
+  };
+
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Load paybill balance
+      // Load paybill balance and dashboard stats
       loadPaybillBalance();
-      
+      loadDashboardStats();
+
       // All endpoints are public - no API key needed
       const [txRes, wdRes, projRes] = await Promise.all([
         api.transactions.getAll({
@@ -162,6 +199,17 @@ const FinanceDashboard: React.FC = () => {
   }, []);
 
   const totals = useMemo(() => {
+    // Use transaction summary from API if available
+    if (transactionSummary) {
+      return {
+        credit: transactionSummary.total_credit || 0,
+        debit: transactionSummary.total_debit || 0,
+        net: (transactionSummary.total_credit || 0) - (transactionSummary.total_debit || 0),
+        count: transactionSummary.total_count || 0,
+      };
+    }
+
+    // Fallback to local calculation
     const credit = transactions
       .filter((t) => (t.type || '').toLowerCase() === 'credit')
       .reduce((s, t) => s + (Number(t.amount) || 0), 0);
@@ -169,11 +217,14 @@ const FinanceDashboard: React.FC = () => {
       .filter((t) => (t.type || '').toLowerCase() === 'debit')
       .reduce((s, t) => s + (Number(t.amount) || 0), 0);
     const net = credit - debit;
-    return { credit, debit, net };
-  }, [transactions]);
+    return { credit, debit, net, count: transactions.length };
+  }, [transactions, transactionSummary]);
 
   const recentTxRows: React.ReactNode[][] = (transactions || []).slice(0, 12).map((t) => [
-    <span className="font-medium text-foreground">{t.account?.reference || t.account?.name || '—'}</span>,
+    <div>
+      <span className="font-medium text-foreground block">{t.payer_name || t.account?.name || '—'}</span>
+      <span className="text-xs text-muted-foreground">{t.account?.reference || t.phone_number || ''}</span>
+    </div>,
     <span className="font-mono">{KES(t.amount)}</span>,
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${(t.type || '').toLowerCase() === 'credit'
         ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
@@ -281,16 +332,41 @@ const FinanceDashboard: React.FC = () => {
         <div className="text-3xl font-bold text-green-600">{KES(paybillBalance)}</div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Stat label="Total Transactions" value={totals.count.toString()} type="neutral" />
         <Stat label="Total Inflow" value={KES(totals.credit)} type="positive" />
         <Stat label="Total Outflow" value={KES(totals.debit)} type="negative" />
         <Stat label="Net Balance" value={KES(totals.net)} type={totals.net >= 0 ? 'positive' : 'negative'} />
       </div>
 
+      {/* Additional Dashboard Stats */}
+      {dashboardStats && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {dashboardStats.total_users && (
+            <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">Total Users</div>
+              <div className="text-2xl font-bold text-foreground">{dashboardStats.total_users}</div>
+            </div>
+          )}
+          {dashboardStats.total_projects !== undefined && (
+            <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">Active Projects</div>
+              <div className="text-2xl font-bold text-foreground">{dashboardStats.total_projects}</div>
+            </div>
+          )}
+          {dashboardStats.total_withdrawals !== undefined && (
+            <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">Pending Withdrawals</div>
+              <div className="text-2xl font-bold text-foreground">{dashboardStats.total_withdrawals}</div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-foreground">Recent Transactions</h3>
         <Table
-          columns={['Account', 'Amount', 'Type', 'Status', 'Reference', 'Created']}
+          columns={['User/Payer', 'Amount', 'Type', 'Status', 'Reference', 'Created']}
           rows={recentTxRows}
         />
       </div>

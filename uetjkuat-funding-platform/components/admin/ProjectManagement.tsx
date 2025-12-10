@@ -1,10 +1,10 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useProjects } from '../../contexts/ProjectContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { NotificationContext } from '../../contexts/NotificationContext';
 import { useAI } from '../../contexts/AIContext';
-import { Edit2, Sparkles, Trash2, Plus, Image as ImageIcon, Calendar, DollarSign, Target, Upload, Loader2, CreditCard } from 'lucide-react';
+import { Edit2, Sparkles, Trash2, Plus, Image as ImageIcon, Calendar, DollarSign, Target, Upload, Loader2, CreditCard, Search, X, User, Clock, Eye, EyeOff } from 'lucide-react';
 import { Type } from '@google/genai';
 import { Project } from '../../types';
 import api from '../../services/api';
@@ -23,6 +23,8 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onProjectEdit, on
     const [aiTopic, setAITopic] = useState('');
     const [isUploading, setIsUploading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filteredProjects, setFilteredProjects] = useState<Project[]>(projects);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [formData, setFormData] = useState({
@@ -36,7 +38,26 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onProjectEdit, on
         impactStatement: '',
         durationDays: 30,
         accountNumber: '', // For tracking donations to specific account
+        visibility: 'public' as 'public' | 'private', // Public by default
     });
+
+    // Search filtering effect
+    useEffect(() => {
+        if (!searchQuery.trim()) {
+            setFilteredProjects(projects);
+            return;
+        }
+
+        const query = searchQuery.toLowerCase();
+        const filtered = projects.filter(p =>
+            p.title?.toLowerCase().includes(query) ||
+            p.description?.toLowerCase().includes(query) ||
+            p.category?.toLowerCase().includes(query) ||
+            p.organizer?.toLowerCase().includes(query) ||
+            p.impactStatement?.toLowerCase().includes(query)
+        );
+        setFilteredProjects(filtered);
+    }, [searchQuery, projects]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -92,6 +113,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onProjectEdit, on
                 impactStatement: '',
                 durationDays: 30,
                 accountNumber: '',
+                visibility: 'public',
             });
         } catch (error) {
             addNotification('Failed to create project');
@@ -226,6 +248,13 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onProjectEdit, on
                                 <label className="block text-sm font-medium text-foreground mb-1">Duration (days)</label>
                                 <input type="number" name="durationDays" value={formData.durationDays} onChange={handleChange} className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm" />
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium text-foreground mb-1">Visibility</label>
+                                <select name="visibility" value={formData.visibility} onChange={handleChange} className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm">
+                                    <option value="public">Public</option>
+                                    <option value="private">Private</option>
+                                </select>
+                            </div>
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-foreground mb-1">Featured Image</label>
                                 <div className="flex gap-2">
@@ -275,44 +304,134 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onProjectEdit, on
                 {/* Existing Projects List */}
                 <div className="bg-card p-6 rounded-xl border border-border shadow-sm h-fit">
                     <h3 className="text-xl font-semibold text-foreground mb-4">Existing Projects</h3>
+
+                    {/* Search Bar */}
+                    <div className="mb-4">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <input
+                                type="text"
+                                placeholder="Search projects..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-9 pr-9 py-2 rounded-lg border border-input bg-background text-foreground text-sm placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                            />
+                            {searchQuery && (
+                                <button
+                                    onClick={() => setSearchQuery('')}
+                                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            )}
+                        </div>
+                        {searchQuery && (
+                            <p className="text-xs text-muted-foreground mt-2">
+                                {filteredProjects.length} of {projects.length} projects
+                            </p>
+                        )}
+                    </div>
+
                     <div className="space-y-4 max-h-[800px] overflow-y-auto pr-2 custom-scrollbar">
-                        {projects.map(p => (
-                            <div key={p.id} className="bg-secondary/30 p-4 rounded-xl border border-border hover:border-primary/30 transition-all group">
-                                <div className="flex justify-between items-start mb-3">
-                                    <div>
-                                        <h4 className="font-semibold text-foreground line-clamp-1">{p.title}</h4>
-                                        <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full mt-1 inline-block">
-                                            {p.category}
-                                        </span>
+                        {filteredProjects.map(p => (
+                            <div key={p.id} className="bg-secondary/30 p-3 rounded-xl border border-border hover:border-primary/30 transition-all group">
+                                {/* Featured Image */}
+                                {p.featuredImage && (
+                                    <div className="mb-3">
+                                        <img
+                                            src={p.featuredImage}
+                                            alt={p.title}
+                                            className="w-full h-24 object-cover rounded-lg border border-border"
+                                            onError={(e) => {
+                                                e.currentTarget.style.display = 'none';
+                                            }}
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="flex justify-between items-start mb-2">
+                                    <div className="flex-1">
+                                        <h4 className="font-semibold text-foreground text-sm line-clamp-1">{p.title}</h4>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+                                                {p.category}
+                                            </span>
+                                            {p.visibility && (
+                                                <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                                                    {p.visibility === 'public' ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                                                    {p.visibility}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button onClick={() => onProjectEdit(p)} className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors">
-                                            <Edit2 className="w-4 h-4" />
+                                            <Edit2 className="w-3.5 h-3.5" />
                                         </button>
                                         <button onClick={() => onProjectDelete(p)} className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors">
-                                            <Trash2 className="w-4 h-4" />
+                                            <Trash2 className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
                                 </div>
 
-                                <div className="space-y-3">
+                                {/* Organizer and Duration */}
+                                <div className="flex items-center gap-3 mb-2 text-xs text-muted-foreground">
+                                    {p.organizer && (
+                                        <span className="flex items-center gap-1">
+                                            <User className="w-3 h-3" />
+                                            {p.organizer}
+                                        </span>
+                                    )}
+                                    {p.durationDays && (
+                                        <span className="flex items-center gap-1">
+                                            <Clock className="w-3 h-3" />
+                                            {p.durationDays} days
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Impact Statement */}
+                                {p.impactStatement && (
+                                    <p className="text-xs text-muted-foreground mb-3 line-clamp-2 italic">
+                                        "{p.impactStatement}"
+                                    </p>
+                                )}
+
+                                {/* Funding Progress */}
+                                <div className="space-y-2">
                                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                        <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> {p.currentAmount.toLocaleString()} raised</span>
+                                        <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> {p.currentAmount.toLocaleString()}</span>
                                         <span className="flex items-center gap-1"><Target className="w-3 h-3" /> {p.fundingGoal.toLocaleString()}</span>
                                     </div>
 
-                                    <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+                                    <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
                                         <div
                                             className="bg-primary h-full rounded-full transition-all duration-500"
                                             style={{ width: `${Math.min((p.currentAmount / p.fundingGoal) * 100, 100)}%` }}
                                         ></div>
                                     </div>
+
+                                    <div className="text-xs text-center text-muted-foreground font-medium">
+                                        {Math.round((p.currentAmount / p.fundingGoal) * 100)}% funded
+                                    </div>
                                 </div>
                             </div>
                         ))}
-                        {projects.length === 0 && (
+                        {filteredProjects.length === 0 && (
                             <div className="text-center py-8 text-muted-foreground">
-                                <p>No projects found.</p>
+                                {searchQuery ? (
+                                    <>
+                                        <p>No projects match your search.</p>
+                                        <button
+                                            onClick={() => setSearchQuery('')}
+                                            className="mt-2 text-sm text-primary hover:underline"
+                                        >
+                                            Clear search
+                                        </button>
+                                    </>
+                                ) : (
+                                    <p>No projects found.</p>
+                                )}
                             </div>
                         )}
                     </div>

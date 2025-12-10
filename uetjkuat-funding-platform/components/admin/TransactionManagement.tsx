@@ -8,21 +8,30 @@ interface Transaction {
   amount: number;
   type: 'credit' | 'debit' | 'donation' | 'withdrawal';
   status: 'completed' | 'pending' | 'failed' | 'cancelled';
-  date: string;
+  date?: string; // Legacy field
+  created_at: string;
+  updated_at: string;
   description?: string;
   reference?: string;
-  phoneNumber?: string;
-  projectTitle?: string;
+  phone_number?: string;
+  payer_name?: string; // User/Payer name from backend
+  payment_method?: string;
+  metadata?: any;
+  processed_at?: string;
   account?: {
     id: number;
     name: string;
     reference: string;
+    type: string;
+    status: string;
   };
 }
 
 const TransactionManagement: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     type: 'all',
     status: 'all',
@@ -35,24 +44,72 @@ const TransactionManagement: React.FC = () => {
     fetchTransactions();
   }, [filters]);
 
+  // Search filtering effect
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredTransactions(transactions);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase();
+    const filtered = transactions.filter(t =>
+      t.payer_name?.toLowerCase().includes(query) ||
+      t.reference?.toLowerCase().includes(query) ||
+      t.phone_number?.toLowerCase().includes(query) ||
+      t.account?.name?.toLowerCase().includes(query) ||
+      t.account?.reference?.toLowerCase().includes(query) ||
+      t.id.toString().includes(query)
+    );
+    setFilteredTransactions(filtered);
+  }, [searchQuery, transactions]);
+
   const fetchTransactions = async () => {
     try {
       setLoading(true);
       const params: Record<string, string> = {};
       if (filters.type !== 'all') params.type = filters.type;
       if (filters.status !== 'all') params.status = filters.status;
-      if (filters.dateFrom) params.from_date = filters.dateFrom;
-      if (filters.dateTo) params.to_date = filters.dateTo;
+      if (filters.dateFrom) params.start_date = filters.dateFrom;
+      if (filters.dateTo) params.end_date = filters.dateTo;
 
       const response = await api.transactions.getAll(params);
       if (response.success && response.data) {
-        setTransactions(Array.isArray(response.data) ? response.data : []);
+        const txns = Array.isArray(response.data) ? response.data : [];
+        setTransactions(txns);
+        setFilteredTransactions(txns);
       }
     } catch (error) {
       console.error('Error fetching transactions:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Format date to human-readable format
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
+    // If less than 24 hours ago, show relative time
+    if (diffInHours < 24) {
+      if (diffInHours < 1) {
+        const mins = Math.floor(diffInHours * 60);
+        return mins <= 1 ? 'Just now' : `${mins} mins ago`;
+      }
+      const hours = Math.floor(diffInHours);
+      return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+    }
+
+    // Otherwise show full date
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   const getTypeIcon = (type: string) => {
@@ -79,15 +136,15 @@ const TransactionManagement: React.FC = () => {
     return badges[status as keyof typeof badges] || 'bg-secondary text-secondary-foreground';
   };
 
-  const totalAmount = transactions
+  const totalAmount = filteredTransactions
     .filter(t => t.status === 'completed')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const creditTotal = transactions
+  const creditTotal = filteredTransactions
     .filter(t => t.type === 'credit' && t.status === 'completed')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const debitTotal = transactions
+  const debitTotal = filteredTransactions
     .filter(t => (t.type === 'debit' || t.type === 'withdrawal') && t.status === 'completed')
     .reduce((sum, t) => sum + t.amount, 0);
 
@@ -129,15 +186,49 @@ const TransactionManagement: React.FC = () => {
         </button>
       </div>
 
+      {/* Search Bar */}
+      <div className="bg-card rounded-xl shadow-sm p-4 border border-border">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search by name, reference, phone, or account..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        {searchQuery && (
+          <p className="text-xs text-muted-foreground mt-2">
+            Showing {filteredTransactions.length} of {transactions.length} transactions
+          </p>
+        )}
+      </div>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
-          <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">Total Transactions</p>
-          <p className="text-2xl font-bold text-foreground">{transactions.length}</p>
+          <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">
+            {searchQuery ? 'Filtered' : 'Total'} Transactions
+          </p>
+          <p className="text-2xl font-bold text-foreground">{filteredTransactions.length}</p>
+          {searchQuery && transactions.length !== filteredTransactions.length && (
+            <p className="text-xs text-muted-foreground mt-1">of {transactions.length} total</p>
+          )}
         </div>
 
         <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
-          <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">Total Volume</p>
+          <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">
+            {searchQuery ? 'Filtered' : 'Total'} Volume
+          </p>
           <p className="text-2xl font-bold text-foreground">KES {totalAmount.toLocaleString()}</p>
         </div>
 
@@ -217,11 +308,23 @@ const TransactionManagement: React.FC = () => {
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading transactions...</p>
         </div>
-      ) : transactions.length === 0 ? (
+      ) : filteredTransactions.length === 0 ? (
         <div className="bg-card rounded-xl shadow-sm p-12 text-center border border-border">
           <CreditCard className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
-          <p className="text-lg text-foreground font-semibold">No transactions found</p>
-          <p className="text-muted-foreground mt-2">Try adjusting your filters</p>
+          <p className="text-lg text-foreground font-semibold">
+            {searchQuery ? 'No matching transactions' : 'No transactions found'}
+          </p>
+          <p className="text-muted-foreground mt-2">
+            {searchQuery ? 'Try a different search term' : 'Try adjusting your filters'}
+          </p>
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              Clear Search
+            </button>
+          )}
         </div>
       ) : (
         <div className="bg-card rounded-xl shadow-sm overflow-hidden border border-border">
@@ -230,37 +333,48 @@ const TransactionManagement: React.FC = () => {
               <thead className="bg-secondary/50 border-b border-border">
                 <tr>
                   <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date & Time</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">User/Payer</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Account</th>
                   <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Description</th>
                   <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">Amount</th>
                   <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Status</th>
                   <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {transactions.map((transaction) => (
+                {filteredTransactions.map((transaction) => (
                   <tr key={transaction.id} className="hover:bg-secondary/30 transition-colors">
                     <td className="px-6 py-4">
                       <div className="text-sm font-medium text-foreground">
-                        {new Date(transaction.date).toLocaleDateString()}
+                        {formatDate(transaction.created_at || transaction.date)}
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(transaction.date).toLocaleTimeString()}
+                      {transaction.created_at && (
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(transaction.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-medium text-foreground">
+                        {transaction.payer_name || 'N/A'}
                       </div>
+                      {transaction.phone_number && (
+                        <div className="text-xs text-muted-foreground font-mono">{transaction.phone_number}</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-medium text-foreground">
+                        {transaction.account?.name || 'N/A'}
+                      </div>
+                      {transaction.account?.reference && (
+                        <div className="text-xs text-muted-foreground font-mono">{transaction.account.reference}</div>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         {getTypeIcon(transaction.type)}
                         <span className="text-sm capitalize text-foreground">{transaction.type}</span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-foreground truncate max-w-[200px]" title={transaction.description || transaction.projectTitle}>
-                        {transaction.description || transaction.projectTitle || 'N/A'}
-                      </div>
-                      {transaction.reference && (
-                        <div className="text-xs text-muted-foreground font-mono mt-0.5">{transaction.reference}</div>
-                      )}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <span className={`font-bold text-sm ${transaction.type === 'credit' || transaction.type === 'donation'
@@ -316,6 +430,19 @@ const TransactionManagement: React.FC = () => {
                     {selectedTransaction.type}
                   </p>
                 </div>
+                {selectedTransaction.payer_name && (
+                  <div className="col-span-2">
+                    <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">User/Payer Name</p>
+                    <p className="text-base font-semibold text-foreground">{selectedTransaction.payer_name}</p>
+                  </div>
+                )}
+                {selectedTransaction.account && (
+                  <div className="col-span-2">
+                    <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">Account</p>
+                    <p className="text-sm font-semibold text-foreground">{selectedTransaction.account.name}</p>
+                    <p className="font-mono text-xs text-muted-foreground mt-0.5">{selectedTransaction.account.reference}</p>
+                  </div>
+                )}
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">Amount</p>
                   <p className={`text-xl font-bold ${selectedTransaction.type === 'credit' || selectedTransaction.type === 'donation'
@@ -332,27 +459,33 @@ const TransactionManagement: React.FC = () => {
                   </span>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">Date</p>
+                  <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">Date Created</p>
                   <p className="text-sm font-semibold text-foreground">
-                    {new Date(selectedTransaction.date).toLocaleString()}
+                    {formatDate(selectedTransaction.created_at || selectedTransaction.date)}
                   </p>
                 </div>
+                {selectedTransaction.payment_method && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">Payment Method</p>
+                    <p className="text-sm font-semibold text-foreground capitalize">{selectedTransaction.payment_method}</p>
+                  </div>
+                )}
                 {selectedTransaction.reference && (
                   <div>
                     <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">Reference</p>
                     <p className="font-mono text-sm font-semibold text-foreground">{selectedTransaction.reference}</p>
                   </div>
                 )}
-                {selectedTransaction.phoneNumber && (
+                {selectedTransaction.phone_number && (
                   <div>
                     <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">Phone Number</p>
-                    <p className="text-sm font-semibold text-foreground">{selectedTransaction.phoneNumber}</p>
+                    <p className="text-sm font-semibold text-foreground">{selectedTransaction.phone_number}</p>
                   </div>
                 )}
-                {selectedTransaction.description && (
+                {selectedTransaction.processed_at && (
                   <div className="col-span-2">
-                    <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">Description</p>
-                    <p className="text-sm text-foreground">{selectedTransaction.description}</p>
+                    <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">Processed At</p>
+                    <p className="text-sm text-foreground">{formatDate(selectedTransaction.processed_at)}</p>
                   </div>
                 )}
               </div>
