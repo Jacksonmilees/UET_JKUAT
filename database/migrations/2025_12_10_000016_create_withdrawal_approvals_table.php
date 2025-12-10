@@ -11,24 +11,26 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('withdrawal_approvals', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('withdrawal_id')->constrained()->onDelete('cascade');
-            $table->foreignId('approver_id')->nullable()->constrained('users')->onDelete('set null');
-            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending')->index();
-            $table->text('notes')->nullable();
-            $table->text('rejection_reason')->nullable();
-            $table->string('otp_code')->nullable();
-            $table->timestamp('otp_expires_at')->nullable();
-            $table->timestamp('otp_verified_at')->nullable();
-            $table->timestamp('approved_at')->nullable();
-            $table->timestamp('rejected_at')->nullable();
-            $table->timestamps();
+        if (!Schema::hasTable('withdrawal_approvals')) {
+            Schema::create('withdrawal_approvals', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('withdrawal_id')->constrained()->onDelete('cascade');
+                $table->foreignId('approver_id')->nullable()->constrained('users')->onDelete('set null');
+                $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending')->index();
+                $table->text('notes')->nullable();
+                $table->text('rejection_reason')->nullable();
+                $table->string('otp_code')->nullable();
+                $table->timestamp('otp_expires_at')->nullable();
+                $table->timestamp('otp_verified_at')->nullable();
+                $table->timestamp('approved_at')->nullable();
+                $table->timestamp('rejected_at')->nullable();
+                $table->timestamps();
 
-            $table->index('withdrawal_id');
-            $table->index('approver_id');
-            $table->index('status');
-        });
+                $table->index('withdrawal_id');
+                $table->index('approver_id');
+                // Removed duplicate: $table->index('status'); - already indexed on line above
+            });
+        }
     }
 
     /**
