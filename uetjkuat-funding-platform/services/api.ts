@@ -879,7 +879,68 @@ const enhancedUsersApi = {
   toggleStatus: async (id: string) => apiRequest(`/v1/users/${id}/toggle-status`, { method: 'PUT' }),
 };
 
-// Settings API (for public settings)
+// Admin API (dashboard stats, reports, management)
+const adminApi = {
+  // Dashboard Stats
+  getDashboardStats: async (): Promise<ApiResponse<any>> =>
+    apiRequest('/v1/admin/dashboard/stats'),
+
+  getPaybillBalance: async (forceRefresh: boolean = false): Promise<ApiResponse<any>> =>
+    apiRequest(`/v1/admin/dashboard/paybill-balance?refresh=${forceRefresh ? '1' : '0'}`),
+
+  getTransactionSummary: async (params?: Record<string, string>): Promise<ApiResponse<any>> => {
+    const query = params ? '?' + new URLSearchParams(params).toString() : '';
+    return apiRequest(`/v1/admin/dashboard/transaction-summary${query}`);
+  },
+
+  // Reports
+  reports: {
+    financial: async (params?: Record<string, string>): Promise<ApiResponse<any>> => {
+      const query = params ? '?' + new URLSearchParams(params).toString() : '';
+      return apiRequest(`/v1/admin/reports/financial${query}`);
+    },
+
+    projects: async (projectId?: string | number): Promise<ApiResponse<any>> => {
+      const endpoint = projectId
+        ? `/v1/admin/reports/projects/${projectId}`
+        : '/v1/admin/reports/projects';
+      return apiRequest(endpoint);
+    },
+
+    accountStatement: async (accountReference: string, params?: Record<string, string>): Promise<ApiResponse<any>> => {
+      const query = params ? '?' + new URLSearchParams(params).toString() : '';
+      return apiRequest(`/v1/admin/reports/account-statement/${accountReference}${query}`);
+    },
+
+    monthlySummary: async (params?: Record<string, string>): Promise<ApiResponse<any>> => {
+      const query = params ? '?' + new URLSearchParams(params).toString() : '';
+      return apiRequest(`/v1/admin/reports/monthly-summary${query}`);
+    },
+  },
+
+  // Account Management
+  accounts: {
+    getAll: async (): Promise<ApiResponse<any>> =>
+      apiRequest('/v1/admin/accounts'),
+
+    create: async (data: any): Promise<ApiResponse<any>> =>
+      apiRequest('/v1/admin/accounts/create', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    update: async (id: string | number, data: any): Promise<ApiResponse<any>> =>
+      apiRequest(`/v1/admin/accounts/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    getMonthlyTotal: async (accountReference: string): Promise<ApiResponse<any>> =>
+      apiRequest(`/v1/admin/accounts/${accountReference}/monthly-total`),
+  },
+};
+
+// Enhanced Settings API (full CRUD)
 const settingsApi = {
   getPublic: async (): Promise<ApiResponse<{
     chair_name: string;
@@ -890,6 +951,39 @@ const settingsApi = {
     hero_images: Array<{ url: string; alt: string }>;
     visible_modules: Record<string, boolean>;
   }>> => apiRequest('/v1/settings/public'),
+
+  getAll: async (): Promise<ApiResponse<any>> =>
+    apiRequest('/v1/settings'),
+
+  update: async (data: any): Promise<ApiResponse<any>> =>
+    apiRequest('/v1/settings', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  uploadChairImage: async (formData: FormData): Promise<ApiResponse<any>> => {
+    const token = localStorage.getItem('auth_token');
+    const headers: HeadersInit = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (API_KEY) headers['X-API-Key'] = API_KEY;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/v1/settings/upload-image`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+      const data = await response.json();
+      return { success: response.ok, data: data.data || data, error: data.error || data.message };
+    } catch (error) {
+      return { success: false, error: 'Upload failed' };
+    }
+  },
+
+  removeChairImage: async (): Promise<ApiResponse<any>> =>
+    apiRequest('/v1/settings/chair-image', {
+      method: 'DELETE',
+    }),
 };
 
 // Export default API object
@@ -915,6 +1009,7 @@ export default {
   merchandise: merchandiseApi,
   onboarding: onboardingApi,
   settings: settingsApi,
+  admin: adminApi,
   getToken,
   setToken,
   removeToken,
