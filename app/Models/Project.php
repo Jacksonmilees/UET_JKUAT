@@ -12,19 +12,32 @@ class Project extends Model
         'name',
         'title',
         'description',
+        'long_description',
         'target_amount',
         'current_amount',
         'account_number',
         'account_reference',
         'status',
         'end_date',
-        'image_url'
+        'image_url',
+        'featured_image',
+        'user_id',
+        'category_id',
+        'slug',
+        'visibility',
+        'allow_donations',
+        'organizer',
+        'impact_statement',
+        'duration_days',
+        'metadata'
     ];
 
     protected $casts = [
         'target_amount' => 'decimal:2',
         'current_amount' => 'decimal:2',
-        'end_date' => 'datetime'
+        'end_date' => 'datetime',
+        'metadata' => 'array',
+        'allow_donations' => 'boolean'
     ];
 
     /**

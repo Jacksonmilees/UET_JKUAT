@@ -19,7 +19,7 @@ return new class extends Migration
             $table->unsignedBigInteger('auditable_id')->nullable();
             $table->json('old_values')->nullable();
             $table->json('new_values')->nullable();
-            $table->string('ip_address', 45')->nullable();
+            $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->string('url')->nullable();
             $table->string('method')->nullable(); // GET, POST, PUT, DELETE
