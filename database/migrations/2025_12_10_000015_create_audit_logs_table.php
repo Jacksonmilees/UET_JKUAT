@@ -11,26 +11,27 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('audit_logs', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
-            $table->string('event')->index(); // created, updated, deleted, accessed, login, logout
-            $table->string('auditable_type')->nullable(); // Model class name
-            $table->unsignedBigInteger('auditable_id')->nullable();
-            $table->json('old_values')->nullable();
-            $table->json('new_values')->nullable();
-            $table->string('ip_address', 45)->nullable();
-            $table->text('user_agent')->nullable();
-            $table->string('url')->nullable();
-            $table->string('method')->nullable(); // GET, POST, PUT, DELETE
-            $table->json('metadata')->nullable();
-            $table->timestamps();
+        if (!Schema::hasTable('audit_logs')) {
+            Schema::create('audit_logs', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
+                $table->string('event')->index(); // created, updated, deleted, accessed, login, logout - already indexed
+                $table->string('auditable_type')->nullable(); // Model class name
+                $table->unsignedBigInteger('auditable_id')->nullable();
+                $table->json('old_values')->nullable();
+                $table->json('new_values')->nullable();
+                $table->string('ip_address', 45)->nullable();
+                $table->text('user_agent')->nullable();
+                $table->string('url')->nullable();
+                $table->string('method')->nullable(); // GET, POST, PUT, DELETE
+                $table->json('metadata')->nullable();
+                $table->timestamps();
 
-            $table->index(['auditable_type', 'auditable_id']);
-            $table->index('user_id');
-            $table->index('event');
-            $table->index('created_at');
-        });
+                $table->index(['auditable_type', 'auditable_id']);
+                // Removed duplicate: $table->index('event'); - already indexed on line above
+                $table->index('created_at');
+            });
+        }
     }
 
     /**
