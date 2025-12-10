@@ -420,7 +420,65 @@ Route::prefix('v1')->group(function () {
     
     // Current Semester (public)
     Route::get('/semesters/current', [SemesterController::class, 'current']);
+
+    // ============================================================
+    // PUBLIC CAMPAIGN ROUTES (Guest donations)
+    // ============================================================
+    Route::get('/campaigns/public/{code}', [\App\Http\Controllers\PublicCampaignController::class, 'show']);
+    Route::post('/campaigns/public/{code}/donate', [\App\Http\Controllers\PublicCampaignController::class, 'donate']);
+    Route::post('/campaigns/public/{code}/track-share', [\App\Http\Controllers\PublicCampaignController::class, 'trackShare']);
+    Route::get('/campaigns/public/{code}/stats', [\App\Http\Controllers\PublicCampaignController::class, 'stats']);
+    Route::post('/campaigns/donations/verify', [\App\Http\Controllers\PublicCampaignController::class, 'verifyDonation']);
+    Route::get('/campaigns/public', [\App\Http\Controllers\PublicCampaignController::class, 'index']);
 });
+
+// ============================================================
+// PROTECTED ROUTES - CAMPAIGN MANAGEMENT (Authenticated users)
+// ============================================================
+Route::middleware(ApiKeyMiddleware::class)
+    ->prefix('v1')
+    ->group(function () {
+        // Campaign Management (User's campaigns)
+        Route::get('/campaigns', [\App\Http\Controllers\CampaignController::class, 'index']);
+        Route::post('/campaigns', [\App\Http\Controllers\CampaignController::class, 'store']);
+        Route::get('/campaigns/{campaign}', [\App\Http\Controllers\CampaignController::class, 'show']);
+        Route::put('/campaigns/{campaign}', [\App\Http\Controllers\CampaignController::class, 'update']);
+        Route::delete('/campaigns/{campaign}', [\App\Http\Controllers\CampaignController::class, 'destroy']);
+        Route::post('/campaigns/{campaign}/toggle-status', [\App\Http\Controllers\CampaignController::class, 'toggleStatus']);
+        Route::get('/campaigns/{campaign}/analytics', [\App\Http\Controllers\CampaignController::class, 'analytics']);
+        Route::get('/campaigns/{campaign}/shareable', [\App\Http\Controllers\CampaignController::class, 'shareable']);
+        Route::get('/campaigns/{campaign}/donations', [\App\Http\Controllers\CampaignController::class, 'donations']);
+        Route::post('/campaigns/{campaign}/track-share', [\App\Http\Controllers\CampaignController::class, 'trackShare']);
+
+        // Role & Permission Management (RBAC)
+        Route::get('/roles', [\App\Http\Controllers\RoleController::class, 'index']);
+        Route::post('/roles', [\App\Http\Controllers\RoleController::class, 'store']);
+        Route::get('/roles/{role}', [\App\Http\Controllers\RoleController::class, 'show']);
+        Route::put('/roles/{role}', [\App\Http\Controllers\RoleController::class, 'update']);
+        Route::delete('/roles/{role}', [\App\Http\Controllers\RoleController::class, 'destroy']);
+        Route::post('/roles/assign', [\App\Http\Controllers\RoleController::class, 'assignToUser']);
+        Route::post('/roles/remove', [\App\Http\Controllers\RoleController::class, 'removeFromUser']);
+        Route::get('/permissions', [\App\Http\Controllers\RoleController::class, 'permissions']);
+        Route::get('/roles/{role}/users', [\App\Http\Controllers\RoleController::class, 'roleUsers']);
+
+        // Audit Log Management
+        Route::get('/audit-logs', [\App\Http\Controllers\AuditLogController::class, 'index']);
+        Route::get('/audit-logs/{auditLog}', [\App\Http\Controllers\AuditLogController::class, 'show']);
+        Route::get('/audit-logs/entity/logs', [\App\Http\Controllers\AuditLogController::class, 'entityLogs']);
+        Route::get('/audit-logs/statistics', [\App\Http\Controllers\AuditLogController::class, 'statistics']);
+        Route::get('/audit-logs/export', [\App\Http\Controllers\AuditLogController::class, 'export']);
+        Route::get('/audit-logs/event-types', [\App\Http\Controllers\AuditLogController::class, 'eventTypes']);
+
+        // Withdrawal Approval Workflow
+        Route::get('/withdrawals/approvals/pending', [\App\Http\Controllers\WithdrawalController::class, 'getPendingApprovals']);
+        Route::get('/withdrawals/approvals/history', [\App\Http\Controllers\WithdrawalController::class, 'getApprovalHistory']);
+        Route::get('/withdrawals/approvals/stats', [\App\Http\Controllers\WithdrawalController::class, 'getApprovalStats']);
+        Route::post('/withdrawals/approvals/{approvalId}/request-otp', [\App\Http\Controllers\WithdrawalController::class, 'requestApprovalOTP']);
+        Route::post('/withdrawals/approvals/{approvalId}/approve', [\App\Http\Controllers\WithdrawalController::class, 'approveWithdrawal']);
+        Route::post('/withdrawals/approvals/{approvalId}/reject', [\App\Http\Controllers\WithdrawalController::class, 'rejectWithdrawal']);
+        Route::get('/withdrawals/approvals/all', [\App\Http\Controllers\WithdrawalController::class, 'getAllPendingApprovals']);
+        Route::post('/withdrawals/approvals/{approvalId}/reassign', [\App\Http\Controllers\WithdrawalController::class, 'reassignApproval']);
+    });
 
 Route::get('/health', function () {
     try {

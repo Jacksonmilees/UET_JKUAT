@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Withdrawal;
+use App\Models\WithdrawalApproval;
 use Illuminate\Http\Request;
 use App\Services\AccountService;
 use App\Services\PaymentNotificationService;
+use App\Services\WithdrawalApprovalService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 
@@ -13,11 +15,16 @@ class WithdrawalController extends Controller
 {
     protected $accountService;
     protected $paymentNotificationService;
+    protected $approvalService;
 
-    public function __construct(AccountService $accountService, PaymentNotificationService $paymentNotificationService)
-    {
+    public function __construct(
+        AccountService $accountService,
+        PaymentNotificationService $paymentNotificationService,
+        WithdrawalApprovalService $approvalService
+    ) {
         $this->accountService = $accountService;
         $this->paymentNotificationService = $paymentNotificationService;
+        $this->approvalService = $approvalService;
     }
 
     public function initiateWithdrawal(Request $request)
@@ -478,5 +485,303 @@ class WithdrawalController extends Controller
         ];
 
         Http::post($apiUrl, $postData);
+    }
+
+    /**
+     * ========================================
+     * APPROVAL WORKFLOW ENDPOINTS
+     * ========================================
+     */
+
+    /**
+     * Get pending approvals for authenticated user
+     */
+    public function getPendingApprovals(Request $request)
+    {
+        try {
+            $user = $this->getUserFromBearer($request);
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized'
+                ], 401);
+            }
+
+            if (!$this->approvalService->canApprove($user)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'You do not have permission to approve withdrawals'
+                ], 403);
+            }
+
+            $approvals = $this->approvalService->getPendingApprovals($user);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $approvals
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch pending approvals',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get approval history for authenticated user
+     */
+    public function getApprovalHistory(Request $request)
+    {
+        try {
+            $user = $this->getUserFromBearer($request);
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized'
+                ], 401);
+            }
+
+            $limit = $request->input('limit', 50);
+            $history = $this->approvalService->getApprovalHistory($user, $limit);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $history
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch approval history',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get approval statistics for authenticated user
+     */
+    public function getApprovalStats(Request $request)
+    {
+        try {
+            $user = $this->getUserFromBearer($request);
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized'
+                ], 401);
+            }
+
+            $days = $request->input('days', 30);
+            $stats = $this->approvalService->getApprovalStatistics($user, $days);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $stats
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch approval statistics',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Request OTP for withdrawal approval
+     */
+    public function requestApprovalOTP(Request $request, $approvalId)
+    {
+        try {
+            $user = $this->getUserFromBearer($request);
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized'
+                ], 401);
+            }
+
+            $approval = WithdrawalApproval::findOrFail($approvalId);
+            $result = $this->approvalService->requestOTP($approval, $user);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $result
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * Approve withdrawal with OTP
+     */
+    public function approveWithdrawal(Request $request, $approvalId)
+    {
+        $validated = $request->validate([
+            'otp' => 'required|string|size:6',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        try {
+            $user = $this->getUserFromBearer($request);
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized'
+                ], 401);
+            }
+
+            $approval = WithdrawalApproval::findOrFail($approvalId);
+            $result = $this->approvalService->approveWithdrawal(
+                $approval,
+                $user,
+                $validated['otp'],
+                $validated['notes'] ?? null
+            );
+
+            return response()->json([
+                'status' => 'success',
+                'message' => $result['message'],
+                'data' => $result['withdrawal']
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * Reject withdrawal
+     */
+    public function rejectWithdrawal(Request $request, $approvalId)
+    {
+        $validated = $request->validate([
+            'reason' => 'required|string|max:500',
+            'otp' => 'nullable|string|size:6',
+        ]);
+
+        try {
+            $user = $this->getUserFromBearer($request);
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized'
+                ], 401);
+            }
+
+            $approval = WithdrawalApproval::findOrFail($approvalId);
+            $result = $this->approvalService->rejectWithdrawal(
+                $approval,
+                $user,
+                $validated['reason'],
+                $validated['otp'] ?? null
+            );
+
+            return response()->json([
+                'status' => 'success',
+                'message' => $result['message'],
+                'data' => $result['withdrawal']
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * Get all pending approvals (Admin view)
+     */
+    public function getAllPendingApprovals(Request $request)
+    {
+        try {
+            $user = $this->getUserFromBearer($request);
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized'
+                ], 401);
+            }
+
+            if (!$user->hasPermission('view-transactions') && !$user->isSuperAdmin()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'You do not have permission to view all approvals'
+                ], 403);
+            }
+
+            $approvals = $this->approvalService->getAllPendingApprovals();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $approvals
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch approvals',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Reassign approval to different user (Super Admin only)
+     */
+    public function reassignApproval(Request $request, $approvalId)
+    {
+        $validated = $request->validate([
+            'new_approver_id' => 'required|exists:users,id',
+        ]);
+
+        try {
+            $user = $this->getUserFromBearer($request);
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized'
+                ], 401);
+            }
+
+            if (!$user->isSuperAdmin()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Only super admins can reassign approvals'
+                ], 403);
+            }
+
+            $approval = WithdrawalApproval::findOrFail($approvalId);
+            $newApprover = \App\Models\User::findOrFail($validated['new_approver_id']);
+
+            $updatedApproval = $this->approvalService->reassignApproval($approval, $newApprover, $user);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Approval reassigned successfully',
+                'data' => $updatedApproval
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * Helper method to get user from bearer token
+     */
+    protected function getUserFromBearer(Request $request)
+    {
+        return $request->user();
     }
 }
