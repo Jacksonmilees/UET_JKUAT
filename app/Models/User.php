@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -10,7 +11,7 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -60,6 +61,24 @@ class User extends Authenticatable
     }
 
     /**
+     * Relationships
+     */
+    public function campaigns()
+    {
+        return $this->hasMany(Campaign::class);
+    }
+
+    public function accounts()
+    {
+        return $this->hasMany(Account::class);
+    }
+
+    public function projects()
+    {
+        return $this->hasMany(Project::class);
+    }
+
+    /**
      * Get user's full profile data
      *
      * @return array
@@ -79,6 +98,8 @@ class User extends Authenticatable
             'ministry_interest' => $this->ministry_interest,
             'residence' => $this->residence,
             'role' => $this->role ?? 'user',
+            'roles' => $this->roles->pluck('name')->toArray(),
+            'permissions' => $this->getAllPermissions(),
             'status' => $this->status ?? 'active',
             'avatar' => $this->avatar,
             'registration_completed_at' => $this->registration_completed_at?->toISOString(),
@@ -88,12 +109,18 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user is admin
+     * Check if user is admin (maintains backward compatibility)
+     * Now checks both old role field and new RBAC system
      *
      * @return bool
      */
     public function isAdmin(): bool
     {
+        // Check new RBAC system first
+        if ($this->hasAnyRole(['super-admin', 'admin', 'treasurer', 'project-manager'])) {
+            return true;
+        }
+        // Fall back to old system for backward compatibility
         return in_array($this->role, ['admin', 'super_admin']) || $this->email === 'admin@uetjkuat.com';
     }
 
