@@ -6,7 +6,7 @@ import { useFinance } from '../contexts/FinanceContext';
 import { useNotification } from '../contexts/NotificationContext';
 import UserManagement from '../components/admin/UserManagement';
 import ProjectManagement from '../components/admin/ProjectManagement';
-import NewsManagement from '../components/admin/NewsManagement';
+import { NewsManagement } from '../components/admin/NewsManagement';
 import FinanceDashboard from '../components/admin/FinanceDashboard';
 import MembersManagement from '../components/admin/MembersManagement';
 import WithdrawalManagement from '../components/admin/WithdrawalManagement';
