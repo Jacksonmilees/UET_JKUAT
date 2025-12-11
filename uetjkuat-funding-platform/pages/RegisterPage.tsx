@@ -808,8 +808,9 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
 
           {/* Form */}
           <div className="px-6 pb-6">
+
             {/* Step 1: Personal Info */}
-            {currentStep === 1 && (
+            {currentStep === 1 && !showOtpVerification && !showPaymentStep && (
               <div className="space-y-4 animate-in fade-in duration-300">
                 {renderInput('name', 'Full Name', <User className="w-5 h-5" />, 'text', 'John Doe')}
                 {renderInput('email', 'Email Address', <Mail className="w-5 h-5" />, 'email', 'john@example.com')}
@@ -828,7 +829,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
             )}
 
             {/* Step 2: Academic Info */}
-            {currentStep === 2 && (
+            {currentStep === 2 && !showOtpVerification && !showPaymentStep && (
               <div className="space-y-4 animate-in fade-in duration-300">
                 {renderSelect('year_of_study', 'Year of Study', <GraduationCap className="w-5 h-5" />, yearOptions, 'Select your year')}
                 {renderInput('course', 'Course / Program', <BookOpen className="w-5 h-5" />, 'text', 'BSc. Computer Science')}
@@ -860,6 +861,48 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
                     )}
                   </button>
                 </div>
+              </div>
+            )}
+
+            {/* OTP Verification Step */}
+            {showOtpVerification && !showPaymentStep && (
+              <div className="space-y-4 animate-in fade-in duration-300">
+                <h2 className="text-lg font-semibold text-center">Enter the 6-digit OTP sent to your WhatsApp</h2>
+                <div className="flex gap-2 justify-center">
+                  {otp.map((digit, idx) => (
+                    <input
+                      key={idx}
+                      id={`otp-${idx}`}
+                      type="text"
+                      maxLength={1}
+                      value={digit}
+                      onChange={e => handleOtpChange(idx, e.target.value)}
+                      onKeyDown={e => handleOtpKeyDown(idx, e)}
+                      className="w-10 h-10 text-center border rounded text-lg"
+                    />
+                  ))}
+                </div>
+                <button
+                  onClick={handleVerifyOtp}
+                  disabled={otpLoading}
+                  className="w-full py-3.5 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                >
+                  {otpLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    'Verify OTP'
+                  )}
+                </button>
+                <button
+                  onClick={handleResendOtp}
+                  disabled={resendTimer > 0}
+                  className="w-full py-2 mt-2 border border-primary text-primary rounded-xl font-semibold hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend OTP'}
+                </button>
               </div>
             )}
 
