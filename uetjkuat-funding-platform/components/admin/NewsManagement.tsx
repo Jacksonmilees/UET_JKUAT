@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { useNews } from '../../contexts/NewsContext';
+import { useNews as useNewsQuery, useCreateNews } from '../../hooks/useApi';
 import { useAuth } from '../../contexts/AuthContext';
 import { NotificationContext } from '../../contexts/NotificationContext';
 import { useAI } from '../../contexts/AIContext';
-import { Edit2, Sparkles, Trash2, Newspaper, Image as ImageIcon, User, Tag, Upload, Loader2 } from 'lucide-react';
+import { Edit2, Sparkles, Trash2, Newspaper, Image as ImageIcon, User, Tag, Upload, Loader2, AlertCircle } from 'lucide-react';
 import { Type } from '@google/genai';
 import { NewsArticle } from '../../types';
 
@@ -13,7 +13,8 @@ interface NewsManagementProps {
 }
 
 const NewsManagement: React.FC<NewsManagementProps> = ({ onArticleEdit, onArticleDelete }) => {
-    const { articles, addArticle } = useNews();
+    const { data: articles = [], isLoading, error } = useNewsQuery();
+    const createNewsMutation = useCreateNews();
     const { user } = useAuth();
     const { addNotification } = React.useContext(NotificationContext);
     const { isGenerating, generateContent } = useAI();
@@ -60,21 +61,26 @@ const NewsManagement: React.FC<NewsManagementProps> = ({ onArticleEdit, onArticl
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.title || !formData.excerpt) {
             addNotification("Please fill all required fields.");
             return;
         }
-        addArticle(formData);
-        addNotification(`Article "${formData.title}" published successfully!`);
-        setFormData({
-            title: '',
-            excerpt: '',
-            imageUrl: 'https://picsum.photos/seed/new_article/600/400',
-            author: user?.name || 'Admin',
-            category: 'Announcements',
-        });
+
+        try {
+            await createNewsMutation.mutateAsync(formData);
+            addNotification(`Article "${formData.title}" published successfully!`);
+            setFormData({
+                title: '',
+                excerpt: '',
+                imageUrl: 'https://picsum.photos/seed/new_article/600/400',
+                author: user?.name || 'Admin',
+                category: 'Announcements',
+            });
+        } catch (error: any) {
+            addNotification(`Failed to create article: ${error.message}`);
+        }
     };
 
     const handleGenerateNewsContent = async () => {
@@ -239,34 +245,64 @@ const NewsManagement: React.FC<NewsManagementProps> = ({ onArticleEdit, onArticl
 
             <div className="mt-8">
                 <h3 className="text-lg font-bold text-foreground mb-4">Published Articles ({articles.length})</h3>
-                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                    {articles.map(article => (
-                        <div key={article.id} className="bg-card p-4 rounded-xl shadow-sm border border-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:shadow-md transition-shadow">
-                            <div className="flex items-center gap-4 flex-grow">
-                                <img src={article.imageUrl} alt={article.title} className="w-20 h-16 object-cover rounded-lg bg-secondary" />
-                                <div>
-                                    <p className="font-bold text-foreground line-clamp-1">{article.title}</p>
-                                    <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
-                                        <span className="font-medium text-primary">{article.author}</span>
-                                        <span>•</span>
-                                        <span>{article.date}</span>
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                                <span className="text-xs font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-full whitespace-nowrap">{article.category}</span>
-                                <div className="flex items-center gap-1 ml-2 border-l border-border pl-3">
-                                    <button onClick={() => onArticleEdit(article)} className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Edit">
-                                        <Edit2 className="w-4 h-4" />
-                                    </button>
-                                    <button onClick={() => onArticleDelete(article)} className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors" title="Delete">
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
+
+                {/* Loading State */}
+                {isLoading && (
+                    <div className="flex items-center justify-center py-12">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                        <span className="ml-3 text-muted-foreground">Loading articles...</span>
+                    </div>
+                )}
+
+                {/* Error State */}
+                {error && (
+                    <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 flex items-center gap-3">
+                        <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0" />
+                        <div>
+                            <p className="font-medium text-destructive">Failed to load articles</p>
+                            <p className="text-sm text-destructive/80">{error.message}</p>
                         </div>
-                    ))}
-                </div>
+                    </div>
+                )}
+
+                {/* Articles List */}
+                {!isLoading && !error && (
+                    <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                        {articles.length === 0 ? (
+                            <div className="text-center py-12 text-muted-foreground">
+                                <Newspaper className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                                <p>No articles published yet</p>
+                            </div>
+                        ) : (
+                            articles.map(article => (
+                                <div key={article.id} className="bg-card p-4 rounded-xl shadow-sm border border-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:shadow-md transition-shadow">
+                                    <div className="flex items-center gap-4 flex-grow">
+                                        <img src={article.imageUrl} alt={article.title} className="w-20 h-16 object-cover rounded-lg bg-secondary" />
+                                        <div>
+                                            <p className="font-bold text-foreground line-clamp-1">{article.title}</p>
+                                            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
+                                                <span className="font-medium text-primary">{article.author}</span>
+                                                <span>•</span>
+                                                <span>{article.date}</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                                        <span className="text-xs font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-full whitespace-nowrap">{article.category}</span>
+                                        <div className="flex items-center gap-1 ml-2 border-l border-border pl-3">
+                                            <button onClick={() => onArticleEdit(article)} className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Edit">
+                                                <Edit2 className="w-4 h-4" />
+                                            </button>
+                                            <button onClick={() => onArticleDelete(article)} className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors" title="Delete">
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );
