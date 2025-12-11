@@ -34,6 +34,8 @@ class User extends Authenticatable
         'status',
         'avatar',
         'registration_completed_at',
+        'balance',
+        'unsettled_balance',
     ];
 
     /**
@@ -57,6 +59,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'registration_completed_at' => 'datetime',
+            'balance' => 'decimal:2',
+            'unsettled_balance' => 'decimal:2',
         ];
     }
 
@@ -76,6 +80,111 @@ class User extends Authenticatable
     public function projects()
     {
         return $this->hasMany(Project::class);
+    }
+
+    public function rechargeTokens()
+    {
+        return $this->hasMany(AccountRechargeToken::class);
+    }
+
+    public function walletTransactions()
+    {
+        return $this->hasMany(WalletTransaction::class);
+    }
+
+    /**
+     * Wallet Methods
+     */
+
+    /**
+     * Add funds to user wallet
+     */
+    public function addToWallet(float $amount, string $source = 'recharge', ?array $metadata = null): void
+    {
+        $this->increment('balance', $amount);
+
+        // Log wallet transaction
+        WalletTransaction::create([
+            'user_id' => $this->id,
+            'type' => 'credit',
+            'amount' => $amount,
+            'source' => $source,
+            'balance_after' => $this->fresh()->balance,
+            'metadata' => $metadata,
+        ]);
+    }
+
+    /**
+     * Deduct funds from user wallet
+     */
+    public function deductFromWallet(float $amount, string $purpose = 'payment', ?array $metadata = null): bool
+    {
+        if ($this->balance < $amount) {
+            return false;
+        }
+
+        $this->decrement('balance', $amount);
+
+        // Log wallet transaction
+        WalletTransaction::create([
+            'user_id' => $this->id,
+            'type' => 'debit',
+            'amount' => $amount,
+            'purpose' => $purpose,
+            'balance_after' => $this->fresh()->balance,
+            'metadata' => $metadata,
+        ]);
+
+        return true;
+    }
+
+    /**
+     * Add unsettled funds (money in paybill but not allocated)
+     */
+    public function addUnsettledFunds(float $amount): void
+    {
+        $this->increment('unsettled_balance', $amount);
+    }
+
+    /**
+     * Settle funds (move from unsettled to wallet)
+     */
+    public function settleFunds(float $amount): bool
+    {
+        if ($this->unsettled_balance < $amount) {
+            return false;
+        }
+
+        $this->decrement('unsettled_balance', $amount);
+        $this->increment('balance', $amount);
+
+        // Log the settlement
+        WalletTransaction::create([
+            'user_id' => $this->id,
+            'type' => 'credit',
+            'amount' => $amount,
+            'source' => 'settlement',
+            'balance_after' => $this->fresh()->balance,
+            'metadata' => ['settled_from_unsettled' => true],
+        ]);
+
+        return true;
+    }
+
+    /**
+     * Check if user has sufficient wallet balance
+     */
+    public function hasSufficientBalance(float $amount): bool
+    {
+        return $this->balance >= $amount;
+    }
+
+    /**
+     * Get total available funds (wallet + unsettled)
+     */
+    public function getTotalAvailableFunds(): float
+    {
+        return $this->balance + $this->unsettled_balance;
     }
 
     /**
@@ -102,6 +211,9 @@ class User extends Authenticatable
             'permissions' => $this->getAllPermissions(),
             'status' => $this->status ?? 'active',
             'avatar' => $this->avatar,
+            'balance' => $this->balance ?? 0,
+            'unsettled_balance' => $this->unsettled_balance ?? 0,
+            'total_available_funds' => $this->getTotalAvailableFunds(),
             'registration_completed_at' => $this->registration_completed_at?->toISOString(),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
