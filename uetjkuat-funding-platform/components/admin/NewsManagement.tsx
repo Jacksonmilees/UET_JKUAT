@@ -13,7 +13,8 @@ interface NewsManagementProps {
   className?: string;
 }
 
-export function NewsManagement({ className = '' }: NewsManagementProps) {
+function NewsManagement({ className = '' }: NewsManagementProps) {
+  export default NewsManagement;
   const [activeTab, setActiveTab] = useState<'news' | 'announcements'>('news');
 
   // News state
