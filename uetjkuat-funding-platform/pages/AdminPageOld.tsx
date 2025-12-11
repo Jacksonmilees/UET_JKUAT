@@ -5,7 +5,7 @@ import { useNews } from '../contexts/NewsContext';
 import { useFinance } from '../contexts/FinanceContext';
 import UserManagement from '../components/admin/UserManagement';
 import ProjectManagement from '../components/admin/ProjectManagement';
-import { NewsManagement } from '../components/admin/NewsManagement';
+import NewsManagement from '../components/admin/NewsManagement';
 import FinanceDashboard from '../components/admin/FinanceDashboard';
 import MembersManagement from '../components/admin/MembersManagement';
 import EditProjectModal from '../components/admin/EditProjectModal';
