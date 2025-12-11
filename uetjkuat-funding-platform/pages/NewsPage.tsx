@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNews } from '../contexts/NewsContext';
+import SEO from '../components/SEO';
 import { Calendar, User, ArrowRight, Clock, Tag, RefreshCw, Newspaper, TrendingUp, Filter, Search } from 'lucide-react';
 
 // Skeleton components
@@ -93,8 +94,14 @@ const NewsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 md:py-12">
+    <>
+      <SEO
+        title="News & Updates"
+        description="Stay informed with the latest happenings from the UET JKUAT community. Read our latest news, announcements, and updates."
+        keywords="UET JKUAT news, campus updates, ministry news, Christian fellowship updates"
+      />
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8 md:py-12">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
           <div>
@@ -362,8 +369,9 @@ const NewsPage: React.FC = () => {
             </button>
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
