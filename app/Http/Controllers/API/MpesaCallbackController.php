@@ -11,6 +11,7 @@ use App\Models\Transaction;
 use App\Models\Account;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Models\RechargeContribution;
 use App\Exceptions\PaymentProcessingException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -124,8 +125,38 @@ class MpesaCallbackController extends Controller
 
         // Find the pending ticket using the CheckoutRequestID
         $checkoutRequestId = $stkCallback['CheckoutRequestID'];
-        
-        // First, try to find a pending transaction we created (e.g., mandatory contribution)
+
+        // Check for recharge contribution first
+        $rechargeContribution = RechargeContribution::where('checkout_request_id', $checkoutRequestId)
+            ->where('status', RechargeContribution::STATUS_PENDING)
+            ->first();
+
+        if ($rechargeContribution) {
+            try {
+                $rechargeContribution->markCompleted($mpesaReceiptNumber);
+
+                Log::info('Recharge contribution completed', [
+                    'contribution_id' => $rechargeContribution->id,
+                    'amount' => $amount,
+                    'donor_name' => $rechargeContribution->donor_name,
+                    'user_id' => $rechargeContribution->token->user_id,
+                ]);
+
+                return $this->successResponse('Recharge payment processed', [
+                    'contribution_id' => $rechargeContribution->id,
+                    'amount' => $amount,
+                    'reference' => $mpesaReceiptNumber,
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to complete recharge contribution', [
+                    'error' => $e->getMessage(),
+                    'contribution_id' => $rechargeContribution->id,
+                    'checkout_request_id' => $checkoutRequestId,
+                ]);
+            }
+        }
+
+        // Try to find a pending transaction we created (e.g., mandatory contribution)
         $pendingTxn = Transaction::where('metadata->checkout_request_id', $checkoutRequestId)->first();
 
         if ($pendingTxn) {
