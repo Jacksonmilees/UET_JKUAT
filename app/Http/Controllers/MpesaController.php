@@ -299,15 +299,43 @@ class MpesaController extends Controller
     public function queryTransactionStatus($checkoutRequestID)
     {
         try {
+            // 1. Check local Payment model for completed status
+            $payment = Payment::where('checkout_request_id', $checkoutRequestID)
+                ->where('status', 'completed')
+                ->first();
+            if ($payment) {
+                return response()->json([
+                    'checkoutRequestId' => $checkoutRequestID,
+                    'status' => 'completed',
+                    'amount' => $payment->amount,
+                    'phoneNumber' => $payment->phone_number,
+                    'mpesaReceiptNumber' => $payment->transaction_id,
+                    'errorMessage' => null,
+                ]);
+            }
+
+            // 2. Check local Ticket model for completed payment_status
+            $ticket = \App\Models\Ticket::where('checkout_request_id', $checkoutRequestID)
+                ->where('payment_status', 'completed')
+                ->first();
+            if ($ticket) {
+                return response()->json([
+                    'checkoutRequestId' => $checkoutRequestID,
+                    'status' => 'completed',
+                    'amount' => $ticket->amount,
+                    'phoneNumber' => $ticket->phone_number,
+                    'mpesaReceiptNumber' => null,
+                    'errorMessage' => null,
+                ]);
+            }
+
+            // 3. Fallback to Safaricom STK query
             $accessToken = $this->getAccessToken();
-            
             $url = $this->env === 'sandbox'
                 ? 'https://sandbox.safaricom.co.ke/mpesa/stkpushquery/v1/query'
                 : 'https://api.safaricom.co.ke/mpesa/stkpushquery/v1/query';
-
             $timestamp = Carbon::now()->format('YmdHis');
             $password = base64_encode($this->shortcode . $this->passkey . $timestamp);
-
             $response = Http::withToken($accessToken)
                 ->post($url, [
                     'BusinessShortCode' => $this->shortcode,
@@ -315,7 +343,6 @@ class MpesaController extends Controller
                     'Timestamp' => $timestamp,
                     'CheckoutRequestID' => $checkoutRequestID
                 ]);
-
             if (!$response->successful()) {
                 Log::error('STK status query failed', [
                     'status' => $response->status(),
@@ -327,31 +354,23 @@ class MpesaController extends Controller
                     'errorMessage' => 'Failed to query status',
                 ], 200);
             }
-
             $data = $response->json();
-            // Map Safaricom response to frontend expected shape
-            // Default assumptions: pending unless explicit success/failure codes
             $resultCode = $data['ResultCode'] ?? null;
             $resultDesc = $data['ResultDesc'] ?? null;
-
             $status = 'pending';
             if ($resultCode === 0 || $resultCode === '0') {
                 $status = 'completed';
             } elseif (in_array((string)$resultCode, ['1032', '1', '2001', '1037', '1036'], true)) {
-                // 1032: Request cancelled by user; other non-zero codes considered failure
                 $status = ($resultCode == '1032') ? 'cancelled' : 'failed';
             }
-
             return response()->json([
                 'checkoutRequestId' => $data['CheckoutRequestID'] ?? $checkoutRequestID,
                 'status' => $status,
-                // Amount and phone not supplied by STK query - will be populated after callback
                 'amount' => null,
                 'phoneNumber' => null,
                 'mpesaReceiptNumber' => null,
                 'errorMessage' => $status === 'failed' || $status === 'cancelled' ? ($resultDesc ?? 'Payment not completed') : null,
             ]);
-
         } catch (\Exception $e) {
             Log::error('Transaction status query error: ' . $e->getMessage());
             return response()->json([
