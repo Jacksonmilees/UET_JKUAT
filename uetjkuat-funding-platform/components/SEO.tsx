@@ -10,9 +10,9 @@ interface SEOProps {
   author?: string;
 }
 
-export function SEO({
+export default function SEO({
   title,
-  description = 'United Evangelical Team JKUAT - Join us in faith, fellowship, and service. Support our projects and make a difference in our community.',
+  description = 'Uttermost Evangelistic Team JKUAT - Join us in faith, fellowship, and service. Support our projects and make a difference in our community.',
   keywords = 'UET JKUAT, Christian fellowship, JKUAT ministry, student organization, fundraising, community service',
   image,
   url,
