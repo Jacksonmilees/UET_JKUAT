@@ -325,22 +325,21 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
       showError('Phone number is required');
       return;
     }
-    
+
     setPaymentLoading(true);
     setPaymentStatus('pending');
-    
+
     try {
       const response = await mpesaApi.initiateSTKPush({
         phone_number: paymentPhone,
         amount: REGISTRATION_FEE,
-        account_reference: `REG-${registeredUser?.member_id || 'NEW'}`,
-        transaction_desc: 'UET JKUAT Registration Fee',
+        account_number: registeredUser?.member_id || 'NEW',
       });
-      
+
       if (response.success && response.data?.CheckoutRequestID) {
         setCheckoutRequestId(response.data.CheckoutRequestID);
         showSuccess('Check your phone for M-Pesa prompt. Enter PIN to complete.');
-        
+
         // Start polling for payment status
         pollPaymentStatus(response.data.CheckoutRequestID);
       } else {
