@@ -1,311 +1,1100 @@
-import React, { useState } from 'react';
-import { useNews as useNewsQuery, useCreateNews } from '../../hooks/useApi';
-import { useAuth } from '../../contexts/AuthContext';
-import { NotificationContext } from '../../contexts/NotificationContext';
-import { useAI } from '../../contexts/AIContext';
-import { Edit2, Sparkles, Trash2, Newspaper, Image as ImageIcon, User, Tag, Upload, Loader2, AlertCircle } from 'lucide-react';
-import { Type } from '@google/genai';
-import { NewsArticle } from '../../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { DataTable } from './shared/DataTable';
+import { StatCard } from './shared/StatCard';
+import { FilterBar } from './shared/FilterBar';
+import { NewsArticle, Announcement, ApiResponse } from '../../types/backend';
+import {
+  Plus, X, Eye, Edit2, Trash2, FileText, Bell, Calendar,
+  Tag, User, Globe, Check, Clock, Archive, AlertCircle
+} from 'lucide-react';
+import api from '../../services/api';
 
 interface NewsManagementProps {
-    onArticleEdit: (article: NewsArticle) => void;
-    onArticleDelete: (article: NewsArticle) => void;
+  className?: string;
 }
 
-const NewsManagement: React.FC<NewsManagementProps> = ({ onArticleEdit, onArticleDelete }) => {
-    const { data: articles = [], isLoading, error } = useNewsQuery();
-    const createNewsMutation = useCreateNews();
-    const { user } = useAuth();
-    const { addNotification } = React.useContext(NotificationContext);
-    const { isGenerating, generateContent } = useAI();
-    const [aiTopic, setAITopic] = useState('');
-    const [isUploading, setIsUploading] = useState(false);
+export function NewsManagement({ className = '' }: NewsManagementProps) {
+  const [activeTab, setActiveTab] = useState<'news' | 'announcements'>('news');
 
-    const [formData, setFormData] = useState({
-        title: '',
-        excerpt: '',
-        imageUrl: 'https://picsum.photos/seed/new_article/600/400',
-        author: user?.name || 'Admin',
-        category: 'Announcements',
+  // News state
+  const [news, setNews] = useState<NewsArticle[]>([]);
+  const [newsLoading, setNewsLoading] = useState(true);
+  const [newsSearchQuery, setNewsSearchQuery] = useState('');
+  const [newsStatusFilter, setNewsStatusFilter] = useState<'all' | 'draft' | 'published' | 'archived'>('all');
+  const [selectedNews, setSelectedNews] = useState<NewsArticle | null>(null);
+  const [showNewsModal, setShowNewsModal] = useState(false);
+  const [isCreatingNews, setIsCreatingNews] = useState(false);
+  const [newsFormData, setNewsFormData] = useState({
+    title: '',
+    slug: '',
+    excerpt: '',
+    content: '',
+    featured_image: '',
+    status: 'draft' as 'draft' | 'published' | 'archived',
+    category_id: '',
+    tags: [] as string[],
+  });
+
+  // Announcements state
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(true);
+  const [announcementSearchQuery, setAnnouncementSearchQuery] = useState('');
+  const [announcementTypeFilter, setAnnouncementTypeFilter] = useState<'all' | 'info' | 'warning' | 'success' | 'error'>('all');
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+  const [isCreatingAnnouncement, setIsCreatingAnnouncement] = useState(false);
+  const [announcementFormData, setAnnouncementFormData] = useState({
+    title: '',
+    content: '',
+    type: 'info' as 'info' | 'warning' | 'success' | 'error',
+    priority: 'medium' as 'low' | 'medium' | 'high',
+    is_active: true,
+    start_date: '',
+    end_date: '',
+    target_audience: '',
+  });
+
+  useEffect(() => {
+    fetchNews();
+    fetchAnnouncements();
+  }, []);
+
+  // ==================== NEWS FUNCTIONS ====================
+  const fetchNews = async () => {
+    try {
+      setNewsLoading(true);
+      const response: ApiResponse<NewsArticle[]> = await api.news.getAll();
+      if (response.success && response.data) {
+        setNews(Array.isArray(response.data) ? response.data : []);
+      }
+    } catch (error) {
+      console.error('Error fetching news:', error);
+    } finally {
+      setNewsLoading(false);
+    }
+  };
+
+  const handleCreateNews = async () => {
+    try {
+      const response: ApiResponse<NewsArticle> = await api.news.create({
+        ...newsFormData,
+        category_id: newsFormData.category_id ? parseInt(newsFormData.category_id) : undefined,
+      });
+
+      if (response.success) {
+        await fetchNews();
+        setShowNewsModal(false);
+        resetNewsForm();
+      }
+    } catch (error) {
+      console.error('Error creating news:', error);
+    }
+  };
+
+  const handleUpdateNews = async () => {
+    if (!selectedNews) return;
+
+    try {
+      const response: ApiResponse<NewsArticle> = await api.news.update(selectedNews.id, {
+        ...newsFormData,
+        category_id: newsFormData.category_id ? parseInt(newsFormData.category_id) : undefined,
+      });
+
+      if (response.success) {
+        await fetchNews();
+        setShowNewsModal(false);
+        resetNewsForm();
+      }
+    } catch (error) {
+      console.error('Error updating news:', error);
+    }
+  };
+
+  const handleDeleteNews = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this article?')) return;
+
+    try {
+      const response: ApiResponse = await api.news.delete(id);
+      if (response.success) {
+        await fetchNews();
+      }
+    } catch (error) {
+      console.error('Error deleting news:', error);
+    }
+  };
+
+  const handlePublishNews = async (article: NewsArticle) => {
+    try {
+      const response: ApiResponse<NewsArticle> = await api.news.update(article.id, {
+        status: 'published',
+        published_at: new Date().toISOString(),
+      });
+
+      if (response.success) {
+        await fetchNews();
+      }
+    } catch (error) {
+      console.error('Error publishing news:', error);
+    }
+  };
+
+  const resetNewsForm = () => {
+    setNewsFormData({
+      title: '',
+      slug: '',
+      excerpt: '',
+      content: '',
+      featured_image: '',
+      status: 'draft',
+      category_id: '',
+      tags: [],
     });
+    setSelectedNews(null);
+    setIsCreatingNews(false);
+  };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
+  const openNewsCreateModal = () => {
+    resetNewsForm();
+    setIsCreatingNews(true);
+    setShowNewsModal(true);
+  };
 
-    // Convert file to base64
-    const fileToBase64 = (file: File): Promise<string> => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = (error) => reject(error);
-        });
-    };
+  const openNewsEditModal = (article: NewsArticle) => {
+    setSelectedNews(article);
+    setNewsFormData({
+      title: article.title,
+      slug: article.slug,
+      excerpt: article.excerpt || '',
+      content: article.content,
+      featured_image: article.featured_image || '',
+      status: article.status,
+      category_id: article.category_id?.toString() || '',
+      tags: article.tags || [],
+    });
+    setIsCreatingNews(false);
+    setShowNewsModal(true);
+  };
 
-    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+  const openNewsViewModal = (article: NewsArticle) => {
+    setSelectedNews(article);
+    setIsCreatingNews(false);
+    setShowNewsModal(true);
+  };
 
-        setIsUploading(true);
-        try {
-            const base64 = await fileToBase64(file);
-            setFormData(prev => ({ ...prev, imageUrl: base64 }));
-            addNotification('Image uploaded successfully!');
-        } catch (error) {
-            console.error('Upload error:', error);
-            addNotification('Failed to upload image');
-        } finally {
-            setIsUploading(false);
-        }
-    };
+  // Auto-generate slug from title
+  const generateSlug = (title: string) => {
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!formData.title || !formData.excerpt) {
-            addNotification("Please fill all required fields.");
-            return;
-        }
+  // ==================== ANNOUNCEMENTS FUNCTIONS ====================
+  const fetchAnnouncements = async () => {
+    try {
+      setAnnouncementsLoading(true);
+      const response: ApiResponse<Announcement[]> = await api.announcements.getAll();
+      if (response.success && response.data) {
+        setAnnouncements(Array.isArray(response.data) ? response.data : []);
+      }
+    } catch (error) {
+      console.error('Error fetching announcements:', error);
+    } finally {
+      setAnnouncementsLoading(false);
+    }
+  };
 
-        try {
-            await createNewsMutation.mutateAsync(formData);
-            addNotification(`Article "${formData.title}" published successfully!`);
-            setFormData({
-                title: '',
-                excerpt: '',
-                imageUrl: 'https://picsum.photos/seed/new_article/600/400',
-                author: user?.name || 'Admin',
-                category: 'Announcements',
-            });
-        } catch (error: any) {
-            addNotification(`Failed to create article: ${error.message}`);
-        }
-    };
+  const handleCreateAnnouncement = async () => {
+    try {
+      const response: ApiResponse<Announcement> = await api.announcements.create(announcementFormData);
 
-    const handleGenerateNewsContent = async () => {
-        if (!aiTopic) {
-            addNotification("Please enter a topic for AI generation.");
-            return;
-        }
-        const prompt = `Generate a news article for a university christian union. The topic is "${aiTopic}". The article should be engaging and informative. Provide a catchy title and a short excerpt (around 30-40 words).`;
+      if (response.success) {
+        await fetchAnnouncements();
+        setShowAnnouncementModal(false);
+        resetAnnouncementForm();
+      }
+    } catch (error) {
+      console.error('Error creating announcement:', error);
+    }
+  };
 
-        const newsSchema = {
-            type: Type.OBJECT,
-            properties: {
-                title: { type: Type.STRING, description: "The catchy title of the news article." },
-                excerpt: { type: Type.STRING, description: "A short summary or excerpt of the article." }
-            },
-            required: ["title", "excerpt"]
-        };
+  const handleUpdateAnnouncement = async () => {
+    if (!selectedAnnouncement) return;
 
-        const result = await generateContent(prompt, newsSchema);
+    try {
+      const response: ApiResponse<Announcement> = await api.announcements.update(
+        selectedAnnouncement.id,
+        announcementFormData
+      );
 
-        if (result) {
-            try {
-                const parsedResult = JSON.parse(result);
-                setFormData(prev => ({
-                    ...prev,
-                    title: parsedResult.title || prev.title,
-                    excerpt: parsedResult.excerpt || prev.excerpt,
-                }));
-                addNotification("AI content generated successfully!");
-            } catch (e) {
-                console.error("Failed to parse AI response:", e);
-                addNotification("AI generated content in an unexpected format.");
-            }
-        }
-    };
+      if (response.success) {
+        await fetchAnnouncements();
+        setShowAnnouncementModal(false);
+        resetAnnouncementForm();
+      }
+    } catch (error) {
+      console.error('Error updating announcement:', error);
+    }
+  };
 
+  const handleToggleAnnouncementActive = async (id: number) => {
+    try {
+      const response: ApiResponse<Announcement> = await api.announcements.toggleActive(id);
+      if (response.success) {
+        await fetchAnnouncements();
+      }
+    } catch (error) {
+      console.error('Error toggling announcement:', error);
+    }
+  };
 
-    return (
-        <div className="space-y-8">
-            <div className="flex items-center gap-2">
-                <Newspaper className="w-6 h-6 text-primary" />
-                <h2 className="text-2xl font-bold text-foreground">News Management</h2>
-            </div>
+  const handleDeleteAnnouncement = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this announcement?')) return;
 
-            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border border-indigo-100 dark:border-indigo-800 p-6 rounded-xl shadow-sm">
-                <h3 className="text-lg font-bold text-indigo-800 dark:text-indigo-300 mb-2 flex items-center">
-                    <Sparkles className="w-5 h-5 mr-2 text-indigo-600 dark:text-indigo-400" />
-                    Generate with AI
-                </h3>
-                <p className="text-sm text-indigo-700 dark:text-indigo-300 mb-4">
-                    Stuck on writing an update? Provide a topic and let AI draft it for you.
-                </p>
-                <div className="flex gap-3">
-                    <input
-                        type="text"
-                        value={aiTopic}
-                        onChange={(e) => setAITopic(e.target.value)}
-                        placeholder="e.g., Results of recent bake sale"
-                        className="flex-grow block w-full rounded-lg border-indigo-200 dark:border-indigo-800 bg-white dark:bg-background shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-4 py-2"
-                    />
-                    <button
-                        type="button"
-                        onClick={handleGenerateNewsContent}
-                        disabled={isGenerating}
-                        className="inline-flex items-center justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 transition-all"
-                    >
-                        <Sparkles className="w-4 h-4 mr-2" />
-                        {isGenerating ? 'Generating...' : 'Generate'}
-                    </button>
-                </div>
-            </div>
+    try {
+      const response: ApiResponse = await api.announcements.delete(id);
+      if (response.success) {
+        await fetchAnnouncements();
+      }
+    } catch (error) {
+      console.error('Error deleting announcement:', error);
+    }
+  };
 
-            <div className="bg-card p-6 rounded-xl border border-border shadow-sm">
-                <h3 className="text-lg font-bold text-foreground mb-6">Publish New Article</h3>
-                <form onSubmit={handleSubmit} className="space-y-5">
-                    <div>
-                        <label className="block text-sm font-medium text-foreground mb-1.5">Title</label>
-                        <input
-                            type="text"
-                            name="title"
-                            value={formData.title}
-                            onChange={handleChange}
-                            className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm"
-                            placeholder="Enter article title"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-foreground mb-1.5">Excerpt / Short Summary</label>
-                        <textarea
-                            name="excerpt"
-                            value={formData.excerpt}
-                            onChange={handleChange}
-                            rows={3}
-                            className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm"
-                            placeholder="Brief summary of the article..."
-                        ></textarea>
-                    </div>
-                    <div>
-                        <label className="text-sm font-medium text-foreground mb-1.5 flex items-center gap-2">
-                            <ImageIcon className="w-4 h-4 text-muted-foreground" />
-                            Image
-                        </label>
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                name="imageUrl"
-                                value={formData.imageUrl.startsWith('data:') ? 'Image uploaded' : formData.imageUrl}
-                                onChange={handleChange}
-                                disabled={formData.imageUrl.startsWith('data:')}
-                                className="flex-1 block w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm disabled:bg-secondary"
-                                placeholder="Image URL or upload"
-                            />
-                            <label className="inline-flex items-center justify-center py-2 px-4 border border-border shadow-sm text-sm font-medium rounded-lg text-foreground bg-secondary hover:bg-secondary/80 cursor-pointer transition-all">
-                                {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleImageUpload}
-                                    className="hidden"
-                                />
-                            </label>
-                        </div>
-                        {formData.imageUrl && (
-                            <img src={formData.imageUrl} alt="Preview" className="mt-2 w-32 h-20 object-cover rounded-lg" />
-                        )}
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="text-sm font-medium text-foreground mb-1.5 flex items-center gap-2">
-                                <User className="w-4 h-4 text-muted-foreground" />
-                                Author
-                            </label>
-                            <input
-                                type="text"
-                                name="author"
-                                value={formData.author}
-                                onChange={handleChange}
-                                className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm"
-                            />
-                        </div>
-                        <div>
-                            <label className="text-sm font-medium text-foreground mb-1.5 flex items-center gap-2">
-                                <Tag className="w-4 h-4 text-muted-foreground" />
-                                Category
-                            </label>
-                            <input
-                                type="text"
-                                name="category"
-                                value={formData.category}
-                                onChange={handleChange}
-                                className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm"
-                            />
-                        </div>
-                    </div>
-                    <div className="flex justify-end pt-2">
-                        <button type="submit" className="inline-flex justify-center items-center py-2.5 px-6 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary hover:bg-primary/90 transition-all">
-                            Publish Article
-                        </button>
-                    </div>
-                </form>
-            </div>
+  const resetAnnouncementForm = () => {
+    setAnnouncementFormData({
+      title: '',
+      content: '',
+      type: 'info',
+      priority: 'medium',
+      is_active: true,
+      start_date: '',
+      end_date: '',
+      target_audience: '',
+    });
+    setSelectedAnnouncement(null);
+    setIsCreatingAnnouncement(false);
+  };
 
-            <div className="mt-8">
-                <h3 className="text-lg font-bold text-foreground mb-4">Published Articles ({articles.length})</h3>
+  const openAnnouncementCreateModal = () => {
+    resetAnnouncementForm();
+    setIsCreatingAnnouncement(true);
+    setShowAnnouncementModal(true);
+  };
 
-                {/* Loading State */}
-                {isLoading && (
-                    <div className="flex items-center justify-center py-12">
-                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                        <span className="ml-3 text-muted-foreground">Loading articles...</span>
-                    </div>
-                )}
+  const openAnnouncementEditModal = (announcement: Announcement) => {
+    setSelectedAnnouncement(announcement);
+    setAnnouncementFormData({
+      title: announcement.title,
+      content: announcement.content,
+      type: announcement.type,
+      priority: announcement.priority,
+      is_active: announcement.is_active,
+      start_date: announcement.start_date || '',
+      end_date: announcement.end_date || '',
+      target_audience: announcement.target_audience || '',
+    });
+    setIsCreatingAnnouncement(false);
+    setShowAnnouncementModal(true);
+  };
 
-                {/* Error State */}
-                {error && (
-                    <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 flex items-center gap-3">
-                        <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0" />
-                        <div>
-                            <p className="font-medium text-destructive">Failed to load articles</p>
-                            <p className="text-sm text-destructive/80">{error.message}</p>
-                        </div>
-                    </div>
-                )}
+  // ==================== FILTERED DATA ====================
+  const filteredNews = useMemo(() => {
+    let filtered = [...news];
 
-                {/* Articles List */}
-                {!isLoading && !error && (
-                    <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                        {articles.length === 0 ? (
-                            <div className="text-center py-12 text-muted-foreground">
-                                <Newspaper className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                                <p>No articles published yet</p>
-                            </div>
-                        ) : (
-                            articles.map(article => (
-                                <div key={article.id} className="bg-card p-4 rounded-xl shadow-sm border border-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:shadow-md transition-shadow">
-                                    <div className="flex items-center gap-4 flex-grow">
-                                        <img src={article.imageUrl} alt={article.title} className="w-20 h-16 object-cover rounded-lg bg-secondary" />
-                                        <div>
-                                            <p className="font-bold text-foreground line-clamp-1">{article.title}</p>
-                                            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
-                                                <span className="font-medium text-primary">{article.author}</span>
-                                                <span>•</span>
-                                                <span>{article.date}</span>
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                                        <span className="text-xs font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-full whitespace-nowrap">{article.category}</span>
-                                        <div className="flex items-center gap-1 ml-2 border-l border-border pl-3">
-                                            <button onClick={() => onArticleEdit(article)} className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Edit">
-                                                <Edit2 className="w-4 h-4" />
-                                            </button>
-                                            <button onClick={() => onArticleDelete(article)} className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors" title="Delete">
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                )}
-            </div>
+    // Search filter
+    if (newsSearchQuery) {
+      const query = newsSearchQuery.toLowerCase();
+      filtered = filtered.filter(article =>
+        article.title.toLowerCase().includes(query) ||
+        article.excerpt?.toLowerCase().includes(query) ||
+        article.content.toLowerCase().includes(query) ||
+        article.tags?.some(tag => tag.toLowerCase().includes(query))
+      );
+    }
+
+    // Status filter
+    if (newsStatusFilter !== 'all') {
+      filtered = filtered.filter(article => article.status === newsStatusFilter);
+    }
+
+    return filtered;
+  }, [news, newsSearchQuery, newsStatusFilter]);
+
+  const filteredAnnouncements = useMemo(() => {
+    let filtered = [...announcements];
+
+    // Search filter
+    if (announcementSearchQuery) {
+      const query = announcementSearchQuery.toLowerCase();
+      filtered = filtered.filter(announcement =>
+        announcement.title.toLowerCase().includes(query) ||
+        announcement.content.toLowerCase().includes(query)
+      );
+    }
+
+    // Type filter
+    if (announcementTypeFilter !== 'all') {
+      filtered = filtered.filter(announcement => announcement.type === announcementTypeFilter);
+    }
+
+    return filtered;
+  }, [announcements, announcementSearchQuery, announcementTypeFilter]);
+
+  // ==================== STATS ====================
+  const newsStats = {
+    total: news.length,
+    published: news.filter(a => a.status === 'published').length,
+    drafts: news.filter(a => a.status === 'draft').length,
+    archived: news.filter(a => a.status === 'archived').length,
+  };
+
+  const announcementStats = {
+    total: announcements.length,
+    active: announcements.filter(a => a.is_active).length,
+    highPriority: announcements.filter(a => a.priority === 'high' && a.is_active).length,
+    inactive: announcements.filter(a => !a.is_active).length,
+  };
+
+  // ==================== TABLE COLUMNS ====================
+  const newsColumns = [
+    {
+      key: 'title',
+      header: 'Title',
+      render: (article: NewsArticle) => (
+        <div className="flex items-start space-x-3">
+          {article.featured_image && (
+            <img
+              src={article.featured_image}
+              alt={article.title}
+              className="w-12 h-12 rounded object-cover"
+            />
+          )}
+          <div>
+            <div className="font-medium text-gray-900">{article.title}</div>
+            {article.excerpt && (
+              <div className="text-sm text-gray-500 mt-1 line-clamp-1">{article.excerpt}</div>
+            )}
+          </div>
         </div>
-    );
-};
+      )
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (article: NewsArticle) => {
+        const statusColors = {
+          draft: 'bg-gray-100 text-gray-800',
+          published: 'bg-green-100 text-green-800',
+          archived: 'bg-orange-100 text-orange-800',
+        };
+        return (
+          <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusColors[article.status]}`}>
+            {article.status.charAt(0).toUpperCase() + article.status.slice(1)}
+          </span>
+        );
+      }
+    },
+    {
+      key: 'published_at',
+      header: 'Published',
+      render: (article: NewsArticle) => article.published_at
+        ? new Date(article.published_at).toLocaleDateString()
+        : '-'
+    },
+    {
+      key: 'tags',
+      header: 'Tags',
+      render: (article: NewsArticle) => article.tags && article.tags.length > 0 ? (
+        <div className="flex flex-wrap gap-1">
+          {article.tags.slice(0, 2).map((tag, index) => (
+            <span key={index} className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded">
+              {tag}
+            </span>
+          ))}
+          {article.tags.length > 2 && (
+            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
+              +{article.tags.length - 2}
+            </span>
+          )}
+        </div>
+      ) : '-'
+    },
+    {
+      key: 'created_at',
+      header: 'Created',
+      render: (article: NewsArticle) => new Date(article.created_at).toLocaleDateString()
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      render: (article: NewsArticle) => (
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => openNewsViewModal(article)}
+            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+            title="View"
+          >
+            <Eye className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => openNewsEditModal(article)}
+            className="p-1 text-green-600 hover:bg-green-50 rounded"
+            title="Edit"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
+          {article.status === 'draft' && (
+            <button
+              onClick={() => handlePublishNews(article)}
+              className="p-1 text-purple-600 hover:bg-purple-50 rounded"
+              title="Publish"
+            >
+              <Check className="w-4 h-4" />
+            </button>
+          )}
+          <button
+            onClick={() => handleDeleteNews(article.id)}
+            className="p-1 text-red-600 hover:bg-red-50 rounded"
+            title="Delete"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      ),
+    },
+  ];
 
-export default NewsManagement;
+  const announcementColumns = [
+    {
+      key: 'title',
+      header: 'Title',
+      render: (announcement: Announcement) => (
+        <div>
+          <div className="font-medium text-gray-900">{announcement.title}</div>
+          <div className="text-sm text-gray-500 mt-1 line-clamp-1">{announcement.content}</div>
+        </div>
+      )
+    },
+    {
+      key: 'type',
+      header: 'Type',
+      render: (announcement: Announcement) => {
+        const typeColors = {
+          info: 'bg-blue-100 text-blue-800',
+          warning: 'bg-yellow-100 text-yellow-800',
+          success: 'bg-green-100 text-green-800',
+          error: 'bg-red-100 text-red-800',
+        };
+        const TypeIcon = {
+          info: AlertCircle,
+          warning: AlertCircle,
+          success: Check,
+          error: X,
+        }[announcement.type];
+
+        return (
+          <span className={`px-2 py-1 text-xs font-medium rounded-full inline-flex items-center gap-1 ${typeColors[announcement.type]}`}>
+            <TypeIcon className="w-3 h-3" />
+            {announcement.type.charAt(0).toUpperCase() + announcement.type.slice(1)}
+          </span>
+        );
+      }
+    },
+    {
+      key: 'priority',
+      header: 'Priority',
+      render: (announcement: Announcement) => {
+        const priorityColors = {
+          low: 'bg-gray-100 text-gray-800',
+          medium: 'bg-blue-100 text-blue-800',
+          high: 'bg-red-100 text-red-800',
+        };
+        return (
+          <span className={`px-2 py-1 text-xs font-medium rounded-full ${priorityColors[announcement.priority]}`}>
+            {announcement.priority.charAt(0).toUpperCase() + announcement.priority.slice(1)}
+          </span>
+        );
+      }
+    },
+    {
+      key: 'is_active',
+      header: 'Status',
+      render: (announcement: Announcement) => (
+        <button
+          onClick={() => handleToggleAnnouncementActive(announcement.id)}
+          className={`px-3 py-1 text-xs font-medium rounded-full ${
+            announcement.is_active
+              ? 'bg-green-100 text-green-800 hover:bg-green-200'
+              : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+          }`}
+        >
+          {announcement.is_active ? 'Active' : 'Inactive'}
+        </button>
+      )
+    },
+    {
+      key: 'start_date',
+      header: 'Period',
+      render: (announcement: Announcement) => {
+        if (!announcement.start_date && !announcement.end_date) return 'Permanent';
+        return (
+          <div className="text-sm">
+            {announcement.start_date && new Date(announcement.start_date).toLocaleDateString()}
+            {announcement.start_date && announcement.end_date && ' - '}
+            {announcement.end_date && new Date(announcement.end_date).toLocaleDateString()}
+          </div>
+        );
+      }
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      render: (announcement: Announcement) => (
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => openAnnouncementEditModal(announcement)}
+            className="p-1 text-green-600 hover:bg-green-50 rounded"
+            title="Edit"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => handleDeleteAnnouncement(announcement.id)}
+            className="p-1 text-red-600 hover:bg-red-50 rounded"
+            title="Delete"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div className={`space-y-6 ${className}`}>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">News & Announcements</h1>
+          <p className="text-sm text-gray-600 mt-1">Manage news articles and system announcements</p>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('news')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'news'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <FileText className="w-5 h-5 inline-block mr-2" />
+            News Articles
+          </button>
+          <button
+            onClick={() => setActiveTab('announcements')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'announcements'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <Bell className="w-5 h-5 inline-block mr-2" />
+            Announcements
+          </button>
+        </nav>
+      </div>
+
+      {/* NEWS TAB */}
+      {activeTab === 'news' && (
+        <div className="space-y-6">
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              title="Total Articles"
+              value={newsStats.total.toString()}
+              icon={FileText}
+              gradient="blue"
+              loading={newsLoading}
+            />
+            <StatCard
+              title="Published"
+              value={newsStats.published.toString()}
+              icon={Globe}
+              gradient="green"
+              loading={newsLoading}
+            />
+            <StatCard
+              title="Drafts"
+              value={newsStats.drafts.toString()}
+              icon={Edit2}
+              gradient="orange"
+              loading={newsLoading}
+            />
+            <StatCard
+              title="Archived"
+              value={newsStats.archived.toString()}
+              icon={Archive}
+              gradient="gray"
+              loading={newsLoading}
+            />
+          </div>
+
+          {/* Filter Bar */}
+          <FilterBar
+            searchQuery={newsSearchQuery}
+            onSearchChange={setNewsSearchQuery}
+            searchPlaceholder="Search articles..."
+            filters={[
+              {
+                label: 'Status',
+                value: newsStatusFilter,
+                onChange: (value) => setNewsStatusFilter(value as typeof newsStatusFilter),
+                options: [
+                  { value: 'all', label: 'All Status' },
+                  { value: 'draft', label: 'Drafts' },
+                  { value: 'published', label: 'Published' },
+                  { value: 'archived', label: 'Archived' },
+                ],
+              },
+            ]}
+            onRefresh={fetchNews}
+            onCreate={openNewsCreateModal}
+            createLabel="New Article"
+          />
+
+          {/* News Table */}
+          <div className="bg-white rounded-lg shadow">
+            <DataTable
+              data={filteredNews}
+              columns={newsColumns}
+              keyExtractor={(article) => article.id.toString()}
+              loading={newsLoading}
+              emptyMessage="No news articles found"
+              itemsPerPage={15}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ANNOUNCEMENTS TAB */}
+      {activeTab === 'announcements' && (
+        <div className="space-y-6">
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              title="Total Announcements"
+              value={announcementStats.total.toString()}
+              icon={Bell}
+              gradient="blue"
+              loading={announcementsLoading}
+            />
+            <StatCard
+              title="Active"
+              value={announcementStats.active.toString()}
+              icon={Check}
+              gradient="green"
+              loading={announcementsLoading}
+            />
+            <StatCard
+              title="High Priority"
+              value={announcementStats.highPriority.toString()}
+              icon={AlertCircle}
+              gradient="red"
+              loading={announcementsLoading}
+            />
+            <StatCard
+              title="Inactive"
+              value={announcementStats.inactive.toString()}
+              icon={Clock}
+              gradient="gray"
+              loading={announcementsLoading}
+            />
+          </div>
+
+          {/* Filter Bar */}
+          <FilterBar
+            searchQuery={announcementSearchQuery}
+            onSearchChange={setAnnouncementSearchQuery}
+            searchPlaceholder="Search announcements..."
+            filters={[
+              {
+                label: 'Type',
+                value: announcementTypeFilter,
+                onChange: (value) => setAnnouncementTypeFilter(value as typeof announcementTypeFilter),
+                options: [
+                  { value: 'all', label: 'All Types' },
+                  { value: 'info', label: 'Info' },
+                  { value: 'warning', label: 'Warning' },
+                  { value: 'success', label: 'Success' },
+                  { value: 'error', label: 'Error' },
+                ],
+              },
+            ]}
+            onRefresh={fetchAnnouncements}
+            onCreate={openAnnouncementCreateModal}
+            createLabel="New Announcement"
+          />
+
+          {/* Announcements Table */}
+          <div className="bg-white rounded-lg shadow">
+            <DataTable
+              data={filteredAnnouncements}
+              columns={announcementColumns}
+              keyExtractor={(announcement) => announcement.id.toString()}
+              loading={announcementsLoading}
+              emptyMessage="No announcements found"
+              itemsPerPage={15}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* NEWS MODAL */}
+      {showNewsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">
+                {isCreatingNews ? 'Create News Article' : selectedNews ? 'News Article Details' : 'Edit News Article'}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowNewsModal(false);
+                  resetNewsForm();
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {isCreatingNews || (!isCreatingNews && selectedNews) ? (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Title *
+                    </label>
+                    <input
+                      type="text"
+                      value={newsFormData.title}
+                      onChange={(e) => {
+                        setNewsFormData({
+                          ...newsFormData,
+                          title: e.target.value,
+                          slug: generateSlug(e.target.value)
+                        });
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter article title"
+                      disabled={!isCreatingNews && !selectedNews}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Slug (URL-friendly) *
+                    </label>
+                    <input
+                      type="text"
+                      value={newsFormData.slug}
+                      onChange={(e) => setNewsFormData({ ...newsFormData, slug: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="article-url-slug"
+                      disabled={!isCreatingNews && !selectedNews}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Excerpt (Short summary)
+                    </label>
+                    <textarea
+                      value={newsFormData.excerpt}
+                      onChange={(e) => setNewsFormData({ ...newsFormData, excerpt: e.target.value })}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="Brief summary (optional)"
+                      disabled={!isCreatingNews && !selectedNews}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Content *
+                    </label>
+                    <textarea
+                      value={newsFormData.content}
+                      onChange={(e) => setNewsFormData({ ...newsFormData, content: e.target.value })}
+                      rows={10}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                      placeholder="Article content (supports Markdown)"
+                      disabled={!isCreatingNews && !selectedNews}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Featured Image URL
+                      </label>
+                      <input
+                        type="text"
+                        value={newsFormData.featured_image}
+                        onChange={(e) => setNewsFormData({ ...newsFormData, featured_image: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="https://..."
+                        disabled={!isCreatingNews && !selectedNews}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Status
+                      </label>
+                      <select
+                        value={newsFormData.status}
+                        onChange={(e) => setNewsFormData({ ...newsFormData, status: e.target.value as any })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        disabled={!isCreatingNews && !selectedNews}
+                      >
+                        <option value="draft">Draft</option>
+                        <option value="published">Published</option>
+                        <option value="archived">Archived</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {(isCreatingNews || selectedNews) && (
+                    <div className="flex justify-end space-x-3 pt-4 border-t">
+                      <button
+                        onClick={() => {
+                          setShowNewsModal(false);
+                          resetNewsForm();
+                        }}
+                        className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={isCreatingNews ? handleCreateNews : handleUpdateNews}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      >
+                        {isCreatingNews ? 'Create Article' : 'Update Article'}
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                selectedNews && (
+                  <div className="space-y-4">
+                    {selectedNews.featured_image && (
+                      <img
+                        src={selectedNews.featured_image}
+                        alt={selectedNews.title}
+                        className="w-full h-64 object-cover rounded-lg"
+                      />
+                    )}
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-900">{selectedNews.title}</h3>
+                      {selectedNews.excerpt && (
+                        <p className="text-gray-600 mt-2">{selectedNews.excerpt}</p>
+                      )}
+                    </div>
+                    <div className="prose max-w-none">
+                      <p className="whitespace-pre-wrap">{selectedNews.content}</p>
+                    </div>
+                    {selectedNews.tags && selectedNews.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {selectedNews.tags.map((tag, index) => (
+                          <span key={index} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t text-sm">
+                      <div>
+                        <span className="text-gray-500">Status:</span>
+                        <span className="ml-2 font-medium">{selectedNews.status}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Created:</span>
+                        <span className="ml-2 font-medium">{new Date(selectedNews.created_at).toLocaleString()}</span>
+                      </div>
+                      {selectedNews.published_at && (
+                        <div>
+                          <span className="text-gray-500">Published:</span>
+                          <span className="ml-2 font-medium">{new Date(selectedNews.published_at).toLocaleString()}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ANNOUNCEMENT MODAL */}
+      {showAnnouncementModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">
+                {isCreatingAnnouncement ? 'Create Announcement' : 'Edit Announcement'}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowAnnouncementModal(false);
+                  resetAnnouncementForm();
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Title *
+                </label>
+                <input
+                  type="text"
+                  value={announcementFormData.title}
+                  onChange={(e) => setAnnouncementFormData({ ...announcementFormData, title: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Announcement title"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Content *
+                </label>
+                <textarea
+                  value={announcementFormData.content}
+                  onChange={(e) => setAnnouncementFormData({ ...announcementFormData, content: e.target.value })}
+                  rows={5}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Announcement content"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Type
+                  </label>
+                  <select
+                    value={announcementFormData.type}
+                    onChange={(e) => setAnnouncementFormData({ ...announcementFormData, type: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="info">Info</option>
+                    <option value="warning">Warning</option>
+                    <option value="success">Success</option>
+                    <option value="error">Error</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Priority
+                  </label>
+                  <select
+                    value={announcementFormData.priority}
+                    onChange={(e) => setAnnouncementFormData({ ...announcementFormData, priority: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    value={announcementFormData.is_active ? 'active' : 'inactive'}
+                    onChange={(e) => setAnnouncementFormData({ ...announcementFormData, is_active: e.target.value === 'active' })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Start Date (Optional)
+                  </label>
+                  <input
+                    type="date"
+                    value={announcementFormData.start_date}
+                    onChange={(e) => setAnnouncementFormData({ ...announcementFormData, start_date: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    End Date (Optional)
+                  </label>
+                  <input
+                    type="date"
+                    value={announcementFormData.end_date}
+                    onChange={(e) => setAnnouncementFormData({ ...announcementFormData, end_date: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Target Audience (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={announcementFormData.target_audience}
+                  onChange={(e) => setAnnouncementFormData({ ...announcementFormData, target_audience: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., All Users, Admins, Students"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4 border-t">
+                <button
+                  onClick={() => {
+                    setShowAnnouncementModal(false);
+                    resetAnnouncementForm();
+                  }}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={isCreatingAnnouncement ? handleCreateAnnouncement : handleUpdateAnnouncement}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  {isCreatingAnnouncement ? 'Create Announcement' : 'Update Announcement'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
