@@ -39,12 +39,15 @@ return new class extends Migration
         Schema::table('projects', function (Blueprint $table) {
             $table->index('status');
             $table->index('created_at');
-            $table->index('start_date');
             $table->index('end_date');
-            $table->index('category_id');
-            $table->index('user_id');
+            if (Schema::hasColumn('projects', 'category_id')) {
+                $table->index('category_id');
+                $table->index(['category_id', 'status']);
+            }
+            if (Schema::hasColumn('projects', 'user_id')) {
+                $table->index('user_id');
+            }
             $table->index(['status', 'created_at']);
-            $table->index(['category_id', 'status']);
         });
 
         // Accounts table indexes
@@ -173,12 +176,15 @@ return new class extends Migration
         Schema::table('projects', function (Blueprint $table) {
             $table->dropIndex(['status']);
             $table->dropIndex(['created_at']);
-            $table->dropIndex(['start_date']);
             $table->dropIndex(['end_date']);
-            $table->dropIndex(['category_id']);
-            $table->dropIndex(['user_id']);
+            if (Schema::hasColumn('projects', 'category_id')) {
+                $table->dropIndex(['category_id']);
+                $table->dropIndex(['category_id', 'status']);
+            }
+            if (Schema::hasColumn('projects', 'user_id')) {
+                $table->dropIndex(['user_id']);
+            }
             $table->dropIndex(['status', 'created_at']);
-            $table->dropIndex(['category_id', 'status']);
         });
 
         // Accounts table

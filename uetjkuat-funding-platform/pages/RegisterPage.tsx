@@ -357,23 +357,24 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
   // Poll for payment status
   const pollPaymentStatus = async (checkoutId: string) => {
     setPaymentStatus('checking');
-    
+
     let attempts = 0;
     const maxAttempts = 30; // 30 seconds max
-    
+
     const checkStatus = async () => {
       attempts++;
-      
+
       try {
         const response = await mpesaApi.checkStatus(checkoutId);
-        
+
         if (response.success && response.data) {
-          const status = response.data.ResultCode;
-          
-          if (status === 0 || status === '0') {
+          // Backend returns status as string: "pending", "completed", "cancelled", "failed"
+          const status = response.data.status;
+
+          if (status === 'completed') {
             // Payment successful
             setPaymentStatus('success');
-            
+
             // Store auth token and complete registration
             if (registeredToken) {
               localStorage.setItem('auth_token', registeredToken);
@@ -381,23 +382,28 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
             if (registeredUser) {
               localStorage.setItem('user', JSON.stringify(registeredUser));
             }
-            
+
             showSuccess('Payment successful! Welcome to UET JKUAT.');
-            
+
             // Redirect to login after short delay
             setTimeout(() => {
               setRoute({ page: 'login' });
             }, 2000);
             return;
-          } else if (status === 1032 || status === '1032') {
+          } else if (status === 'cancelled') {
             // User cancelled
             setPaymentStatus('failed');
             showError('Payment was cancelled. Please try again.');
             return;
+          } else if (status === 'failed') {
+            // Payment failed
+            setPaymentStatus('failed');
+            showError(response.data.errorMessage || 'Payment failed. Please try again.');
+            return;
           }
         }
-        
-        // Continue polling if not done
+
+        // Continue polling if still pending
         if (attempts < maxAttempts) {
           setTimeout(checkStatus, 1000);
         } else {
@@ -412,7 +418,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
         }
       }
     };
-    
+
     // Start checking after 5 seconds (give user time to enter PIN)
     setTimeout(checkStatus, 5000);
   };
