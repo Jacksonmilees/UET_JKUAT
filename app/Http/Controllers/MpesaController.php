@@ -299,11 +299,13 @@ class MpesaController extends Controller
     public function queryTransactionStatus($checkoutRequestID)
     {
         try {
+            Log::info('queryTransactionStatus called', ['checkoutRequestID' => $checkoutRequestID]);
             // 1. Check local Payment model for completed status
             $payment = Payment::where('checkout_request_id', $checkoutRequestID)
                 ->where('status', 'completed')
                 ->first();
             if ($payment) {
+                Log::info('Payment found as completed', ['checkoutRequestID' => $checkoutRequestID, 'payment_id' => $payment->id]);
                 return response()->json([
                     'checkoutRequestId' => $checkoutRequestID,
                     'status' => 'completed',
@@ -319,6 +321,7 @@ class MpesaController extends Controller
                 ->where('payment_status', 'completed')
                 ->first();
             if ($ticket) {
+                Log::info('Ticket found as completed', ['checkoutRequestID' => $checkoutRequestID, 'ticket_id' => $ticket->id]);
                 return response()->json([
                     'checkoutRequestId' => $checkoutRequestID,
                     'status' => 'completed',
@@ -372,7 +375,11 @@ class MpesaController extends Controller
                 'errorMessage' => $status === 'failed' || $status === 'cancelled' ? ($resultDesc ?? 'Payment not completed') : null,
             ]);
         } catch (\Exception $e) {
-            Log::error('Transaction status query error: ' . $e->getMessage());
+            Log::error('Transaction status query error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'checkoutRequestID' => $checkoutRequestID,
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to query transaction status',
