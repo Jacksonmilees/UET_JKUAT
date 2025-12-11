@@ -27,6 +27,7 @@ use App\Http\Controllers\API\OnboardingController;
 use App\Http\Controllers\API\SemesterController;
 use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\AccountRechargeController;
+use App\Http\Controllers\API\WalletController;
 use App\Http\Middleware\CheckRolePermission;
 use Illuminate\Http\Request;
 
@@ -358,7 +359,8 @@ Route::middleware(ApiKeyMiddleware::class)
         Route::put('/merchandise/{id}', [\App\Http\Controllers\API\MerchandiseController::class, 'update']);
         Route::delete('/merchandise/{id}', [\App\Http\Controllers\API\MerchandiseController::class, 'destroy']);
         Route::put('/merchandise/{id}/stock', [\App\Http\Controllers\API\MerchandiseController::class, 'updateStock']);
-        
+        Route::post('/merchandise/{id}/purchase-wallet', [\App\Http\Controllers\API\MerchandiseController::class, 'purchaseWithWallet']);
+
         // Members
         Route::get('/members', [\App\Http\Controllers\API\MemberController::class, 'index']);
         Route::get('/members/mmid/{mmid}', [\App\Http\Controllers\API\MemberController::class, 'getByMMID']);
@@ -396,6 +398,16 @@ Route::middleware(ApiKeyMiddleware::class)
         Route::get('/recharge-tokens', [AccountRechargeController::class, 'myTokens']);
         Route::post('/recharge-tokens/{id}/cancel', [AccountRechargeController::class, 'cancelToken']);
         Route::get('/recharge-tokens/{id}/contributions', [AccountRechargeController::class, 'getContributions']);
+
+        // ============================================================
+        // WALLET MANAGEMENT
+        // ============================================================
+        Route::get('/wallet/balance', [WalletController::class, 'getBalance']);
+        Route::get('/wallet/transactions', [WalletController::class, 'getTransactions']);
+        Route::get('/wallet/statistics', [WalletController::class, 'getStatistics']);
+        Route::post('/wallet/settle-funds', [WalletController::class, 'settleFunds']);
+        Route::post('/wallet/pay-project', [WalletController::class, 'payForProject']);
+        Route::get('/wallet/all-wallets', [WalletController::class, 'getAllWallets']);
     });
 
 Route::prefix('v1')->group(function () {

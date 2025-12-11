@@ -46,14 +46,21 @@ class RechargeContribution extends Model
             'status' => self::STATUS_COMPLETED,
             'mpesa_receipt' => $mpesaReceipt,
         ]);
-        
+
         // Update token collected amount
         $this->token->addContribution($this->amount);
-        
-        // Add to user's account balance
+
+        // Add to user's wallet with proper transaction logging
         $user = $this->token->user;
-        $user->increment('balance', $this->amount);
-        
+        $user->addToWallet($this->amount, 'recharge', [
+            'contribution_id' => $this->id,
+            'donor_name' => $this->donor_name,
+            'donor_phone' => $this->donor_phone,
+            'mpesa_receipt' => $mpesaReceipt,
+            'token_id' => $this->token_id,
+            'reason' => $this->token->reason,
+        ]);
+
         // Create notification
         Notification::createPaymentNotification(
             $user->id,
