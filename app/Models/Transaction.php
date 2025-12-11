@@ -11,6 +11,7 @@ class Transaction extends Model
 
     protected $fillable = [
         'account_id',
+        'user_id',
         'transaction_id',
         'amount',
         'type',
@@ -29,8 +30,15 @@ class Transaction extends Model
         'amount' => 'decimal:2'
     ];
 
+    protected $with = ['user:id,name,member_id,email'];
+
     public function account()
     {
         return $this->belongsTo(Account::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }
