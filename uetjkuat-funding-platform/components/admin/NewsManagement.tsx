@@ -14,7 +14,6 @@ interface NewsManagementProps {
 }
 
 function NewsManagement({ className = '' }: NewsManagementProps) {
-  export default NewsManagement;
   const [activeTab, setActiveTab] = useState<'news' | 'announcements'>('news');
 
   // News state
@@ -1098,4 +1097,7 @@ function NewsManagement({ className = '' }: NewsManagementProps) {
       )}
     </div>
   );
+
 }
+
+export default NewsManagement;
