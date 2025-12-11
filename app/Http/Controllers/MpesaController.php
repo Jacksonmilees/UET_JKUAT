@@ -197,6 +197,9 @@ class MpesaController extends Controller
                     // Get the account reference (MMID) from the callback
                     $accountReference = $callbackData['Body']['stkCallback']['CallbackMetadata']['Item'][5]['Value'] ?? null;
 
+                    // Find the original ticket by ticket_number (account reference)
+                    $ticket = Ticket::where('ticket_number', $accountReference)->first();
+
                     // Create payment record
                     $payment = Payment::create([
                         'transaction_id' => $mpesaReceiptNumber,
@@ -210,24 +213,32 @@ class MpesaController extends Controller
                         'checkout_request_id' => $checkoutRequestID
                     ]);
 
-                    // Generate ticket
-                    $ticket = Ticket::create([
-                        'ticket_number' => 'TKT-' . strtoupper(uniqid()),
-                        'member_mmid' => $accountReference,
-                        'payment_id' => $payment->id,
-                        'status' => 'active',
-                        'amount' => $amount,
-                        'phone_number' => $phoneNumber,
-                        'purchase_date' => Carbon::now(),
-                        'expiry_date' => Carbon::now()->addDays(30), // Adjust expiry as needed
-                    ]);
+                    if ($ticket) {
+                        // Update the original ticket's payment_status and status
+                        $ticket->payment_status = 'completed';
+                        $ticket->status = 'active';
+                        $ticket->save();
+                    } else {
+                        // Fallback: create a new ticket if not found
+                        $ticket = Ticket::create([
+                            'ticket_number' => $accountReference ?? ('TKT-' . strtoupper(uniqid())),
+                            'member_mmid' => $accountReference,
+                            'payment_id' => $payment->id,
+                            'status' => 'active',
+                            'amount' => $amount,
+                            'phone_number' => $phoneNumber,
+                            'payment_status' => 'completed',
+                            'purchase_date' => Carbon::now(),
+                            'expiry_date' => Carbon::now()->addDays(30), // Adjust expiry as needed
+                        ]);
+                    }
 
                     // Send ticket confirmation SMS
                     $this->sendTicketConfirmation($ticket, $phoneNumber);
 
                     DB::commit();
 
-                    Log::info('Payment processed and ticket generated successfully', [
+                    Log::info('Payment processed and ticket updated successfully', [
                         'ticket_number' => $ticket->ticket_number,
                         'transaction_id' => $mpesaReceiptNumber
                     ]);
