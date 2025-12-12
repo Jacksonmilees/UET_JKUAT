@@ -66,10 +66,13 @@ return [
     'whatsapp' => [
         'url' => env('WHATSAPP_API_URL'),
     ],
+    'whatsapp_web' => [
+        'base_url' => env('WHATSAPP_WEB_API_URL', env('OTP_SERVICE_URL', 'http://localhost:5001')),
+    ],
 'sms' => [
-    'api_url' => env('SMS_API_URL_URL'),
+    'api_url' => env('SMS_API_URL', 'https://blessedtexts.com/api/sms/v1/sendsms'),
     'api_key' => env('SMS_API_KEY'),
-    'sender_id' => env('SMS_SENDER_ID')
+    'sender_id' => env('SMS_SENDER_ID', 'FERRITE')
 ],
     'decode_hash' => [
         'url' => env('DECODE_HASH_API_URL'),

@@ -20,11 +20,11 @@ class MpesaController extends Controller
     
     public function __construct()
     {
-        $this->consumerKey = config('services.mpesa.consumer_key');
-        $this->consumerSecret = config('services.mpesa.consumer_secret');
-        $this->passkey = config('services.mpesa.passkey');
-        $this->shortcode = config('services.mpesa.shortcode');
-        $this->env = config('services.mpesa.env');
+        $this->consumerKey = config('mpesa.consumer_key');
+        $this->consumerSecret = config('mpesa.consumer_secret');
+        $this->passkey = config('mpesa.passkey');
+        $this->shortcode = config('mpesa.shortcode');
+        $this->env = config('mpesa.env');
     }
 
     private function getAccessToken()
