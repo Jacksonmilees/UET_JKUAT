@@ -65,11 +65,13 @@ return [
     ],
     'whatsapp' => [
         'url' => env('WHATSAPP_API_URL'),
+        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
+        'access_token' => env('WHATSAPP_ACCESS_TOKEN'),
     ],
 'sms' => [
-    'api_url' => env('SMS_API_URL_URL'),
+    'api_url' => env('SMS_API_URL', 'https://blessedtexts.com/api/sms/v1/sendsms'),
     'api_key' => env('SMS_API_KEY'),
-    'sender_id' => env('SMS_SENDER_ID')
+    'sender_id' => env('SMS_SENDER_ID', 'FERRITE')
 ],
     'decode_hash' => [
         'url' => env('DECODE_HASH_API_URL'),

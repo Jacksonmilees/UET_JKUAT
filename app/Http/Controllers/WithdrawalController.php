@@ -361,8 +361,8 @@ class WithdrawalController extends Controller
 
     protected function sendWhatsAppMessage($to, $otp)
     {
-        $phone_number_id = '707651015772272';
-        $access_token = 'EAFdTYxYcXGkBPV6VKkZCs1zMOlbNAJFWi5GZCUZBZCYGv7yg9aSBDOVUrnYY3LOCtp6LPSeXawkwtRSrKJZAS2BVOAj2FUNfZBcrZANOLcqfZAczNVyZAZAz9MeFw9tTtwz4xRWC8vLDXScgvgyxHUyxxgzaKH0KgFS9VnMlaJUPdkpoZAieg7AoDtFgaie43yB';
+        $phone_number_id = config('services.whatsapp.phone_number_id');
+        $access_token = config('services.whatsapp.access_token');
         $api_url = "https://graph.facebook.com/v22.0/$phone_number_id/messages";
 
         // Format phone number for WhatsApp
@@ -467,12 +467,12 @@ class WithdrawalController extends Controller
 
     protected function sendSMS($to, $message)
     {
-        $apiUrl = 'https://blessedtexts.com/api/sms/v1/sendsms';
+        $apiUrl = config('services.sms.api_url', 'https://blessedtexts.com/api/sms/v1/sendsms');
         $formattedTo = preg_replace('/[^\d]/', '', $to);
 
         $postData = [
-            'api_key' => 'af09ec090e4c42498d52bb2673ff559b',
-            'sender_id' => 'FERRITE',
+            'api_key' => config('services.sms.api_key'),
+            'sender_id' => config('services.sms.sender_id', 'FERRITE'),
             'message' => $message,
             'phone' => $formattedTo
         ];
