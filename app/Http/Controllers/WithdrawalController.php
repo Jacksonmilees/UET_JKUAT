@@ -315,30 +315,60 @@ class WithdrawalController extends Controller
         ]);
 
         $initiatorPhone = $validated['phone_number'];
-        $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $otpServiceUrl = config('services.whatsapp_web.base_url', env('OTP_SERVICE_URL', 'http://localhost:5001'));
 
         try {
-            $messageSent = $this->sendWhatsAppMessage($initiatorPhone, $otp);
-            if (!$messageSent) {
-                Log::error('Failed to send OTP via WhatsApp', ['phone_number' => $initiatorPhone]);
+            // Call WhatsApp OTP service with retry logic (same as OTPAuthController)
+            $maxRetries = 3;
+            $response = null;
+            $lastException = null;
+
+            for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+                try {
+                    Log::info("Withdrawal OTP Request attempt {$attempt} to {$otpServiceUrl}/send-otp");
+
+                    $response = Http::timeout(30)
+                        ->retry(2, 1000)
+                        ->post("{$otpServiceUrl}/send-otp", [
+                            'phone' => $initiatorPhone,
+                            'customMessage' => "Your UET JKUAT withdrawal verification code is: {otp}\n\nValid for 10 minutes.\n\n_UET JKUAT Ministry Platform_"
+                        ]);
+
+                    if ($response->successful()) {
+                        break;
+                    }
+                } catch (\Exception $e) {
+                    $lastException = $e;
+                    Log::warning("Withdrawal OTP attempt {$attempt} failed: " . $e->getMessage());
+                    if ($attempt < $maxRetries) {
+                        sleep(1);
+                    }
+                }
+            }
+
+            if (!$response || !$response->successful()) {
+                Log::error('Failed to send OTP via WhatsApp service', [
+                    'phone_number' => $initiatorPhone,
+                    'error' => $lastException ? $lastException->getMessage() : 'No response'
+                ]);
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Failed to send OTP'
+                    'message' => 'Failed to send OTP. Please try again.'
                 ], 500);
             }
 
-            $cacheKey = $initiatorPhone . '_otp';
-            cache()->put($cacheKey, $otp, now()->addMinutes(10));
+            $data = $response->json();
 
-            Log::info('OTP Sent via WhatsApp', [
+            Log::info('OTP Sent via WhatsApp service', [
                 'initiator_phone' => $initiatorPhone,
-                'cache_key' => $cacheKey,
-                'otp' => $otp
+                'provider' => $data['provider'] ?? 'WhatsApp'
             ]);
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'OTP sent successfully via WhatsApp'
+                'success' => true,
+                'message' => 'OTP sent successfully via WhatsApp',
+                'expiresIn' => '10 minutes'
             ]);
         } catch (\Exception $e) {
             Log::error('Exception in sending OTP via WhatsApp', [
@@ -348,115 +378,48 @@ class WithdrawalController extends Controller
             ]);
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to send OTP'
-            ], 500);
+                'success' => false,
+                'message' => 'OTP service temporarily unavailable. Please try again.'
+            ], 503);
         }
     }
 
     protected function verifyOTP($phoneNumber, $otp)
     {
-        $cachedOTP = cache()->get($phoneNumber . '_otp');
-        return $cachedOTP && (string)$cachedOTP === (string)$otp;
-    }
+        $otpServiceUrl = config('services.whatsapp_web.base_url', env('OTP_SERVICE_URL', 'http://localhost:5001'));
 
-    protected function sendWhatsAppMessage($to, $otp)
-    {
-        $phone_number_id = config('services.whatsapp.phone_number_id');
-        $access_token = config('services.whatsapp.access_token');
-        $api_url = "https://graph.facebook.com/v22.0/$phone_number_id/messages";
+        try {
+            // Verify OTP with WhatsApp OTP service
+            $response = Http::timeout(10)->post("{$otpServiceUrl}/verify-otp", [
+                'phone' => $phoneNumber,
+                'otp' => $otp
+            ]);
 
-        // Format phone number for WhatsApp
-        $formatted_to = preg_replace('/[^0-9]/', '', $to);
-        if (!str_starts_with($formatted_to, '254')) {
-            if (str_starts_with($formatted_to, '0')) {
-                $formatted_to = '254' . substr($formatted_to, 1);
-            } else if (str_starts_with($formatted_to, '7')) {
-                $formatted_to = '254' . $formatted_to;
+            if ($response->successful()) {
+                $data = $response->json();
+
+                Log::info('OTP Verification Result', [
+                    'phone' => $phoneNumber,
+                    'success' => $data['success'] ?? false
+                ]);
+
+                return $data['success'] ?? false;
             }
+
+            Log::error('OTP Verification Failed', [
+                'phone' => $phoneNumber,
+                'status' => $response->status()
+            ]);
+
+            return false;
+
+        } catch (\Exception $e) {
+            Log::error('OTP Verification Exception', [
+                'phone' => $phoneNumber,
+                'error' => $e->getMessage()
+            ]);
+            return false;
         }
-
-        // WhatsApp template data
-        $postData = [
-            'messaging_product' => 'whatsapp',
-            'to' => $formatted_to,
-            'type' => 'template',
-            'template' => [
-                'name' => 'otp_verification',
-                'language' => [
-                    'code' => 'en'
-                ],
-                'components' => [
-                    [
-                        'type' => 'body',
-                        'parameters' => [
-                            [
-                                'type' => 'text',
-                                'text' => (string)$otp
-                            ]
-                        ]
-                    ],
-                    [
-                        'type' => 'button',
-                        'sub_type' => 'url',
-                        'index' => 0,
-                        'parameters' => [
-                            [
-                                'type' => 'text',
-                                'text' => (string)$otp
-                            ]
-                        ]
-                    ]
-                ]
-            ]
-        ];
-
-        $ch = curl_init($api_url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($postData));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Content-Type: application/json',
-            'Authorization: Bearer ' . $access_token
-        ]);
-
-        // Enable verbose output for debugging
-        $debug_file = fopen('whatsapp_debug.log', 'a');
-        curl_setopt($ch, CURLOPT_VERBOSE, true);
-        curl_setopt($ch, CURLOPT_STDERR, $debug_file);
-
-        $response = curl_exec($ch);
-        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curl_error = curl_error($ch);
-        curl_close($ch);
-        fclose($debug_file);
-
-        // Check if message was sent successfully
-        $response_data = json_decode($response, true);
-        $message_sent = false;
-        $message_id = null;
-
-        if ($http_code >= 200 && $http_code < 300 && isset($response_data['messages'][0]['id'])) {
-            $message_sent = true;
-            $message_id = $response_data['messages'][0]['id'];
-        }
-
-        // Log response for debugging
-        $log_message = "Time: " . date('Y-m-d H:i:s') . "\n";
-        $log_message .= "To: $formatted_to\n";
-        $log_message .= "HTTP Code: $http_code\n";
-        $log_message .= "Message Sent: " . ($message_sent ? 'YES' : 'NO') . "\n";
-        if ($message_id) {
-            $log_message .= "Message ID: $message_id\n";
-        }
-        $log_message .= "Response: " . ($response ?: 'No response') . "\n";
-        if ($curl_error) {
-            $log_message .= "cURL Error: $curl_error\n";
-        }
-        $log_message .= "Request Body: " . json_encode($postData) . "\n";
-        $log_message .= "------------------------\n";
-        error_log($log_message, 3, 'whatsapp_errors.log');
-
-        return $message_sent;
     }
 
     protected function sendNotification($to, $message)

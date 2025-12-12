@@ -65,8 +65,9 @@ return [
     ],
     'whatsapp' => [
         'url' => env('WHATSAPP_API_URL'),
-        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
-        'access_token' => env('WHATSAPP_ACCESS_TOKEN'),
+    ],
+    'whatsapp_web' => [
+        'base_url' => env('WHATSAPP_WEB_API_URL', env('OTP_SERVICE_URL', 'http://localhost:5001')),
     ],
 'sms' => [
     'api_url' => env('SMS_API_URL', 'https://blessedtexts.com/api/sms/v1/sendsms'),
