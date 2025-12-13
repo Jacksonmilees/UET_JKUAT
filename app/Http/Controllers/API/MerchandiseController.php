@@ -19,21 +19,25 @@ class MerchandiseController extends Controller
     {
         try {
             $query = Merchandise::query();
-            
-            // Filter by active status
-            if ($request->has('active')) {
+
+            // Support 'all' parameter for admin to see all items
+            if ($request->has('all') && $request->boolean('all')) {
+                // No filter - return all merchandise
+            } elseif ($request->has('active')) {
+                // Filter by specific active status
                 $query->where('active', $request->boolean('active'));
             } else {
-                $query->where('active', true); // Default to active only
+                // Default to active only for public users
+                $query->where('active', true);
             }
-            
+
             // Filter by category
             if ($request->has('category')) {
                 $query->where('category', $request->category);
             }
-            
+
             $merchandise = $query->orderBy('created_at', 'desc')->get();
-            
+
             return response()->json([
                 'success' => true,
                 'data' => $merchandise

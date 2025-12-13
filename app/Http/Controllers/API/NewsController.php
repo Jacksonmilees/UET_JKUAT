@@ -16,16 +16,20 @@ class NewsController extends Controller
     {
         try {
             $query = News::query();
-            
-            // Filter by published status
-            if ($request->has('published')) {
+
+            // Support 'all' parameter for admin to see all items
+            if ($request->has('all') && $request->boolean('all')) {
+                // No filter - return all news items
+            } elseif ($request->has('published')) {
+                // Filter by specific published status
                 $query->where('published', $request->boolean('published'));
             } else {
-                $query->where('published', true); // Default to published only
+                // Default to published only for public users
+                $query->where('published', true);
             }
-            
+
             $news = $query->orderBy('created_at', 'desc')->get();
-            
+
             return response()->json([
                 'success' => true,
                 'data' => $news

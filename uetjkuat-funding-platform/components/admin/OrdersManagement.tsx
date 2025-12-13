@@ -162,9 +162,10 @@ export function OrdersManagement({ className = '' }: { className?: string }) {
           delivered: 'bg-green-100 text-green-800',
           cancelled: 'bg-red-100 text-red-800',
         };
+        const status = order.status || 'pending';
         return (
-          <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusColors[order.status]}`}>
-            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+          <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusColors[status as keyof typeof statusColors] || statusColors.pending}`}>
+            {status.charAt(0).toUpperCase() + status.slice(1)}
           </span>
         );
       }
@@ -179,9 +180,10 @@ export function OrdersManagement({ className = '' }: { className?: string }) {
           failed: 'bg-red-100 text-red-800',
           refunded: 'bg-orange-100 text-orange-800',
         };
+        const paymentStatus = order.payment_status || 'pending';
         return (
-          <span className={`px-2 py-1 text-xs font-medium rounded-full ${paymentColors[order.payment_status]}`}>
-            {order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1)}
+          <span className={`px-2 py-1 text-xs font-medium rounded-full ${paymentColors[paymentStatus as keyof typeof paymentColors] || paymentColors.pending}`}>
+            {paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1)}
           </span>
         );
       }

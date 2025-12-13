@@ -89,7 +89,8 @@ const MerchandiseManagement: React.FC = () => {
   const fetchMerchandise = async () => {
     try {
       setLoading(true);
-      const response = await api.merchandise.getAll({ active: 'all' });
+      // Pass 'all=true' to get all merchandise items (including inactive) for admin
+      const response = await api.merchandise.getAll({ all: 'true' });
       if (response.success && response.data) {
         setMerchandise(Array.isArray(response.data) ? response.data : []);
       }

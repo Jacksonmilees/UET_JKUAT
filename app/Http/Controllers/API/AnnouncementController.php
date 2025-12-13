@@ -16,19 +16,23 @@ class AnnouncementController extends Controller
     {
         try {
             $query = Announcement::query();
-            
-            // Filter by active status
-            if ($request->has('active')) {
+
+            // Support 'all' parameter for admin to see all items
+            if ($request->has('all') && $request->boolean('all')) {
+                // No filter - return all announcements
+            } elseif ($request->has('active')) {
+                // Filter by specific active status
                 $query->where('active', $request->boolean('active'));
             } else {
-                $query->where('active', true); // Default to active only
+                // Default to active only for public users
+                $query->where('active', true);
             }
-            
+
             $announcements = $query
                 ->orderBy('priority', 'desc')
                 ->orderBy('created_at', 'desc')
                 ->get();
-            
+
             return response()->json([
                 'success' => true,
                 'data' => $announcements
