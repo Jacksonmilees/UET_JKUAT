@@ -1,7 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!manifest\\.json|icons/|.*\\.(png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|css|js|json)).*)",
       "destination": "/index.html"
     }
   ],
