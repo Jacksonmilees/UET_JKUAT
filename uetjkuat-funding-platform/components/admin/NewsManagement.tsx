@@ -63,7 +63,8 @@ export function NewsManagement({ className = '' }: NewsManagementProps) {
   const fetchNews = async () => {
     try {
       setNewsLoading(true);
-      const response: ApiResponse<NewsArticle[]> = await api.news.getAll();
+      // Pass 'all=true' to get all news items (including drafts) for admin
+      const response: ApiResponse<NewsArticle[]> = await api.news.getAll({ all: 'true' });
       if (response.success && response.data) {
         setNews(Array.isArray(response.data) ? response.data : []);
       }
@@ -193,7 +194,8 @@ export function NewsManagement({ className = '' }: NewsManagementProps) {
   const fetchAnnouncements = async () => {
     try {
       setAnnouncementsLoading(true);
-      const response: ApiResponse<Announcement[]> = await api.announcements.getAll();
+      // Pass 'all=true' to get all announcements (including inactive) for admin
+      const response: ApiResponse<Announcement[]> = await api.announcements.getAll({ all: 'true' });
       if (response.success && response.data) {
         setAnnouncements(Array.isArray(response.data) ? response.data : []);
       }
@@ -388,9 +390,10 @@ export function NewsManagement({ className = '' }: NewsManagementProps) {
           published: 'bg-green-100 text-green-800',
           archived: 'bg-orange-100 text-orange-800',
         };
+        const status = article.status || 'draft';
         return (
-          <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusColors[article.status]}`}>
-            {article.status.charAt(0).toUpperCase() + article.status.slice(1)}
+          <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusColors[status as keyof typeof statusColors] || statusColors.draft}`}>
+            {status.charAt(0).toUpperCase() + status.slice(1)}
           </span>
         );
       }

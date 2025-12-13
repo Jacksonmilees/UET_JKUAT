@@ -651,8 +651,9 @@ export const usersApi = {
 
 // News API
 export const newsApi = {
-  getAll: async (): Promise<ApiResponse<any[]>> => {
-    return apiRequest('/v1/news');
+  getAll: async (params?: Record<string, string>): Promise<ApiResponse<any[]>> => {
+    const query = params ? '?' + new URLSearchParams(params).toString() : '';
+    return apiRequest(`/v1/news${query}`);
   },
 
   getById: async (id: number): Promise<ApiResponse<any>> => {
@@ -879,6 +880,33 @@ const enhancedUsersApi = {
   toggleStatus: async (id: string) => apiRequest(`/v1/users/${id}/toggle-status`, { method: 'PUT' }),
 };
 
+// Semesters API
+const semestersApi = {
+  getAll: async (): Promise<ApiResponse<any[]>> => apiRequest('/v1/semesters'),
+  getCurrent: async (): Promise<ApiResponse<any>> => apiRequest('/v1/semesters/current'),
+  getById: async (id: string | number): Promise<ApiResponse<any>> => apiRequest(`/v1/semesters/${id}`),
+  create: async (data: any): Promise<ApiResponse<any>> =>
+    apiRequest('/v1/semesters', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  update: async (id: string | number, data: any): Promise<ApiResponse<any>> =>
+    apiRequest(`/v1/semesters/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+  activate: async (id: string | number): Promise<ApiResponse<any>> =>
+    apiRequest(`/v1/semesters/${id}/activate`, {
+      method: 'POST'
+    }),
+  getStats: async (id: string | number): Promise<ApiResponse<any>> =>
+    apiRequest(`/v1/semesters/${id}/stats`),
+  sendReminders: async (id: string | number): Promise<ApiResponse<any>> =>
+    apiRequest(`/v1/semesters/${id}/reminders`, {
+      method: 'POST'
+    }),
+};
+
 // Admin API (dashboard stats, reports, management)
 const adminApi = {
   // Dashboard Stats
@@ -1009,6 +1037,7 @@ export default {
   merchandise: merchandiseApi,
   onboarding: onboardingApi,
   settings: settingsApi,
+  semesters: semestersApi,
   admin: adminApi,
   getToken,
   setToken,

@@ -193,17 +193,20 @@ const AccountManagementNew: React.FC = () => {
       key: 'status',
       header: 'Status',
       sortable: true,
-      render: (account) => (
-        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-          account.status === 'active'
-            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-            : account.status === 'inactive'
-            ? 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
-            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-        }`}>
-          {account.status.charAt(0).toUpperCase() + account.status.slice(1)}
-        </span>
-      ),
+      render: (account) => {
+        const status = account.status || 'inactive';
+        return (
+          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+            status === 'active'
+              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+              : status === 'inactive'
+              ? 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+          }`}>
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </span>
+        );
+      },
     },
     {
       key: 'actions',

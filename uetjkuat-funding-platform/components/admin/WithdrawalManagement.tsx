@@ -187,22 +187,25 @@ const WithdrawalManagementNew: React.FC = () => {
       key: 'status',
       header: 'Status',
       sortable: true,
-      render: (w) => (
-        <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${
-          w.status === 'completed'
-            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-            : w.status === 'pending' || w.status === 'initiated'
-            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-            : w.status === 'failed'
-            ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-            : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
-        }`}>
-          {w.status === 'completed' && <Check className="w-3 h-3" />}
-          {(w.status === 'pending' || w.status === 'initiated') && <Clock className="w-3 h-3" />}
-          {w.status === 'failed' && <X className="w-3 h-3" />}
-          {w.status.charAt(0).toUpperCase() + w.status.slice(1)}
-        </span>
-      ),
+      render: (w) => {
+        const status = w.status || 'pending';
+        return (
+          <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${
+            status === 'completed'
+              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+              : status === 'pending' || status === 'initiated'
+              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+              : status === 'failed'
+              ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+              : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+          }`}>
+            {status === 'completed' && <Check className="w-3 h-3" />}
+            {(status === 'pending' || status === 'initiated') && <Clock className="w-3 h-3" />}
+            {status === 'failed' && <X className="w-3 h-3" />}
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </span>
+        );
+      },
     },
     {
       key: 'actions',

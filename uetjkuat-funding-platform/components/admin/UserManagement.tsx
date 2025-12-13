@@ -265,19 +265,22 @@ const UserManagementNew: React.FC = () => {
       key: 'status',
       header: 'Status',
       sortable: true,
-      render: (u) => (
-        <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${
-          u.status === 'active'
-            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-            : u.status === 'suspended'
-            ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-            : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
-        }`}>
-          {u.status === 'active' && <CheckCircle className="w-3 h-3" />}
-          {u.status === 'suspended' && <XCircle className="w-3 h-3" />}
-          {u.status.charAt(0).toUpperCase() + u.status.slice(1)}
-        </span>
-      ),
+      render: (u) => {
+        const status = u.status || 'inactive';
+        return (
+          <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${
+            status === 'active'
+              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+              : status === 'suspended'
+              ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+              : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+          }`}>
+            {status === 'active' && <CheckCircle className="w-3 h-3" />}
+            {status === 'suspended' && <XCircle className="w-3 h-3" />}
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </span>
+        );
+      },
     },
     {
       key: 'actions',
