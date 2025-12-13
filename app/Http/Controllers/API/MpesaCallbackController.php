@@ -180,7 +180,7 @@ class MpesaCallbackController extends Controller
                     $pendingTxn->account->save();
                 }
 
-                // If this was a mandatory contribution, mark user as active and set registration date
+                // If this was a mandatory contribution, mark user as active and update semester payment status
                 if (($pendingTxn->metadata['purpose'] ?? null) === 'mandatory_contribution' && isset($pendingTxn->metadata['user_id'])) {
                     $user = User::find($pendingTxn->metadata['user_id']);
                     if ($user) {
@@ -188,7 +188,22 @@ class MpesaCallbackController extends Controller
                         if (!$user->registration_completed_at) {
                             $user->registration_completed_at = now();
                         }
+
+                        // Update semester mandatory payment status
+                        $activeSemester = \App\Models\Semester::getActive();
+                        if ($activeSemester) {
+                            $user->current_semester_id = $activeSemester->id;
+                            $user->mandatory_paid_current_semester = true;
+                            $user->mandatory_paid_at = now();
+                        }
+
                         $user->save();
+
+                        Log::info('Mandatory contribution completed', [
+                            'user_id' => $user->id,
+                            'amount' => $amount,
+                            'semester_id' => $activeSemester->id ?? null,
+                        ]);
                     }
                 }
                 

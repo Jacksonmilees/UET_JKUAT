@@ -426,6 +426,7 @@ Route::prefix('v1')->group(function () {
     // Public Recharge Link (no auth required)
     Route::get('/recharge/{token}', [AccountRechargeController::class, 'getPublicTokenInfo']);
     Route::post('/recharge/{token}/pay', [AccountRechargeController::class, 'initiatePayment']);
+    Route::get('/recharge/contribution/{contributionId}/status', [AccountRechargeController::class, 'checkContributionStatus']);
     
     // Public Donation to Project (no auth required)
     Route::post('/projects/{id}/public-donate', [ProjectController::class, 'publicDonate']);
