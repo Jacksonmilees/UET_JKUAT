@@ -279,4 +279,43 @@ class AccountRechargeController extends Controller
             'data' => $contributions,
         ]);
     }
+
+    /**
+     * Check contribution status (public - no auth required)
+     */
+    public function checkContributionStatus(int $contributionId): JsonResponse
+    {
+        try {
+            $contribution = RechargeContribution::find($contributionId);
+
+            if (!$contribution) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Contribution not found',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'contribution_id' => $contribution->id,
+                    'status' => $contribution->status,
+                    'amount' => $contribution->amount,
+                    'mpesa_receipt' => $contribution->mpesa_receipt,
+                    'created_at' => $contribution->created_at->toIso8601String(),
+                    'updated_at' => $contribution->updated_at->toIso8601String(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error checking contribution status', [
+                'contribution_id' => $contributionId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error checking contribution status',
+            ], 500);
+        }
+    }
 }
