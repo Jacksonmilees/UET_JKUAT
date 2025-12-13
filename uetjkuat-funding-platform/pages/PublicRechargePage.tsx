@@ -27,6 +27,10 @@ const PublicRechargePage: React.FC<PublicRechargePageProps> = ({ token, onBack }
   const [amount, setAmount] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [contributionId, setContributionId] = useState<number | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'completed' | 'failed'>('pending');
+  const [verifying, setVerifying] = useState(false);
+  const [mpesaReceipt, setMpesaReceipt] = useState<string | null>(null);
 
   // Fetch token info
   useEffect(() => {
@@ -53,6 +57,46 @@ const PublicRechargePage: React.FC<PublicRechargePageProps> = ({ token, onBack }
 
     fetchTokenInfo();
   }, [token]);
+
+  // Poll for payment status
+  useEffect(() => {
+    if (!contributionId || paymentStatus !== 'pending') return;
+
+    let attempts = 0;
+    const maxAttempts = 40; // 2 minutes (40 * 3 seconds)
+
+    const checkStatus = async () => {
+      try {
+        const response = await api.get(`/v1/recharge/contribution/${contributionId}/status`);
+        if (response.data.success) {
+          const status = response.data.data.status;
+          setPaymentStatus(status);
+
+          if (status === 'completed') {
+            setVerifying(false);
+            setMpesaReceipt(response.data.data.mpesa_receipt);
+          } else if (status === 'failed') {
+            setVerifying(false);
+            setError('Payment failed. Please try again.');
+          }
+        }
+      } catch (err) {
+        console.error('Error checking payment status:', err);
+      }
+
+      attempts++;
+      if (attempts < maxAttempts && paymentStatus === 'pending') {
+        setTimeout(checkStatus, 3000); // Check again in 3 seconds
+      } else if (attempts >= maxAttempts && paymentStatus === 'pending') {
+        setVerifying(false);
+        setError('Payment verification timed out. Please check your wallet later.');
+      }
+    };
+
+    // Start polling after a short delay
+    const timeout = setTimeout(checkStatus, 2000);
+    return () => clearTimeout(timeout);
+  }, [contributionId, paymentStatus]);
 
   const normalizePhone = (phoneInput: string): string => {
     let cleaned = phoneInput.replace(/[^0-9]/g, '');
@@ -96,6 +140,9 @@ const PublicRechargePage: React.FC<PublicRechargePageProps> = ({ token, onBack }
 
       if (response.data.success) {
         setSuccess(true);
+        setContributionId(response.data.data.contribution_id);
+        setVerifying(true);
+        setPaymentStatus('pending');
       } else {
         setError(response.data.message || 'Failed to initiate payment');
       }
@@ -157,32 +204,79 @@ const PublicRechargePage: React.FC<PublicRechargePageProps> = ({ token, onBack }
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
         <div className="bg-card border border-border rounded-2xl p-8 max-w-md w-full text-center shadow-lg">
-          <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="w-10 h-10 text-green-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-foreground mb-2">Check Your Phone!</h2>
-          <p className="text-muted-foreground mb-6">
-            An M-Pesa prompt has been sent to your phone. Please enter your PIN to send <span className="font-semibold text-foreground">KES {amount}</span> to <span className="font-semibold text-foreground">{tokenInfo?.recipient_name}</span>.
-          </p>
-          <div className="bg-muted/50 rounded-lg p-4 mb-6">
-            <p className="text-sm text-muted-foreground">
-              If you don't receive the prompt, please check:
-            </p>
-            <ul className="text-sm text-muted-foreground mt-2 text-left list-disc list-inside">
-              <li>Your phone is on and has network</li>
-              <li>M-Pesa service is active</li>
-              <li>You have sufficient balance</li>
-            </ul>
-          </div>
-          <button
-            onClick={() => {
-              setSuccess(false);
-              setAmount('');
-            }}
-            className="text-primary hover:underline text-sm"
-          >
-            Send more
-          </button>
+          {paymentStatus === 'completed' ? (
+            <>
+              <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-10 h-10 text-green-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-foreground mb-2">Payment Successful!</h2>
+              <p className="text-muted-foreground mb-6">
+                Your payment of <span className="font-semibold text-foreground">KES {amount}</span> to <span className="font-semibold text-foreground">{tokenInfo?.recipient_name}</span> was successful.
+              </p>
+              {mpesaReceipt && (
+                <div className="bg-muted/50 rounded-lg p-4 mb-6">
+                  <p className="text-sm font-medium text-foreground mb-2">M-Pesa Receipt</p>
+                  <p className="text-lg font-mono font-semibold text-primary">{mpesaReceipt}</p>
+                </div>
+              )}
+              <button
+                onClick={() => {
+                  setSuccess(false);
+                  setAmount('');
+                  setPaymentStatus('pending');
+                  setContributionId(null);
+                  setMpesaReceipt(null);
+                }}
+                className="w-full py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                Send Another Payment
+              </button>
+            </>
+          ) : verifying ? (
+            <>
+              <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+              </div>
+              <h2 className="text-2xl font-bold text-foreground mb-2">Verifying Payment...</h2>
+              <p className="text-muted-foreground mb-6">
+                Please wait while we confirm your payment of <span className="font-semibold text-foreground">KES {amount}</span>.
+              </p>
+              <div className="bg-muted/50 rounded-lg p-4">
+                <p className="text-sm text-muted-foreground">
+                  This may take up to 2 minutes. Please don't close this page.
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-10 h-10 text-green-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-foreground mb-2">Check Your Phone!</h2>
+              <p className="text-muted-foreground mb-6">
+                An M-Pesa prompt has been sent to your phone. Please enter your PIN to send <span className="font-semibold text-foreground">KES {amount}</span> to <span className="font-semibold text-foreground">{tokenInfo?.recipient_name}</span>.
+              </p>
+              <div className="bg-muted/50 rounded-lg p-4 mb-6">
+                <p className="text-sm text-muted-foreground">
+                  If you don't receive the prompt, please check:
+                </p>
+                <ul className="text-sm text-muted-foreground mt-2 text-left list-disc list-inside">
+                  <li>Your phone is on and has network</li>
+                  <li>M-Pesa service is active</li>
+                  <li>You have sufficient balance</li>
+                </ul>
+              </div>
+              <button
+                onClick={() => {
+                  setSuccess(false);
+                  setAmount('');
+                }}
+                className="text-primary hover:underline text-sm"
+              >
+                Cancel
+              </button>
+            </>
+          )}
         </div>
       </div>
     );
