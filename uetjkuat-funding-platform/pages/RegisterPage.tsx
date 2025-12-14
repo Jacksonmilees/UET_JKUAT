@@ -4,7 +4,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import MandatoryPaymentModal from '../components/MandatoryPaymentModal';
 import { User, Mail, Phone, Lock, GraduationCap, Building, BookOpen, Home, Heart, ChevronRight, ChevronLeft, CheckCircle, Eye, EyeOff, Loader2, CreditCard, Smartphone } from 'lucide-react';
 import { Route } from '../types';
-import { API_BASE_URL } from '../constants';
+import { API_BASE_URL, MANDATORY_CONTRIBUTION_AMOUNT } from '../constants';
 import { mpesaApi } from '../services/api';
 
 interface RegisterPageProps {
@@ -317,7 +317,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
   };
   
   // Registration fee amount
-  const REGISTRATION_FEE = 100;
+  const REGISTRATION_FEE = MANDATORY_CONTRIBUTION_AMOUNT;
   
   // Handle M-Pesa payment
   const handleInitiatePayment = async () => {
@@ -780,7 +780,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
             setShowMandatoryPayment(false);
             setRoute({ page: 'dashboard' });
           }}
-          amount={100}
+          amount={REGISTRATION_FEE}
           phone={formData.phone}
           onSuccess={() => {
             setShowMandatoryPayment(false);
