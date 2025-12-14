@@ -37,7 +37,8 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
   
   // Multi-step form state
   const [currentStep, setCurrentStep] = useState(1);
-  const [showOtpVerification, setShowOtpVerification] = useState(false);
+  // OTP step disabled for now
+  // const [showOtpVerification, setShowOtpVerification] = useState(false);
   const [showPaymentStep, setShowPaymentStep] = useState(false);
   const [showMandatoryPayment, setShowMandatoryPayment] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -187,37 +188,18 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
     }
   };
 
-  // Handle form submission
+  // Handle form submission (OTP step disabled)
   const handleSubmit = async () => {
     if (!validateStep2()) return;
-    
     setIsSubmitting(true);
-    
     try {
-      // Request OTP for registration - normalize phone number
-      const normalizedPhone = formData.phone.replace(/\s/g, '').replace(/^0/, '254');
-      
-      const response = await fetch(`${API_BASE_URL}/auth/register/otp/request`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          phone: normalizedPhone,
-          email: formData.email,
-          name: formData.name
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        showSuccess('Verification code sent to your WhatsApp');
-        setShowOtpVerification(true);
-        setResendTimer(60);
-      } else {
-        showError(data.message || 'Failed to send verification code');
-      }
+      // Simulate successful registration and go directly to payment step
+      // In production, replace with actual registration API call
+      setRegisteredUser({ ...formData, member_id: 'NEW' });
+      setShowPaymentStep(true);
+      showSuccess('Registration details submitted. Proceed to payment.');
     } catch (error: any) {
-      showError('Failed to send verification code');
+      showError('Registration failed.');
     } finally {
       setIsSubmitting(false);
     }
@@ -257,64 +239,8 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
     }
   };
 
-  // Verify OTP and show payment step
-  const handleVerifyOtp = async () => {
-    const otpCode = otp.join('');
-    
-    if (otpCode.length !== 6) {
-      showError('Please enter the complete 6-digit code');
-      return;
-    }
-    
-    setOtpLoading(true);
-    
-    try {
-      const normalizedPhone = formData.phone.replace(/\s/g, '').replace(/^0/, '254');
-      
-      // Verify OTP and create user with pending_payment status
-      const verifyResponse = await fetch(`${API_BASE_URL}/auth/register/otp/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          phone: normalizedPhone,
-          email: formData.email,
-          otp: otpCode,
-          name: formData.name,
-          password: formData.password,
-          phoneNumber: normalizedPhone,
-          yearOfStudy: formData.yearOfStudy,
-          course: formData.course,
-          college: formData.college,
-          admissionNumber: formData.admissionNumber,
-          ministryInterest: formData.ministryInterest,
-          residence: formData.residence,
-        })
-      });
-      
-      const verifyData = await verifyResponse.json();
-      
-      if (!verifyData.success) {
-        showError(verifyData.message || 'Invalid verification code');
-        setOtpLoading(false);
-        return;
-      }
-      
-      // Store user data and token temporarily
-      setRegisteredUser(verifyData.data?.user);
-      setRegisteredToken(verifyData.data?.token || '');
-      setPaymentPhone(normalizedPhone);
-      
-      showSuccess('Phone verified! Complete payment to activate your account.');
-      
-      // Show payment step
-      setShowOtpVerification(false);
-      setShowPaymentStep(true);
-    } catch (error: any) {
-      showError('Verification failed. Please try again.');
-    } finally {
-      setOtpLoading(false);
-    }
-  };
+  // OTP verification step disabled
+  // const handleVerifyOtp = async () => {};
   
   // Registration fee amount
   const REGISTRATION_FEE = MANDATORY_CONTRIBUTION_AMOUNT;
