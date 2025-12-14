@@ -200,13 +200,6 @@ return new class extends Migration
                     'merchandise_status_category_index' => [ 'sql' => '', 'columns' => ['status', 'category'] ],
                 ]);
             }
-                'mpesa_transaction_logs_phone_number_index' => [ 'sql' => 'CREATE INDEX mpesa_transaction_logs_phone_number_index ON mpesa_transaction_logs (phone_number)', 'columns' => ['phone_number'] ],
-                'mpesa_transaction_logs_account_number_index' => [ 'sql' => 'CREATE INDEX mpesa_transaction_logs_account_number_index ON mpesa_transaction_logs (account_number)', 'columns' => ['account_number'] ],
-                'mpesa_transaction_logs_created_at_index' => [ 'sql' => 'CREATE INDEX mpesa_transaction_logs_created_at_index ON mpesa_transaction_logs (created_at)', 'columns' => ['created_at'] ],
-                'mpesa_transaction_logs_status_created_at_index' => [ 'sql' => 'CREATE INDEX mpesa_transaction_logs_status_created_at_index ON mpesa_transaction_logs (status, created_at)', 'columns' => ['status', 'created_at'] ],
-                'mpesa_transaction_logs_phone_number_status_index' => [ 'sql' => 'CREATE INDEX mpesa_transaction_logs_phone_number_status_index ON mpesa_transaction_logs (phone_number, status)', 'columns' => ['phone_number', 'status'] ],
-            ]);
-        }
 
         // Tickets table indexes (if exists)
         if (Schema::hasTable('tickets')) {
