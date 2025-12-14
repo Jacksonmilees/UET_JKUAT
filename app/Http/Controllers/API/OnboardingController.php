@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 
 class OnboardingController extends Controller
 {
-    private const MANDATORY_AMOUNT = 100; // KES 100
+    private const MANDATORY_AMOUNT = 1; // KES 1 (TEMP for testing)
 
     /**
     * Initiate mandatory contribution STK push for the authenticated user.
