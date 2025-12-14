@@ -49,6 +49,7 @@ return [
         'https://uet-jkuat.onrender.com',  // Backend domain
         'https://uet-jkuat.vercel.app',  // Frontend on Vercel
         'https://uetjkuat-54286e10a43b.herokuapp.com',  // Heroku deployment
+        'https://www.uetjkuat.co.ke', // Production frontend
     ],
 
     /*

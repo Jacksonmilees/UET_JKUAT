@@ -305,5 +305,6 @@ return new class extends Migration
                         ]);
                     }
                 }
-            };
-        if (Schema::hasTable('merchandise')) {
+            }
+        }
+}
