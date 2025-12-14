@@ -15,12 +15,12 @@ use Exception;
 class AccountStatementService
 {
     protected $accountService;
-    protected $memberDbConnection;
+
 
     public function __construct(AccountService $accountService)
     {
         $this->accountService = $accountService;
-        $this->memberDbConnection = DB::connection('member_db');
+        // Removed member_db connection to avoid deployment error
     }
 
     public function generateAccountStatements($startDate = null, $endDate = null)
