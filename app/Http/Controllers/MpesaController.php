@@ -176,37 +176,33 @@ class MpesaController extends Controller
 
         try {
             DB::beginTransaction();
-
             $callbackData = $request->json()->all();
-            
             if (isset($callbackData['Body']['stkCallback'])) {
-                $resultCode = $callbackData['Body']['stkCallback']['ResultCode'];
-                $resultDesc = $callbackData['Body']['stkCallback']['ResultDesc'];
-                $merchantRequestID = $callbackData['Body']['stkCallback']['MerchantRequestID'];
-                $checkoutRequestID = $callbackData['Body']['stkCallback']['CheckoutRequestID'];
+                $resultCode = $callbackData['Body']['stkCallback']['ResultCode'] ?? null;
+                $resultDesc = $callbackData['Body']['stkCallback']['ResultDesc'] ?? null;
+                $merchantRequestID = $callbackData['Body']['stkCallback']['MerchantRequestID'] ?? null;
+                $checkoutRequestID = $callbackData['Body']['stkCallback']['CheckoutRequestID'] ?? null;
 
                 if ($resultCode == 0) {
-                    // Payment successful - extract payment details
-                    $callbackMetadata = collect($callbackData['Body']['stkCallback']['CallbackMetadata']['Item']);
-                    
-                    $amount = $callbackMetadata->firstWhere('Name', 'Amount')['Value'];
-                    $mpesaReceiptNumber = $callbackMetadata->firstWhere('Name', 'MpesaReceiptNumber')['Value'];
-                    $transactionDate = $callbackMetadata->firstWhere('Name', 'TransactionDate')['Value'];
-                    $phoneNumber = $callbackMetadata->firstWhere('Name', 'PhoneNumber')['Value'];
-                    
-                    // Get the account reference (MMID) from the callback
-                    $accountReference = $callbackData['Body']['stkCallback']['CallbackMetadata']['Item'][5]['Value'] ?? null;
+                    // Payment successful - extract payment details safely
+                    $callbackMetadata = collect($callbackData['Body']['stkCallback']['CallbackMetadata']['Item'] ?? []);
+                    $amount = optional($callbackMetadata->firstWhere('Name', 'Amount'))['Value'] ?? null;
+                    $mpesaReceiptNumber = optional($callbackMetadata->firstWhere('Name', 'MpesaReceiptNumber'))['Value'] ?? null;
+                    $transactionDate = optional($callbackMetadata->firstWhere('Name', 'TransactionDate'))['Value'] ?? null;
+                    $phoneNumber = optional($callbackMetadata->firstWhere('Name', 'PhoneNumber'))['Value'] ?? null;
+                    // Try to get account reference by name, fallback to null
+                    $accountReference = optional($callbackMetadata->firstWhere('Name', 'AccountReference'))['Value'] ?? null;
 
-                    // Find the original ticket by ticket_number (account reference)
-                    $ticket = Ticket::where('ticket_number', $accountReference)->first();
+                    // Find the original ticket by ticket_number (account reference), if present
+                    $ticket = $accountReference ? Ticket::where('ticket_number', $accountReference)->first() : null;
 
-                    // Create payment record
+                    // Create payment record (only if all required fields are present)
                     $payment = Payment::create([
                         'transaction_id' => $mpesaReceiptNumber,
                         'amount' => $amount,
                         'phone_number' => $phoneNumber,
                         'member_mmid' => $accountReference,
-                        'transaction_date' => Carbon::createFromFormat('YmdHis', $transactionDate),
+                        'transaction_date' => $transactionDate ? Carbon::createFromFormat('YmdHis', $transactionDate) : Carbon::now(),
                         'status' => 'completed',
                         'payment_method' => 'mpesa',
                         'merchant_request_id' => $merchantRequestID,
@@ -218,10 +214,10 @@ class MpesaController extends Controller
                         $ticket->payment_status = 'completed';
                         $ticket->status = 'active';
                         $ticket->save();
-                    } else {
-                        // Fallback: create a new ticket if not found
+                    } else if ($accountReference) {
+                        // Fallback: create a new ticket if not found and reference exists
                         $ticket = Ticket::create([
-                            'ticket_number' => $accountReference ?? ('TKT-' . strtoupper(uniqid())),
+                            'ticket_number' => $accountReference,
                             'member_mmid' => $accountReference,
                             'payment_id' => $payment->id,
                             'status' => 'active',
@@ -229,20 +225,20 @@ class MpesaController extends Controller
                             'phone_number' => $phoneNumber,
                             'payment_status' => 'completed',
                             'purchase_date' => Carbon::now(),
-                            'expiry_date' => Carbon::now()->addDays(30), // Adjust expiry as needed
+                            'expiry_date' => Carbon::now()->addDays(30),
                         ]);
                     }
 
-                    // Send ticket confirmation SMS
-                    $this->sendTicketConfirmation($ticket, $phoneNumber);
+                    // Send ticket confirmation SMS if ticket exists
+                    if ($ticket && $phoneNumber) {
+                        $this->sendTicketConfirmation($ticket, $phoneNumber);
+                    }
 
                     DB::commit();
-
                     Log::info('Payment processed and ticket updated successfully', [
-                        'ticket_number' => $ticket->ticket_number,
+                        'ticket_number' => $ticket->ticket_number ?? null,
                         'transaction_id' => $mpesaReceiptNumber
                     ]);
-
                     return response()->json([
                         'ResultCode' => 0,
                         'ResultDesc' => 'Success'
@@ -255,19 +251,15 @@ class MpesaController extends Controller
                     ]);
                 }
             }
-
             DB::rollBack();
             Log::error('Payment failed or invalid callback data', $callbackData);
-
             return response()->json([
                 'ResultCode' => 1,
                 'ResultDesc' => 'Failed'
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error processing M-Pesa callback: ' . $e->getMessage());
-
             return response()->json([
                 'ResultCode' => 1,
                 'ResultDesc' => 'Failed'

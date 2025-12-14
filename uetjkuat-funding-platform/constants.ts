@@ -31,7 +31,7 @@ const getPastDate = (days: number) => {
     return date.toISOString();
 }
 
-export const MANDATORY_CONTRIBUTION_AMOUNT = 1;
+export const MANDATORY_CONTRIBUTION_AMOUNT = 100;
 
 // API Configuration (single source of truth for frontend)
 // Last updated: 2025-12-09 - OTP endpoints working
