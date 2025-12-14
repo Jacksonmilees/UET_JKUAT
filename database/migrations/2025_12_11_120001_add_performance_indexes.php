@@ -87,23 +87,20 @@ return new class extends Migration
             Schema::table('withdrawals', function (Blueprint $table) {
                 $sm = Schema::getConnection()->getDoctrineSchemaManager();
                 $indexes = $sm->listTableIndexes('withdrawals');
-                if (!isset($indexes['withdrawals_status_index'])) {
-                    $table->index('status');
-                }
-                if (!isset($indexes['withdrawals_created_at_index'])) {
-                    $table->index('created_at');
-                }
-                if (!isset($indexes['withdrawals_account_id_index'])) {
-                    $table->index('account_id');
-                }
-                if (!isset($indexes['withdrawals_phone_number_index'])) {
-                    $table->index('phone_number');
-                }
-                if (!isset($indexes['withdrawals_status_created_at_index'])) {
-                    $table->index(['status', 'created_at']);
-                }
-                if (!isset($indexes['withdrawals_account_id_status_index'])) {
-                    $table->index(['account_id', 'status']);
+                // Use raw SQL to create indexes only if they do not exist (Postgres compatible)
+                $indexes = [
+                    'withdrawals_status_index' => 'CREATE INDEX withdrawals_status_index ON withdrawals (status)',
+                    'withdrawals_created_at_index' => 'CREATE INDEX withdrawals_created_at_index ON withdrawals (created_at)',
+                    'withdrawals_account_id_index' => 'CREATE INDEX withdrawals_account_id_index ON withdrawals (account_id)',
+                    'withdrawals_phone_number_index' => 'CREATE INDEX withdrawals_phone_number_index ON withdrawals (phone_number)',
+                    'withdrawals_status_created_at_index' => 'CREATE INDEX withdrawals_status_created_at_index ON withdrawals (status, created_at)',
+                    'withdrawals_account_id_status_index' => 'CREATE INDEX withdrawals_account_id_status_index ON withdrawals (account_id, status)',
+                ];
+                foreach ($indexes as $indexName => $sql) {
+                    $exists = DB::select("SELECT 1 FROM pg_indexes WHERE tablename = 'withdrawals' AND indexname = ?", [$indexName]);
+                    if (empty($exists)) {
+                        DB::statement($sql);
+                    }
                 }
             });
         }
