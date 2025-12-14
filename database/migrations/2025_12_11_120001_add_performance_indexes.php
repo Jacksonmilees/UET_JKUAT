@@ -85,12 +85,26 @@ return new class extends Migration
         // Withdrawals table indexes (if exists)
         if (Schema::hasTable('withdrawals')) {
             Schema::table('withdrawals', function (Blueprint $table) {
-                $table->index('status');
-                $table->index('created_at');
-                $table->index('account_id');
-                $table->index('phone_number');
-                $table->index(['status', 'created_at']);
-                $table->index(['account_id', 'status']);
+                $sm = Schema::getConnection()->getDoctrineSchemaManager();
+                $indexes = $sm->listTableIndexes('withdrawals');
+                if (!isset($indexes['withdrawals_status_index'])) {
+                    $table->index('status');
+                }
+                if (!isset($indexes['withdrawals_created_at_index'])) {
+                    $table->index('created_at');
+                }
+                if (!isset($indexes['withdrawals_account_id_index'])) {
+                    $table->index('account_id');
+                }
+                if (!isset($indexes['withdrawals_phone_number_index'])) {
+                    $table->index('phone_number');
+                }
+                if (!isset($indexes['withdrawals_status_created_at_index'])) {
+                    $table->index(['status', 'created_at']);
+                }
+                if (!isset($indexes['withdrawals_account_id_status_index'])) {
+                    $table->index(['account_id', 'status']);
+                }
             });
         }
 
