@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import MandatoryPaymentModal from '../components/MandatoryPaymentModal';
-import { User, Mail, Phone, Lock, GraduationCap, Building, BookOpen, Home, Heart, ChevronRight, ChevronLeft, CheckCircle, Eye, EyeOff, Loader2, CreditCard, Smartphone } from 'lucide-react';
+import { User, Mail, Phone, Lock, GraduationCap, Building, BookOpen, Home, Heart, ChevronRight, ChevronLeft, CheckCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Route } from '../types';
-import { API_BASE_URL, MANDATORY_CONTRIBUTION_AMOUNT } from '../constants';
-import { mpesaApi } from '../services/api';
+import { MANDATORY_CONTRIBUTION_AMOUNT } from '../constants';
 
 interface RegisterPageProps {
   setRoute: (route: Route) => void;
@@ -37,28 +36,12 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
   
   // Multi-step form state
   const [currentStep, setCurrentStep] = useState(1);
-  // OTP step disabled for now
-  // const [showOtpVerification, setShowOtpVerification] = useState(false);
-  const [showPaymentStep, setShowPaymentStep] = useState(false);
   const [showMandatoryPayment, setShowMandatoryPayment] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Password visibility
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
-  // OTP state
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [otpLoading, setOtpLoading] = useState(false);
-  const [resendTimer, setResendTimer] = useState(0);
-  
-  // Payment state
-  const [paymentLoading, setPaymentLoading] = useState(false);
-  const [paymentPhone, setPaymentPhone] = useState('');
-  const [checkoutRequestId, setCheckoutRequestId] = useState('');
-  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'pending' | 'checking' | 'success' | 'failed'>('idle');
-  const [registeredUser, setRegisteredUser] = useState<any>(null);
-  const [registeredToken, setRegisteredToken] = useState<string>('');
   
   // Form data
   const [formData, setFormData] = useState({
@@ -79,14 +62,6 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
   
   // Validation errors per field
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Resend timer countdown
-  useEffect(() => {
-    if (resendTimer > 0) {
-      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [resendTimer]);
 
   // Show mandatory payment after successful registration
   useEffect(() => {
@@ -188,16 +163,38 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
     }
   };
 
-  // Handle form submission (OTP step disabled)
+  const normalizePhone = (phone: string): string => {
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.startsWith('0')) return `254${cleaned.slice(1)}`;
+    if (cleaned.startsWith('254')) return cleaned;
+    if (cleaned.startsWith('7') || cleaned.startsWith('1')) return `254${cleaned}`;
+    return cleaned;
+  };
+
+  // Handle form submission (no OTP)
   const handleSubmit = async () => {
     if (!validateStep2()) return;
     setIsSubmitting(true);
+
     try {
-      // Simulate successful registration and go directly to payment step
-      // In production, replace with actual registration API call
-      setRegisteredUser({ ...formData, member_id: 'NEW' });
-      setShowPaymentStep(true);
-      showSuccess('Registration details submitted. Proceed to payment.');
+      const success = await register({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        phoneNumber: normalizePhone(formData.phone),
+        yearOfStudy: formData.year_of_study,
+        course: formData.course.trim(),
+        college: formData.college,
+        admissionNumber: formData.admission_number.trim(),
+        ministryInterest: formData.ministry_interest.trim() || 'Not specified',
+        residence: formData.residence.trim() || 'Not specified',
+      });
+
+      if (success) {
+        showSuccess('Registration successful. Complete mandatory payment to continue.');
+      } else {
+        showError('Registration failed. Please check your details and try again.');
+      }
     } catch (error: any) {
       showError('Registration failed.');
     } finally {
@@ -205,180 +202,8 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
     }
   };
 
-  // Handle OTP input
-  const handleOtpChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return;
-    
-    const newOtp = [...otp];
-    newOtp[index] = value.slice(-1);
-    setOtp(newOtp);
-    
-    // Auto-focus next input
-    if (value && index < 5) {
-      const nextInput = document.getElementById(`otp-${index + 1}`);
-      nextInput?.focus();
-    }
-  };
-
-  // Handle OTP paste
-  const handleOtpPaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    const newOtp = [...otp];
-    for (let i = 0; i < pastedData.length; i++) {
-      newOtp[i] = pastedData[i];
-    }
-    setOtp(newOtp);
-  };
-
-  // Handle OTP key down (backspace navigation)
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      const prevInput = document.getElementById(`otp-${index - 1}`);
-      prevInput?.focus();
-    }
-  };
-
-  // OTP verification step disabled
-  // const handleVerifyOtp = async () => {};
-  
   // Registration fee amount
   const REGISTRATION_FEE = MANDATORY_CONTRIBUTION_AMOUNT;
-  
-  // Handle M-Pesa payment
-  const handleInitiatePayment = async () => {
-    if (!paymentPhone) {
-      showError('Phone number is required');
-      return;
-    }
-
-    setPaymentLoading(true);
-    setPaymentStatus('pending');
-
-    try {
-      const response = await mpesaApi.initiateSTKPush({
-        phone_number: paymentPhone,
-        amount: REGISTRATION_FEE,
-        account_number: registeredUser?.member_id || 'NEW',
-      });
-
-      if (response.success && response.data?.CheckoutRequestID) {
-        setCheckoutRequestId(response.data.CheckoutRequestID);
-        showSuccess('Check your phone for M-Pesa prompt. Enter PIN to complete.');
-
-        // Start polling for payment status
-        pollPaymentStatus(response.data.CheckoutRequestID);
-      } else {
-        showError(response.message || 'Failed to initiate payment');
-        setPaymentStatus('failed');
-      }
-    } catch (error: any) {
-      showError(error.message || 'Payment failed. Please try again.');
-      setPaymentStatus('failed');
-    } finally {
-      setPaymentLoading(false);
-    }
-  };
-  
-  // Poll for payment status
-  const pollPaymentStatus = async (checkoutId: string) => {
-    setPaymentStatus('checking');
-
-    let attempts = 0;
-    const maxAttempts = 30; // 30 seconds max
-
-    const checkStatus = async () => {
-      attempts++;
-
-      try {
-        const response = await mpesaApi.checkStatus(checkoutId);
-
-        if (response.success && response.data) {
-          // Backend returns status as string: "pending", "completed", "cancelled", "failed"
-          const status = response.data.status;
-
-          if (status === 'completed') {
-            // Payment successful
-            setPaymentStatus('success');
-
-            // Store auth token and complete registration
-            if (registeredToken) {
-              localStorage.setItem('auth_token', registeredToken);
-            }
-            if (registeredUser) {
-              localStorage.setItem('user', JSON.stringify(registeredUser));
-            }
-
-            showSuccess('Payment successful! Welcome to UET JKUAT.');
-
-            // Redirect to login after short delay
-            setTimeout(() => {
-              setRoute({ page: 'login' });
-            }, 2000);
-            return;
-          } else if (status === 'cancelled') {
-            // User cancelled
-            setPaymentStatus('failed');
-            showError('Payment was cancelled. Please try again.');
-            return;
-          } else if (status === 'failed') {
-            // Payment failed
-            setPaymentStatus('failed');
-            showError(response.data.errorMessage || 'Payment failed. Please try again.');
-            return;
-          }
-        }
-
-        // Continue polling if still pending
-        if (attempts < maxAttempts) {
-          setTimeout(checkStatus, 1000);
-        } else {
-          setPaymentStatus('idle');
-          showError('Payment verification timed out. If you paid, please contact support.');
-        }
-      } catch (error) {
-        if (attempts < maxAttempts) {
-          setTimeout(checkStatus, 1000);
-        } else {
-          setPaymentStatus('idle');
-        }
-      }
-    };
-
-    // Start checking after 5 seconds (give user time to enter PIN)
-    setTimeout(checkStatus, 5000);
-  };
-
-  // Resend OTP
-  const handleResendOtp = async () => {
-    if (resendTimer > 0) return;
-    
-    try {
-      const normalizedPhone = formData.phone.replace(/\s/g, '').replace(/^0/, '254');
-      
-      const response = await fetch(`${API_BASE_URL}/auth/register/otp/request`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          phone: normalizedPhone,
-          email: formData.email,
-          name: formData.name
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        showSuccess('New verification code sent to WhatsApp');
-        setResendTimer(60);
-        setOtp(['', '', '', '', '', '']);
-      } else {
-        showError(data.message || 'Failed to resend code');
-      }
-    } catch (error) {
-      showError('Failed to resend verification code');
-    }
-  };
 
   // Render step indicator
   const renderStepIndicator = () => (
@@ -502,199 +327,6 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
     </div>
   );
 
-  // Render OTP verification
-  if (showOtpVerification) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-secondary/30 px-4 py-12">
-        <div className="w-full max-w-md">
-          <div className="bg-card rounded-2xl shadow-xl p-8 border border-border">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Phone className="w-8 h-8 text-primary" />
-              </div>
-              <h2 className="text-2xl font-bold text-foreground">Verify Your Phone</h2>
-              <p className="text-muted-foreground mt-2">
-                Enter the 6-digit code sent to <br />
-                <span className="font-medium text-foreground">{formData.phone}</span>
-              </p>
-            </div>
-
-            {/* OTP Input */}
-            <div className="flex justify-center gap-2 mb-6">
-              {otp.map((digit, index) => (
-                <input
-                  key={index}
-                  id={`otp-${index}`}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleOtpChange(index, e.target.value)}
-                  onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                  onPaste={index === 0 ? handleOtpPaste : undefined}
-                  className="w-12 h-14 text-center text-xl font-bold border-2 rounded-xl bg-secondary/50 text-foreground focus:bg-background focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                />
-              ))}
-            </div>
-
-            {/* Verify Button */}
-            <button
-              onClick={handleVerifyOtp}
-              disabled={otpLoading || otp.join('').length !== 6}
-              className="w-full py-3.5 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-            >
-              {otpLoading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Verifying...
-                </>
-              ) : (
-                'Verify & Create Account'
-              )}
-            </button>
-
-            {/* Resend */}
-            <div className="text-center mt-6">
-              {resendTimer > 0 ? (
-                <p className="text-muted-foreground">
-                  Resend code in <span className="font-semibold text-primary">{resendTimer}s</span>
-                </p>
-              ) : (
-                <button
-                  onClick={handleResendOtp}
-                  className="text-primary hover:text-primary/80 font-medium"
-                >
-                  Resend verification code
-                </button>
-              )}
-            </div>
-
-            {/* Back button */}
-            <button
-              onClick={() => setShowOtpVerification(false)}
-              className="w-full mt-4 py-2.5 text-muted-foreground hover:text-foreground font-medium flex items-center justify-center gap-2"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Back to registration
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Render Payment step
-  if (showPaymentStep) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-secondary/30 px-4 py-12">
-        <div className="w-full max-w-md">
-          <div className="bg-card rounded-2xl shadow-xl p-8 border border-border">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                {paymentStatus === 'success' ? (
-                  <CheckCircle className="w-8 h-8 text-green-500" />
-                ) : (
-                  <CreditCard className="w-8 h-8 text-foreground" />
-                )}
-              </div>
-              <h2 className="text-2xl font-bold text-foreground">
-                {paymentStatus === 'success' ? 'Payment Successful!' : 'Complete Registration'}
-              </h2>
-              <p className="text-muted-foreground mt-2">
-                {paymentStatus === 'success' 
-                  ? 'Your account is now active. Redirecting...'
-                  : 'Pay the registration fee to activate your account'
-                }
-              </p>
-            </div>
-
-            {paymentStatus !== 'success' && (
-              <>
-                {/* Payment Amount */}
-                <div className="bg-secondary/50 rounded-xl p-6 mb-6 text-center">
-                  <p className="text-sm text-muted-foreground mb-1">Registration Fee</p>
-                  <p className="text-4xl font-bold text-foreground">KES {REGISTRATION_FEE}</p>
-                  <p className="text-sm text-muted-foreground mt-2">One-time payment</p>
-                </div>
-
-                {/* Phone Number */}
-                <div className="space-y-1.5 mb-6">
-                  <label className="block text-sm font-medium text-foreground">M-Pesa Phone Number</label>
-                  <div className="relative">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      <Smartphone className="w-5 h-5" />
-                    </div>
-                    <input
-                      type="tel"
-                      value={paymentPhone}
-                      onChange={(e) => setPaymentPhone(e.target.value.replace(/[^0-9]/g, ''))}
-                      placeholder="254700000000"
-                      className="w-full pl-10 pr-4 py-3 border border-border rounded-xl bg-secondary/50 focus:bg-background text-foreground transition-colors focus:ring-2 focus:ring-primary focus:border-transparent"
-                    />
-                  </div>
-                </div>
-
-                {/* Pay Button */}
-                <button
-                  onClick={handleInitiatePayment}
-                  disabled={paymentLoading || paymentStatus === 'checking' || !paymentPhone}
-                  className="w-full py-3.5 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-                >
-                  {paymentLoading || paymentStatus === 'checking' ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      {paymentStatus === 'checking' ? 'Confirming Payment...' : 'Initiating...'}
-                    </>
-                  ) : paymentStatus === 'pending' ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Waiting for payment...
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="w-5 h-5" />
-                      Pay with M-Pesa
-                    </>
-                  )}
-                </button>
-
-                {/* Status message */}
-                {paymentStatus === 'pending' && (
-                  <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
-                    <p className="text-sm text-yellow-600 dark:text-yellow-400 text-center">
-                      📱 Check your phone for M-Pesa prompt and enter your PIN to complete payment
-                    </p>
-                  </div>
-                )}
-
-                {paymentStatus === 'failed' && (
-                  <div className="mt-4 p-4 bg-destructive/10 border border-destructive/30 rounded-xl">
-                    <p className="text-sm text-destructive text-center">
-                      Payment failed. Please try again.
-                    </p>
-                  </div>
-                )}
-
-                {/* Info */}
-                <p className="text-xs text-muted-foreground text-center mt-6">
-                  You'll receive an M-Pesa prompt on your phone. Enter your PIN to complete payment.
-                </p>
-              </>
-            )}
-
-            {paymentStatus === 'success' && (
-              <div className="flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Main registration form
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-secondary/30 px-4 py-8">
@@ -741,7 +373,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
           <div className="px-6 pb-6">
 
             {/* Step 1: Personal Info */}
-            {currentStep === 1 && !showOtpVerification && !showPaymentStep && (
+            {currentStep === 1 && (
               <div className="space-y-4 animate-in fade-in duration-300">
                 {renderInput('name', 'Full Name', <User className="w-5 h-5" />, 'text', 'John Doe')}
                 {renderInput('email', 'Email Address', <Mail className="w-5 h-5" />, 'email', 'john@example.com')}
@@ -760,7 +392,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
             )}
 
             {/* Step 2: Academic Info */}
-            {currentStep === 2 && !showOtpVerification && !showPaymentStep && (
+            {currentStep === 2 && (
               <div className="space-y-4 animate-in fade-in duration-300">
                 {renderSelect('year_of_study', 'Year of Study', <GraduationCap className="w-5 h-5" />, yearOptions, 'Select your year')}
                 {renderInput('course', 'Course / Program', <BookOpen className="w-5 h-5" />, 'text', 'BSc. Computer Science')}
@@ -785,55 +417,13 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
                     {isSubmitting ? (
                       <>
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        Sending OTP...
+                        Creating Account...
                       </>
                     ) : (
                       'Create Account'
                     )}
                   </button>
                 </div>
-              </div>
-            )}
-
-            {/* OTP Verification Step */}
-            {showOtpVerification && !showPaymentStep && (
-              <div className="space-y-4 animate-in fade-in duration-300">
-                <h2 className="text-lg font-semibold text-center">Enter the 6-digit OTP sent to your WhatsApp</h2>
-                <div className="flex gap-2 justify-center">
-                  {otp.map((digit, idx) => (
-                    <input
-                      key={idx}
-                      id={`otp-${idx}`}
-                      type="text"
-                      maxLength={1}
-                      value={digit}
-                      onChange={e => handleOtpChange(idx, e.target.value)}
-                      onKeyDown={e => handleOtpKeyDown(idx, e)}
-                      className="w-10 h-10 text-center border rounded text-lg"
-                    />
-                  ))}
-                </div>
-                <button
-                  onClick={handleVerifyOtp}
-                  disabled={otpLoading}
-                  className="w-full py-3.5 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-                >
-                  {otpLoading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Verifying...
-                    </>
-                  ) : (
-                    'Verify OTP'
-                  )}
-                </button>
-                <button
-                  onClick={handleResendOtp}
-                  disabled={resendTimer > 0}
-                  className="w-full py-2 mt-2 border border-primary text-primary rounded-xl font-semibold hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend OTP'}
-                </button>
               </div>
             )}
 
