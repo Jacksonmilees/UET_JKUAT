@@ -16,8 +16,9 @@ class OnboardingController extends Controller
     private const MANDATORY_AMOUNT = 1; // KES 1 (TEMP for testing)
 
     /**
-    * Initiate mandatory contribution STK push for the authenticated user.
-    */
+     * Initiate mandatory contribution STK push for the authenticated user.
+     * Sends M-Pesa STK push request and creates a pending transaction.
+     */
     public function initiate(Request $request)
     {
         $user = $this->getUserFromBearer($request);
